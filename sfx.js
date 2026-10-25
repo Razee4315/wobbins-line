@@ -24,7 +24,7 @@
       const d = ir.getChannelData(c); let lp = 0;
       for (let i = 0; i < d.length; i++) { lp += .25 * ((rnd() * 2 - 1) - lp); d[i] = lp * Math.pow(1 - i / d.length, 3.2); }
     }
-    const master = ctx.createGain(); master.gain.value = 1.5;
+    const master = ctx.createGain(); master.gain.value = 1.0;
     const hp = ctx.createBiquadFilter(); hp.type = 'highpass'; hp.frequency.value = 32;
     // warmth: nothing sharp above ~6 kHz, and a gentle dip in the bright, tiring range
     const warm = ctx.createBiquadFilter(); warm.type = 'lowpass'; warm.frequency.value = 6200; warm.Q.value = .5;
@@ -89,8 +89,8 @@
   const S = {
     step: (c, o, t, p) => {                     // soft, muffled footfall
       const v = p.v ?? .3, k = p.seed ?? 0, wob = 1 + (hash(k) - .5) * .18;
-      noise(c, o, { t, d: .05 + .03 * v, g: .07 + .13 * v, f: (450 + 900 * v) * wob, q: .5, seed: k });
-      tone(c, o, { f: 115 * wob, f2: 60, t, d: .07, g: .08 + .12 * v });
+      noise(c, o, { t, d: .05 + .03 * v, g: (.07 + .13 * v) * .3, f: (380 + 700 * v) * wob, q: .5, seed: k });
+      tone(c, o, { f: 115 * wob, f2: 60, t, d: .07, g: (.08 + .12 * v) * .3 });
     },
     jump: (c, o, t, p) => {                     // a little "fwip" up
       const v = p.v ?? .5;
@@ -99,8 +99,8 @@
     },
     land: (c, o, t, p) => {                     // round thud with a soft dust puff
       const v = Math.min(1, p.v ?? .5);
-      tone(c, o, { f: 150, f2: 46, t, d: .22, g: .2 + .35 * v });
-      noise(c, o, { t, d: .1 + .1 * v, g: .05 + .12 * v, f: 800, f2: 220 });
+      tone(c, o, { f: 150, f2: 46, t, d: .22, g: (.2 + .35 * v) * .6 });
+      noise(c, o, { t, d: .1 + .1 * v, g: (.05 + .12 * v) * .6, f: 800, f2: 220 });
       if (v > .55) S.boing(c, o, t + .05, { pitch: 170, g: .07 * v });
     },
     skid: (c, o, t) => noise(c, o, { t, a: .01, d: .12, g: .05, type: 'bandpass', f: 1500, f2: 600, q: .8 }),
@@ -178,7 +178,7 @@
     },
     flap: (c, o, t) => noise(c, o, { t, a: .01, d: .06, g: .03, type: 'bandpass', f: 900, q: 1 }),
     // caption typing: a muted typewriter key, never the same twice
-    blip: (c, o, t, p) => { const k = p.k ?? 0; tone(c, o, { f: 760 + hash(k * 1.7) * 160, t, a: .006, d: .03, g: .011 }); noise(c, o, { t, d: .012, g: .006, type: 'bandpass', f: 1800 + hash(k) * 600, q: 1.5 }); },
+    blip: (c, o, t, p) => { const k = p.k ?? 0; tone(c, o, { f: 760 + hash(k * 1.7) * 160, t, a: .006, d: .03, g: .005 }); noise(c, o, { t, d: .012, g: .006, type: 'bandpass', f: 1800 + hash(k) * 600, q: 1.5 }); },
     // ---- season 3 ----
     snore: (c, o, t) => { noise(c, o, { t, a: .5, d: .7, g: .05, type: 'bandpass', f: 320, f2: 190, q: .8, brown: true }); tone(c, o, { f: 92, f2: 80, t, a: .4, d: .6, g: .025 }); },
     dab: (c, o, t, p) => {                      // a soft paint dab: tiny pluck, a different note each time
@@ -224,7 +224,7 @@
       const vow = 'aeiou'.includes(ch) ? ch : 'aeiouaeo'[(ch.charCodeAt(0) || 0) % 8];
       const [f1, f2] = { a: [760, 1180], e: [470, 1700], i: [340, 2000], o: [500, 860], u: [370, 760] }[vow];
       const wob = 1 + (hash(k * 1.31) - .5) * .14, rise = p.rise ? 1 + .22 * Math.min(1, p.rise) : 1;
-      const f0 = 236 * (p.pitch ?? 1) * wob * rise, d = p.last ? .13 : .075, g = .11 * (p.g ?? 1);
+      const f0 = 236 * (p.pitch ?? 1) * wob * rise, d = p.last ? .13 : .075, g = .032 * (p.g ?? 1);
       const osc = c.createOscillator(); osc.type = 'sawtooth';
       osc.frequency.setValueAtTime(f0 * 1.05, t); osc.frequency.exponentialRampToValueAtTime(f0 * (p.last ? .86 : .97), t + d);
       const soft = c.createBiquadFilter(); soft.type = 'lowpass'; soft.frequency.value = 2400; soft.Q.value = .4;

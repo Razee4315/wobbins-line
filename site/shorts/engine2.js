@@ -634,8 +634,8 @@
       for (let i = 0, n = Math.round(loop.T * fps); i < n; i++) A.advance(1 / fps);
       audio = await SFX.renderLoop(events, loop.T, AAC.sampleRate);
       let peak = 0; for (const c of audio.ch) for (const v of c) peak = Math.max(peak, Math.abs(v));
-      // normalise every short to the same peak so they sound equally loud on social
-      if (peak > 0) for (const c of audio.ch) for (let i = 0; i < c.length; i++) c[i] *= .89 / peak;
+      // normalise every short to the same gentle peak (about -6 dB) so they all sit at the same soft level
+      if (peak > 0) for (const c of audio.ch) for (let i = 0; i < c.length; i++) c[i] *= .5 / peak;
     }
 
     const target = new Mp4Muxer.ArrayBufferTarget();
