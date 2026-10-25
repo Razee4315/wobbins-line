@@ -1,0 +1,32 @@
+# Wobbin's Line: the handbook
+
+Everything we know about making this show, in one place. Read it before starting new episodes, and add to it whenever we learn something.
+
+| File | What's in it |
+|---|---|
+| [01-the-show.md](01-the-show.md) | What we're making: the character, the world, the look, the tone |
+| [02-episode-guide.md](02-episode-guide.md) | How to write an episode: story shape, loop rules, engine cheat sheet, checklist |
+| [03-sound-guide.md](03-sound-guide.md) | How the sound works, the levels we settled on, every sound name |
+| [04-lessons-learned.md](04-lessons-learned.md) | A running log of mistakes and fixes, so we don't repeat them |
+| [05-episodes.md](05-episodes.md) | All 33 episodes: topic, quote, length, notes |
+| [06-preferences.md](06-preferences.md) | What the user loves and dislikes, in their own words where possible |
+| [07-workflow.md](07-workflow.md) | Tools and steps: testing, syncing the site, deploying, rendering, Instagram |
+| [../ideas.md](../ideas.md) | The idea bank: every season's plan, the backlog of future episodes, research notes |
+
+## Where things live
+
+- `*.html` in the project root: one page per episode. Each opens on its own and can export an MP4.
+- `engine2.js`: the animation engine (characters, physics, camera, captions, loops, MP4 export).
+- `sfx.js`: every sound, synthesized in code.
+- `site/`: the website, deployed to https://razee4315.github.io/wobbins-line/ on every push to `main`. Its own design docs are in `site/docs/`.
+- `brand/instagram/`: profile pictures, highlight covers, bio text and first captions.
+- `legacy/season1/`: the original Season 1 pages on the first engine, kept for reference.
+- `tools/`: the dev server and contact-sheet helper we use to check episodes.
+
+## Keeping this up to date
+
+After every working session, add anything new to:
+- `04-lessons-learned.md` (what broke and how we fixed it),
+- `06-preferences.md` (anything the user said they liked or disliked),
+- `05-episodes.md` (new episodes, or ones that have been posted),
+- `../ideas.md` (new ideas, and what we found out from research).

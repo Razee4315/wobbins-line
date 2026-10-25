@@ -3,3 +3,5 @@ __pycache__/
 *.mp4
 Thumbs.db
 .DS_Store
+tools/out/
+renders/

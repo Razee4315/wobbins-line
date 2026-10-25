@@ -1,0 +1,49 @@
+# 04 · Lessons learned
+
+A running log. Newest at the top. When something breaks, write down what happened and the fix.
+
+## 2026-10-26 · Seasons 6 and 7, sound and feel
+
+- **"It feels programmed."** Fixed with three engine changes: line boil on by default (a tiny redraw jitter about 12× a second), blinks at uneven gaps with the odd double blink, and a subtle breathing squash when a character stands still. Motion stays smooth; only the line wobbles.
+- **Sound too loud and harsh.** Warm low-pass and high-shelf cut on the master, a minimum attack on every sound, quieter bells and taps, then (after feedback) footsteps and the caption voice turned down about 14 dB, the master by about 3.5 dB, and MP4 exports normalized to 0.5 instead of 0.89.
+- **Typewriter clicks felt robotic.** Replaced with a soft murmured voice per speaker (Animalese-style), on by default in every episode.
+- **`S.plan` order.** It re-applies every past step in list order each frame, so grouped lists (all looks, then all crouches) clash. Keep plans time-sorted. Also, setting `c.cmd.x` by hand after a plan step that sets `x` gets overwritten; aim the plan step at the right place instead (Why Was I Here? doorway stop).
+- **Sounds tied to the rendered view go missing in MP4s.** The soundtrack pass simulates without rendering, so anything spawned from `S.view` (rain in Small Talk) or positions computed in a draw function (the buddy in Inner Voice) has no sound. Spawn from the camera (`S.cam.x.x`) or compute positions in `update`.
+- **Seam drift from foot history.** After long standing scenes, the feet keep different positions and the loop doesn't match (seam error 63 in Inner Voice). A small hop before the walk-off resets them.
+- **Things that follow Wobbin break the seam.** The buddy followed Wobbin off screen; anchor helpers in place once their part is done.
+- **Colours must loop.** An evening sky that never returns jumps at the seam. Either bring it back, tint only an indoor room (off screen at the seam), or start and end on the same colour.
+- **Props too small at phone size.** The "just in case" items at 6 px were specks; doubling to 12 px made the joke work.
+- **Wide shots are tiny in 9:16.** A huge establishing shot pushed both carts to the frame edges (The Other Line). A camera that follows whichever line is moving reads far better.
+- **Yellow captions are unreadable on white.** Use orange; at night, use a pale yellow accent on the dark sky.
+- **People can't hold things.** Items ride on heads, keys hang from the tuft, kites tie to the tuft. Stacking characters uses `hold()` with `heldFeet` so feet plant on the head below.
+- **Hidden-pane testing.** In the background browser pane, timers and animation frames are throttled; contact sheets rendered from a fresh `Show` are the reliable way to check an episode.
+- **Bulk rendering is slow** (roughly a minute per episode in the background pane). The user asked to skip it unless they ask.
+
+## 2026-10-26 · Season 1 rebuilt on engine 2
+
+- Engine 2 always draws one unbroken line, so The Gap paints paper over the gap and the erased part, and adds round ink caps on the cut ends.
+- Platforms (a crate to stand on) use `story.ground()`; `story.lineAt()` keeps the drawn line flat.
+- The old Season 1 pages are in `legacy/season1/`.
+
+## 2026-10-25/26 · The website
+
+- The fixed band canvas covered the hero, so hero and band became one transparent canvas.
+- The season rows made the phone page 1298px wide (grid items need `min-width: 0`), which zoomed the whole site out.
+- After scrolling back up, Wobbin stayed wherever he'd walked; the camera now brings him back to his spot in the hero.
+- Everything was "too zoomed in": the type scale and sizes came down about a third.
+- The user didn't like the pinned scroll-scrubbed section; it was removed. They didn't like Bricolage Grotesque; the site now uses Clash Display and Satoshi.
+- Cache busting: bump `?v=` (`sh site/scripts/bump.sh` for the site; the episode pages use `sfx.js?v=N` / `engine2.js?v=N`).
+
+## GitHub and deploy
+
+- GitHub Pages on a private repo needs a paid plan, and even then Actions artifact storage can run out (it did: about 1.2 GB of old build artifacts in other repos). Making the repo public fixed it, since public repos don't count toward the quota.
+- Commits must not carry a `Co-Authored-By: Claude` line.
+
+## Earlier seasons (from the first sessions)
+
+- Story state must be fully reset in `init()` or the second loop behaves differently.
+- Only the main character's landings should shake the camera.
+- Old cached `engine2.js` caused "fixed" bugs to reappear; versioned script tags fixed it.
+- Seams need a long enough tail after the last beat for the walk to settle.
+- Shared module-level state (Bloom's flowers) must be copied per show, because the exporter runs its own simulations.
+- In The Hill, the ball needed real head contact or it looked like it floated.

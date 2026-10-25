@@ -62,6 +62,26 @@ Every one opens on a small mystery (what is Bo doing?), then reveals it, escalat
 - **Gratitude** — Bo walks past small good things without seeing them (a flower, a sunbeam, a friend's wave); the second time round Bo collects each one into a growing pixel bouquet. *"look how much you already have."*
 - **Restart** — Bo's tower falls; Bo stares at the mess, then builds something different (and better) from the same blocks. *"starting over isn't starting from zero."*
 
+### Next ideas (added 2026-10-26). Each has a curiosity hook for the first seconds.
+
+- **Sorry** — *Hook:* Bo bows to a lamp post. *Reveal:* Bo says sorry to everything (a door, a cat, the rain), and the little "sorry" bubbles pile up and weigh Bo down; a friend says "you didn't do anything wrong." *"save your sorry for when you mean it."*
+- **Group Chat** — *Hook:* a phone-shaped box on the line keeps jumping and buzzing. *Reveal:* 99+ messages pour out as pixel speech bubbles burying Bo; Bo mutes it and goes outside with one friend. *"you don't have to answer everything right now."*
+- **On Hold** — *Hook:* Bo stands frozen, swaying to a tiny tune. *Reveal:* Bo's on hold; the hold music loops and the day goes from morning to night; finally Bo hangs up and walks to the shop, and it's done in a second. *"some things are faster if you just go."*
+- **Blank Page** — *Hook:* Bo circles a big white square, terrified. *Reveal:* a blank page; every first mark looks wrong, until Bo just scribbles, and the scribble becomes a drawing. *"the first line is allowed to be bad."*
+- **Clap Back** — *Hook:* everyone's clapping; Bo's arms... Bo has no arms. *Reveal:* a friend wins a prize; Bo feels jealous (a green cloud), then cheers loudest, and the friend shares the crown. *"cheering for others doesn't make you smaller."*
+- **Water Yourself** — *Hook:* Bo waters a plant every morning, very proudly. *Reveal:* the plant thrives while Bo droops more each day; the plant "waters" Bo back. *"you need looking after too."*
+- **Offline** — *Hook:* Bo holds a wifi signal like a balloon. *Reveal:* the signal pops; panic, then Bo notices the sunset, a bird, a friend. When the wifi returns, Bo ignores it. *"the world still works offline."*
+- **Homesick** — *Hook:* Bo walks with a tiny house floating above like a thought bubble. *Reveal:* new city, new everything; the little house shrinks as new friends and places fill the bubble, but it never disappears. *"home is something you carry."*
+- **Small Wins** — *Hook:* Bo does a victory dance over... a made bed. *Reveal:* Bo celebrates every tiny thing (socks matched, plant watered) with confetti, and by evening the line is full of colour. *"celebrate the small wins. they're still wins."*
+- **Goodbye** — *Hook:* two friends walking in perfect step. *Reveal:* one is moving away; the line splits into two lines that drift apart, but a string of little hearts stays between them. *"distance changes the line, not the friendship."*
+- **Midnight Snack** — *Hook:* a fridge light in the dark, and two eyes. *Reveal:* Bo tiptoes for "one" snack and returns again and again; a gentle, funny one about habits. *"be kind to yourself, even at midnight."*
+- **The Mirror** — *Hook:* Bo stares into a mirror and pulls the body in, pushes the tuft down. *Reveal:* the mirror shows a wobbly, unkind version; friends see the real Bo, and the mirror slowly agrees. *"you look like someone people love."*
+- **Burnout, gently** — *Hook:* Bo lights lanterns for everyone down the line. *Reveal:* Bo's own flame is a flicker; Bo stops, rests, relights. (Expands the backlog idea above.) *"you can't pour from an empty cup."*
+
+### What we keep learning
+
+See `docs/04-lessons-learned.md` (technical and story lessons) and `docs/06-preferences.md` (what the user likes). Add to both after every session.
+
 ## Research notes
 
 - Last-minute productivity is a measured effect: people who procrastinate more tend to become more productive as the deadline nears (deadline effect / "student syndrome").
