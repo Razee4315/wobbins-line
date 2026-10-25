@@ -1,0 +1,197 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>The Other Line</title>
+</head>
+<body>
+<script src="sfx.js?v=6"></script>
+<script src="engine2.js?v=6"></script>
+<script>
+// Bo joins the back of a line without knowing what it's for. The camera pulls back: two
+// ice-cream carts, two lines. Bo's line stops, the other one flies. Bo switches. It stops.
+// Bo switches back. It stops. So Bo sits down and waits, watches the light change, and
+// suddenly it's Bo's turn: the biggest cone of the day.
+const { PAL, SPRITES, sprite, lerp, seg, sine, outBack, clamp, hash, spring, mix, GROUND } = Shorts;
+const V = 170, A_X = 1960, B_X = 800, GAP = 140;
+const slotA = k => A_X - 110 - k * GAP, slotB = k => B_X + 110 + k * GAP;
+const CONE = ['.SSS.', 'SSSSS', 'SSSSS', 'BBBBB', '.BWB.', '.BBB.', '..B..'];
+const MEGA = ['..R..', '.TTT.', 'TTTTT', '.YYY.', 'YYYYY', '.PPP.', 'PPPPP', 'BBBBB', '.BWB.', '.BBB.', '..B..'];
+const SCOOPS = [PAL.pink, PAL.yellow, PAL.sky, PAL.lime, '#ffffff', PAL.orange];
+const LOOKS = [
+  { hair: 'curl', blush: PAL.pink, fill: '#ffe9f2' }, { hair: 'antenna', hairColor: PAL.blue, fill: '#e6f0ff' },
+  { hairColor: PAL.orange, blush: '#ffb08a', fill: '#fff4d6' }, { hair: 'curl', hairColor: PAL.green, fill: '#e3fbef' },
+  { hair: 'antenna', hairColor: PAL.red, fill: '#ffe8e8' }, { hairColor: PAL.violet, fill: '#efeaff' },
+  { hair: 'curl', hairColor: PAL.sky, fill: '#e2f6ff' }, { hairColor: PAL.brown, blush: PAL.pink, fill: '#fff0e0' },
+];
+// queue events: [time, line, what]
+const SERVE = [
+  [11.4, 'B'], [12.7, 'B'],                        // Bo's line is stuck, the other one flies
+  [15.9, 'A'], [16.9, 'A'],                        // Bo switches: now the old line flies
+  [19.6, 'B'],                                     // switches back: the other one empties
+  [26.2, 'A'],                                     // Bo waits it out
+];
+const STALL_B = [15.4, 19.3], STALL_A = [18.6, 25.8];
+const BO_TURN = 27.6, BENCH = A_X + 330, LEAVE = 35.4, LOOP = LEAVE + 7.6;
+
+Shorts.play({
+  title: 'The Other Line',
+  accent: PAL.orange,
+  voice: { pitch: 1 },
+  loopAfter: LOOP,
+  paperAt: t => mix('#ffffff', '#fff1dc', sine(seg(t, 22.5, 25.5)) * (1 - sine(seg(t, 29, 33)))),
+  captions: [
+    [9.6, 11.0, '*ice cream!*'],
+    [12.6, 14.2, 'that line is *faster.*'],
+    [16.3, 17.8, 'oh, *come on.*'],
+    [19.8, 21.2, '*what?!*'],
+    [22.6, 24.2, "fine. *i'll wait.*"],
+    [28.0, 29.4, 'oh! *my turn.*'],
+    [30.4, 36.6, 'the other line always looks faster. *yours is moving too.*'],
+  ],
+  init(S) {
+    S.A = []; S.B = []; S.gone = [];
+    for (let i = 0; i < 3; i++) S.A.push(S.addChar({ x: slotA(i), face: 1, gain: .3, ...LOOKS[i] }));
+    for (let i = 0; i < 3; i++) S.B.push(S.addChar({ x: slotB(i), face: -1, gain: .3, ...LOOKS[4 + i] }));
+    S.late = [S.addChar({ x: -800, face: 1, gain: .3, ...LOOKS[1] }), S.addChar({ x: -1000, face: 1, gain: .3, ...LOOKS[6] })];
+    S.vendA = S.addChar({ x: A_X + 10, face: -1, gain: .2, hair: 'antenna', hairColor: PAL.red, fill: '#fff' });
+    S.vendB = S.addChar({ x: B_X - 10, face: 1, gain: .2, hairColor: PAL.sky, fill: '#fff' });
+    S.bo = S.addChar({ x: 0, walk: V }); S.focus = S.bo;
+    S.in = null; S.served = 0; S.mega = 0; S.bites = 0; S.fly = 0; S.hum = 0;
+    S.A.forEach((c, i) => c.cone = null); S.B.forEach(c => c.cone = null);
+  },
+  update(S, t, dt) {
+    const bo = S.bo, c = bo.cmd;
+    // everyone in a line shuffles to their slot; Bo too, once Bo is in one
+    const place = (q, slot, dir) => q.forEach((m, k) => { if (m === bo) return; Object.assign(m.cmd, { x: slot(k), speed: 120, accel: 500, face: dir }); });
+    place(S.A, slotA, 1); place(S.B, slotB, -1);
+    const serve = (name) => {
+      const q = name === 'A' ? S.A : S.B, m = q[0]; if (!m || m === bo) return;
+      q.shift(); m.cone = SCOOPS[S.served++ % SCOOPS.length]; m.coneAt = t;
+      Object.assign(m.cmd, { x: name === 'A' ? 6000 : -4000, speed: 260, accel: 600, face: name === 'A' ? 1 : -1, eye: 'happy' });
+      S.sfx('catch', { pitch: 520 + hash(S.served) * 200 }, m.x); S.sfx('laugh', { k: .9 + hash(S.served) * .4, n: 2, g: .6 }, m.x);
+      m.jump(0, -300); S.gone.push(m);
+    };
+    SERVE.forEach(([at, q], i) => { if (t >= at) S.once('serve' + i, () => serve(q)); });
+    // the two late arrivals walk straight into the empty line and get served at once
+    if (t > 17.4) S.late.forEach((m, i) => { if (!m.cone && !S.B.includes(m)) { m.cmd.x = slotB(i) - 30; m.cmd.speed = 380; m.cmd.accel = 900; } });
+    if (t > 20.0) S.late.forEach((m, i) => { if (!m.cone && Math.abs(m.x - (slotB(i) - 30)) < 60) S.once('late' + i, () => { S.B.push(m); }); });
+    if (t > 21.9) S.once('lateServe0', () => serve('B')); if (t > 22.5) S.once('lateServe1', () => serve('B'));
+
+    const joinA = () => { S.B = S.B.filter(m => m !== bo); S.in = 'A'; S.A.push(bo); };
+    const joinB = () => { S.A = S.A.filter(m => m !== bo); S.in = 'B'; S.B.push(bo); };
+    S.plan(bo, t, [
+      [0, { x: slotA(3), speed: V, accel: 520 }],
+      [8.2, () => joinA()],
+      [8.6, { lookX: .6, lookY: -.2, tilt: .14 }],                     // peeks round the person in front
+      [9.4, { tilt: 0, eye: 'happy', lookX: .4 }], [9.4, () => { bo.jump(0, -360); S.sfx('twinkle', { pitch: 1568 }, A_X); }],
+      [10.6, { eye: 'open', lookX: 0 }],
+      [12.0, { face: -1, lookX: .6 }], [12.0, () => S.sfx('slip', {}, bo.x)],
+      [13.4, { face: 1, lookX: 0 }], [13.8, { face: -1, eye: 'squeeze' }],
+      [14.4, () => joinB()],                                          // switch!
+      [14.4, { eye: 'open' }], [14.4, () => S.sfx('whoosh', { d: .5 }, bo.x)],
+      [15.5, { eye: 'flat' }],
+      [16.0, { face: 1, lookX: .5 }],
+      [17.9, () => joinA()], [17.9, () => S.sfx('whoosh', { d: .5 }, bo.x)],   // switch back
+      [18.0, { eye: 'squeeze' }], [19.0, { eye: 'open' }],
+      [19.7, { face: -1, eye: 'wide' }], [20.2, { crouch: .2 }], [20.45, { crouch: 0 }], [20.45, () => { bo.jump(0, -520); S.sfx('dizzy', {}, bo.x); }],
+      [21.2, { face: 1, eye: 'dizzy' }], [21.9, { eye: 'flat' }],
+      [22.3, { sit: 1, tilt: .08, eye: 'flat' }], [22.3, () => S.sfx('breathOut', { d: 1.3 }, bo.x)],   // fine. I'll wait.
+      [24.0, { eye: 'open', lookY: -.8, lookX: .2, tilt: -.06 }],      // watches the sky instead
+      [24.2, () => S.sfx('hum', { notes: [2, 4, 5, 4, 2, 1, 2], gap: .34 }, bo.x)],
+      [25.6, { eye: 'happy' }],
+      [27.3, { sit: 0, tilt: 0, lookY: 0, eye: 'open' }],
+      [BO_TURN, { eye: 'wide' }],
+      [BO_TURN + .3, () => { S.mega = t; S.sfx('arp', { notes: [0, 2, 4, 7, 9] }); S.sfx('sparkle', { n: 9 }, A_X); }],
+      [BO_TURN + .5, { eye: 'happy' }], [BO_TURN + .8, { crouch: .2 }], [BO_TURN + 1.05, { crouch: 0 }], [BO_TURN + 1.05, () => bo.jump(0, -520)],
+      [29.8, () => { S.A = S.A.filter(m => m !== bo); S.in = null; }],
+      [29.8, { x: BENCH, speed: 110, accel: 400, eye: 'open' }],
+      [31.0, { sit: 1, eye: 'happy', lookX: .3, lookY: -.4 }],
+      [LEAVE - .4, { sit: 0, eye: 'open', lookX: 0, lookY: 0 }],
+      [LEAVE, { x: 1e6, speed: V, accel: 450 }],
+    ]);
+    // Bo's place in whichever line Bo is in
+    if (S.in) {
+      const q = S.in === 'A' ? S.A : S.B, k = q.indexOf(bo), x = t > 22.3 && t < 27.3 ? c.x : S.in === 'A' ? slotA(k) : slotB(k);
+      Object.assign(c, { x, speed: Math.abs(bo.x - x) > 150 ? 330 : 120, accel: 1100 });
+      if (Math.abs(bo.x - x) > 150) c.face = Math.sign(x - bo.x); else if (t > 14.6 && t < 17.8) c.face = S.in === 'B' ? -1 : 1;
+    }
+    // Bo's turn: the person ahead gets served at 26.2, then Bo steps up
+    // eating the giant cone on the bench: one bite every so often, a scoop at a time
+    if (t > 31.6 && t < LEAVE - .6) {
+      if (S.bites < 5 && t > 31.8 + S.bites * .62) { S.bites++; S.sfx('catch', { pitch: 380 + S.bites * 40 }, bo.x); S.sfx('laugh', { k: 1.15, n: 1, g: .5 }, bo.x); bo.q.v -= 1.2; S.burst(bo.x + 10, bo.top().y - 30, 5, [SCOOPS[S.bites % 6], '#fff'], { speed: 160, gravity: 600, size: 6, life: .6 }); }
+    }
+    // stalls: the cart shows a little "!" (B's machine sputters, A's vendor takes a call)
+    if (t > STALL_B[0]) S.once('stallB', () => { S.sfx('drain', {}, B_X); S.sfx('poof', {}, B_X); });
+    if (t > STALL_A[0]) S.once('stallA', () => S.sfx('ring', {}, A_X));
+    if (t > STALL_A[0] + 1.4) S.once('stallA2', () => S.sfx('ring', {}, A_X));
+    S.vendA.cmd.face = -1; S.vendB.cmd.face = 1;
+    S.vendA.cmd.lookY = t > STALL_A[0] && t < STALL_A[1] ? .6 : 0; S.vendA.cmd.eye = t > STALL_A[0] && t < STALL_A[1] ? 'flat' : 'happy';
+    S.vendB.cmd.eye = t > STALL_B[0] && t < STALL_B[1] ? 'sad' : 'happy';
+    // a butterfly keeps Bo company while Bo waits
+    if (t > 23.6 && t < 28) { S.fly += dt; if (S.fly > .32) { S.fly = 0; S.sfx('flap', {}); } }
+    // ambience: a warm afternoon
+    S.once('amb', () => { S.sfx('birds', { d: LOOP, g: .8 }); S.sfx('room', { d: LOOP, g: .5 }); });
+
+    // camera: tight on Bo walking in (what is this line?), then pull back to show both carts
+    // then follow the action like a camera operator: whichever line is moving, plus Bo
+    const shot = (x, z, k = 1.6) => { S.camGoal.x = x; S.camGoal.z = z; S.camGoal.kx = k; S.camGoal.kz = k * .8; };
+    if (t < 9.0) { S.camGoal.z = 1.2; S.camGoal.kz = 2; }
+    else if (t < 11.0) shot((A_X + B_X) / 2, .47, 3.2);                 // the reveal: two carts, two lines
+    else if (t < 14.4) shot((B_X + bo.x) / 2 + 20, .7);                  // Bo, watching the other line fly
+    else if (t < 17.9) shot((bo.x + A_X) / 2 + 20, .64);                 // now the old line flies
+    else if (t < 22.2) shot((B_X + bo.x) / 2, .64);                      // ...and the other one empties
+    else if (t < 27.3) shot(bo.x + 40, 1.0, 1.2);                        // waiting, close and quiet
+    else if (t < 29.6) shot((bo.x + A_X) / 2, 1.0);
+    else if (t < LEAVE) shot((bo.x + A_X) / 2, .95);
+  },
+  drawSky(S, ctx, t, v) {
+    for (let i = 0; i < 3; i++) {
+      const W = v.right - v.left + 400, x = v.left - 200 + (1 - ((t / S.T + i / 3 + .2) % 1)) * W;
+      sprite(ctx, SPRITES.cloud, x, v.top + (v.bottom - v.top) * (.2 + i * .07), 9, { X: mix('#ebe8f4', '#ffe0c0', sine(seg(t, 22.5, 25.5)) * (1 - sine(seg(t, 29, 33)))) });
+    }
+  },
+  drawBack(S, ctx, t) {
+    // the bench by cart A
+    ctx.fillStyle = PAL.brown; ctx.lineWidth = 5;
+    ctx.beginPath(); ctx.roundRect(BENCH - 80, GROUND - 52, 160, 16, 6); ctx.fill(); ctx.stroke();
+    for (const x of [BENCH - 62, BENCH + 62]) { ctx.beginPath(); ctx.moveTo(x, GROUND - 36); ctx.lineTo(x, GROUND + 2); ctx.stroke(); }
+  },
+  drawFront(S, ctx, t) {
+    const cart = (x, dir, stripe, body, stall) => {
+      const J = i => S.J(i + x);
+      // awning on two poles
+      ctx.lineWidth = 5; ctx.strokeStyle = '#111';
+      for (const px of [x - 58, x + 58]) { ctx.beginPath(); ctx.moveTo(px, GROUND - 100); ctx.lineTo(px + J(1) * .3, GROUND - 230); ctx.stroke(); }
+      for (let i = 0; i < 6; i++) { ctx.fillStyle = i % 2 ? '#fff' : stripe; ctx.fillRect(x - 78 + i * 26, GROUND - 262, 26, 34); }
+      ctx.strokeRect(x - 78, GROUND - 262, 156, 34);
+      for (let i = 0; i < 6; i++) { ctx.fillStyle = i % 2 ? '#fff' : stripe; ctx.beginPath(); ctx.arc(x - 65 + i * 26, GROUND - 228, 13, 0, Math.PI); ctx.fill(); }
+      // the cart body hides the vendor's legs
+      ctx.fillStyle = body; ctx.beginPath(); ctx.roundRect(x - 74 + J(2) * .3, GROUND - 112, 148, 86, 10); ctx.fill(); ctx.stroke();
+      sprite(ctx, CONE, x, GROUND - 70, 6, { S: stripe, B: PAL.orange, W: PAL.peach });
+      for (const wx of [x - 44, x + 44]) { ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(wx, GROUND - 16, 15, 0, Math.PI * 2); ctx.fill(); ctx.stroke(); }
+      if (stall) { const k = outBack(clamp((t - stall) / .3)); sprite(ctx, SPRITES.bang, x + dir * 10, GROUND - 300 + Math.sin(t * 8) * 3, 6 * k, { X: PAL.red }); }
+    };
+    cart(A_X, -1, PAL.red, PAL.peach, t > STALL_A[0] && t < STALL_A[1] ? STALL_A[0] : 0);
+    cart(B_X, 1, PAL.sky, PAL.lav, t > STALL_B[0] && t < STALL_B[1] ? STALL_B[0] : 0);
+    // the phone A's vendor is busy on
+    if (t > STALL_A[0] && t < STALL_A[1]) { const top = S.vendA.top(); sprite(ctx, ['XXX', 'XBX', 'XBX', 'XXX'], top.x - 34, top.y + 30, 5, { X: '#111', B: PAL.sky }); }
+    // B's machine puffs a little smoke while it's broken
+    if (t > STALL_B[0] && t < STALL_B[1]) for (let i = 0; i < 4; i++) { const u = ((t - STALL_B[0]) * .8 + i / 4) % 1; ctx.fillStyle = PAL.grey; ctx.globalAlpha = 1 - u; ctx.beginPath(); ctx.arc(B_X + 30 + u * 20, GROUND - 130 - u * 90, 10 + u * 12, 0, Math.PI * 2); ctx.fill(); ctx.globalAlpha = 1; }
+    // cones ride on heads (nobody here has hands)
+    for (const m of S.gone) { const top = m.top(), k = outBack(clamp((t - m.coneAt) / .3)); sprite(ctx, CONE, top.x, top.y - 24, 4.4 * k, { S: m.cone, B: PAL.orange, W: PAL.peach }); }
+    if (S.mega) {
+      const top = S.bo.top(), k = outBack(clamp((t - S.mega) / .4)), rows = MEGA.slice(Math.min(MEGA.length - 4, S.bites * 2));
+      if (S.bites < 5) sprite(ctx, rows, top.x, top.y - rows.length * 2.4 - 8, 4.8 * k, { R: PAL.red, T: PAL.sky, Y: PAL.yellow, P: PAL.pink, S: PAL.pink, B: PAL.orange, W: PAL.peach });
+    }
+    // the butterfly
+    if (t > 23.6 && t < 28.4) {
+      const top = S.bo.top(), u = t - 23.6, x = top.x + Math.cos(u * 1.3) * 90 + 20, y = top.y - 70 + Math.sin(u * 2.1) * 40;
+      sprite(ctx, Math.floor(t * 10) % 2 ? SPRITES.flyA : SPRITES.flyB, x, y, 4, { X: PAL.violet, B: '#111' }, seg(t, 23.6, 24) * (1 - seg(t, 28, 28.4)));
+    }
+  },
+});
+</script>
+</body>
+</html>

@@ -1,6 +1,20 @@
 /* Every episode of Wobbin's Line. Numbered in release order; the page lists seasons newest first.
    poster: the moment (seconds) used as the card's still frame and where hover previews start. */
 window.WL_SEASONS = [
+  { n: 7, title: 'Heavy things', episodes: [
+    { id: 'just-in-case', title: 'Just in Case', theme: 'overpacking life', accent: '#ffa300', poster: 18.0, line: 'An umbrella, a sweater, a lamp, a duck, a ladder. All on Wobbin’s head, all just in case.', quote: 'you don’t have to carry every just-in-case.' },
+    { id: 'heavy', title: 'Heavy', theme: 'asking for help', accent: '#3b7dd8', poster: 29.6, line: 'The kite is stuck. “no no, I’ve got it!” Jump, crate, so close. Then, quietly: “could you help?”', quote: 'asking for help isn’t weak. it’s how we reach higher.' },
+    { id: 'fine', title: 'Fine', theme: 'pretending you’re okay', accent: '#ffa300', poster: 18.8, line: 'A painted smile for every friend. It slips, it cracks, and the little rain cloud comes back.', quote: 'you don’t have to be fine all the time.' },
+    { id: 'comfort-zone', title: 'Comfort Zone', theme: 'stepping out', accent: '#ffa300', poster: 22.6, line: 'A warm dome, a grey world outside, and a zone that keeps shrinking. One step out, and colour floods back.', quote: 'comfort zones grow every time you step out.' },
+    { id: 'inner-voice', title: 'Inner Voice', theme: 'the inner critic', accent: '#7b5cff', poster: 16.2, line: 'A grumbly scribble mocks every bounce, and grows. Until Wobbin talks to it kindly.', quote: 'talk to yourself the way you would talk to a friend.' },
+  ] },
+  { n: 6, title: 'Little things', episodes: [
+    { id: 'the-other-line', title: 'The Other Line', theme: 'impatience', accent: '#ffa300', poster: 16.4, line: 'Two ice-cream lines. Whichever one Wobbin picks stops moving.', quote: 'the other line always looks faster. yours is moving too.' },
+    { id: 'why-was-i-here', title: 'Why Was I Here?', theme: 'forgetting', accent: '#00b543', poster: 8.4, line: 'A clear idea, a determined march, and the doorway that eats it. Every time.', quote: 'it’s not just you. doorways really do make you forget.' },
+    { id: 'lost', title: 'Lost', theme: 'losing things', accent: '#ffa300', poster: 18.4, line: 'Cushions fly, the drawer empties, the clock races. The keys were never far.', quote: 'slow down. it’s usually closer than you think.' },
+    { id: 'small-talk', title: 'Small Talk', theme: 'awkward silence', accent: '#ff004d', poster: 21.6, line: 'A bus stop, a stranger, a silence that grows. Then rain, and one umbrella.', quote: 'every friend was a stranger once.' },
+    { id: 'cant-sleep', title: 'Can’t Sleep', theme: 'night thoughts', accent: '#7b5cff', poster: 20.0, line: 'Counting sheep, until the sheep start bringing worries. Then the window opens.', quote: 'you don’t have to solve tomorrow tonight.' },
+  ] },
   { n: 5, title: 'Small courage', episodes: [
     { id: 'monday-mountain', title: 'Monday Mountain', theme: 'dread', accent: '#7b5cff', poster: 7.45, line: 'A storm mountain looms bigger the longer Wobbin stares. Up close, it’s five small steps.', quote: 'it’s never as big up close.' },
     { id: 'imposter', title: 'Imposter', theme: 'imposter syndrome', accent: '#ffa300', poster: 19.4, line: 'Wobbin wins a crown and keeps trying to give it back. It keeps coming home.', quote: 'you’re not an imposter. you belong here.' },
@@ -35,7 +49,7 @@ window.WL_SEASONS = [
     { id: 'the-gap', title: 'The Gap', theme: 'courage', accent: '#3b7dd8', poster: 20.0, line: 'Stuck at the edge, until the line behind starts to vanish.', quote: 'jump before the ground decides for you.' },
   ] },
 ];
-// release-order episode numbers (Season 1 = EP 01–03 … Season 5 = EP 19–23)
+// release-order episode numbers (Season 1 = EP 01–03 … Season 7 = EP 29–33)
 (() => {
   let n = 0;
   [...window.WL_SEASONS].reverse().forEach(s => s.episodes.forEach(e => { e.ep = ++n; e.season = s.n; }));

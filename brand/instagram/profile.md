@@ -29,14 +29,14 @@ A, recommended (122 characters):
 ```
 A tiny show, drawn on one line.
 Wobbin runs into something we all do, then walks off a little wiser.
-23 looping episodes ↓
+33 looping episodes ↓
 ```
 
 B (109 characters):
 ```
 Tiny looping shorts about the things we all do.
 Putting it off. Saying yes. Five more minutes.
-Watch all 23 ↓
+Watch all 33 ↓
 ```
 
 C (109 characters):

@@ -1,0 +1,142 @@
+/* inner-voice: extracted from ../inner-voice.html by scripts/sync-shorts.py. Do not edit here. */
+(function () {
+  const Shorts = Object.assign(Object.create(window.Shorts), { play: story => { (window.WL_STORIES ||= {})['inner-voice'] = story; } });
+  // Bo flicks up a ball and starts bouncing it on its head: 1, 2, 3. A grumbly ink scribble pops up
+  // beside Bo: "is that it?" Bo drops it. "you're going to drop it." Bo drops it. Each jab, the
+  // scribble gets bigger. So Bo turns and talks to it kindly, and the scribble shrinks into a little
+  // buddy who cheers. Bo bounces the ball higher than ever, then heads it over to the new friend.
+  const { PAL, SPRITES, sprite, lerp, seg, sine, outBack, clamp, hash, spring, mix, GROUND } = Shorts;
+  const V = 140, SPOT = 860, BALL0 = 930, BR = 22;
+  const FLICKS = [5.2, 9.4, 12.8, 23.0], DROPS = [8.0, 11.6, 14.2], BIG = 26.4, PASS = 27.3, LEAVE = 29.4, LOOP = LEAVE + 7.2;
+  const SCRIB = '#33333d', CRITIC = { pitch: .72 }, BUDDY = { pitch: 1.45 };
+  const POOF = 6.6, KIND = [17.6, 19.6], TURN = 21.4;
+  const size = t => t < POOF ? 0 : t < 10.2 ? 1 : t < 13.4 ? 1.7 : t < KIND[0] ? 2.6 : t < KIND[1] ? 1.8 : t < TURN ? 1.15 : .9;
+
+  Shorts.play({
+    title: 'Inner Voice',
+    accent: PAL.violet,
+    voice: { pitch: 1 },
+    loopAfter: LOOP,
+    paperAt: t => mix('#ffffff', '#ecebf2', sine(seg(t, 10, 14)) * (1 - sine(seg(t, 18, 22)))),
+    captions: [
+      [7.0, 8.2, 'is that *it?*', '#5a5a66', CRITIC],
+      [10.2, 11.6, "you're going to *drop* it.", '#5a5a66', CRITIC],
+      [13.4, 15.0, 'why even *try?*', '#5a5a66', CRITIC],
+      [KIND[0], KIND[0] + 1.6, "hey. i'm *learning.*"],
+      [KIND[1], KIND[1] + 1.8, "it's okay to be bad *at first.*"],
+      [22.4, 23.6, 'you got this!', PAL.violet, BUDDY],
+      [27.6, 34.4, 'talk to yourself the way you would *talk to a friend.*'],
+    ],
+    init(S) {
+      S.bo = S.addChar({ x: 0, walk: V });
+      S.ball = { x: BALL0, y: GROUND - BR, vx: 0, vy: 0, mode: 'rest' }; S.count = 0; S.best = 0; S.morph = { x: 0, v: 0 }; S.sc = { x: 0, v: 0 };
+    },
+    update(S, t, dt) {
+      const bo = S.bo, c = bo.cmd, b = S.ball, top = bo.top();
+      S.plan(bo, t, [
+        [0, { x: SPOT, speed: V, accel: 450, eye: 'happy' }],
+        [4.6, { eye: 'open', lookX: .7, lookY: .6 }],
+        [5.0, { lookX: 0, lookY: -1 }],
+        [POOF + .2, { eye: 'wide', lookX: -.6 }], [POOF + .8, { eye: 'open', lookX: 0 }],
+        [DROPS[0] + .2, { lookY: .8, eye: 'sad' }], [9.0, { lookY: -1, eye: 'open' }],
+        [DROPS[1] + .2, { lookY: .8, eye: 'sad' }], [12.4, { lookY: -1, eye: 'flat' }],
+        [DROPS[2] + .2, { lookY: .8, eye: 'sad' }],
+        [15.0, { sit: 1, crouch: .14, tilt: .1, lookY: .5 }], [15.0, () => S.sfx('breathOut', { d: 1.6 }, bo.x)],
+        [16.6, { face: -1, lookX: .6, lookY: -.6, eye: 'open', tilt: 0, crouch: 0 }],   // turns to face the voice
+        [KIND[1] + 1.6, { eye: 'happy' }],
+        [22.0, { sit: 0, face: 1, lookY: -1 }],
+        [BIG + .6, { eye: 'happy' }],
+        [PASS - .3, { face: -1 }],
+        [LEAVE - 1.1, { face: 1, eye: 'happy', lookY: 0 }],
+        [LEAVE - .7, { crouch: .2 }], [LEAVE - .45, { crouch: 0 }], [LEAVE - .45, () => bo.jump(0, -400)],   // a little bye hop
+        [LEAVE - .1, { eye: 'open' }],
+        [LEAVE, { x: 1e6, speed: V, accel: 450 }],
+      ]);
+      // the ball: flicked up from the ground, then bounced off Bo's head until a drop
+      const dropping = DROPS.some(d => t > d && t < d + .9);
+      FLICKS.forEach((f, i) => { if (t > f) S.once('flick' + i, () => { Object.assign(b, { x: bo.x + 30, y: GROUND - BR, vx: -40, vy: -1050, mode: 'air' }); S.count = 0; S.sfx('toss', { pitch: 280 }, bo.x); bo.q.v -= 1.5; }); });
+      if (b.mode === 'air' || b.mode === 'pass') {
+        b.vy += 2200 * dt; b.x += b.vx * dt; b.y += b.vy * dt;
+        const headY = top.y - BR + 6;
+        if (b.mode === 'air' && b.vy > 0 && b.y > headY && b.y < headY + 30 && Math.abs(b.x - top.x) < 50 && !dropping) {
+          S.count++; S.best = Math.max(S.best, S.count);
+          const big = t > BIG && t < PASS;
+          b.y = headY; b.vy = big ? -1500 : -940; b.vx = (top.x - b.x) * 2 + (hash(t) - .5) * 40;
+          bo.q.v += 2.2;
+          S.sfx('boing', { pitch: 230, g: .07 }, bo.x); S.sfx('catch', { pitch: 400 }, bo.x);
+          if (t > FLICKS[3]) S.sfx('chime', { n: Math.min(10, S.count + 1), g: .09 }, bo.x);
+        }
+        if (b.mode === 'air' && t > PASS && b.vy > 0 && b.y > headY - 4) S.once('pass', () => { b.mode = 'pass'; b.vy = -900; b.vx = -380; S.sfx('boing', { pitch: 260, g: .08 }, bo.x); S.sfx('laugh', { n: 3 }, bo.x); });
+        if (b.y > GROUND - BR && b.vy > 0) {
+          b.y = GROUND - BR; b.vy *= -.45; b.vx *= .7; S.sfx('thump', { g: .3 }, b.x); S.count = 0;
+          if (Math.abs(b.vy) < 120) { b.mode = 'rest'; b.vy = 0; }
+        }
+      } else if (b.mode === 'rest') { b.vx *= Math.exp(-dt * 2); b.x += b.vx * dt; }
+      if (DROPS.some(d => t > d && t < d + .1)) S.once('miss' + Math.floor(t), () => S.sfx('slip', {}, bo.x));
+      // where the scribble / buddy hovers (worked out here, not in drawing, so the soundtrack pass agrees)
+      { const sc = S.sc.x, hop = S.budHop ? Math.max(0, Math.sin(Math.PI * clamp((t - S.budHop) / .3))) * 20 : 0;
+        const ax = t > PASS && S.budAnchor ? S.budAnchor.x : bo.x - 120 - sc * 30, ay = t > PASS && S.budAnchor ? S.budAnchor.y : top.y - 40 - sc * 34;
+        if (t > PASS) S.budAnchor ??= { x: ax, y: ay };                       // once it has the ball, it stays and plays
+        S.budPos = { x: ax, y: ay + Math.sin(t * 2.4) * 6 - hop, r: 34 * sc }; }
+      // the buddy (the scribble, once it's kind) bounces the passed ball on its own head
+      const bud = S.morph.x > .5 ? S.budPos : null;
+      if (bud && b.mode === 'pass' && b.vy > 0 && Math.abs(b.x - bud.x) < 50 && Math.abs(b.y - (bud.y - 50)) < 24) { b.vy = -760; b.vx = (bud.x - b.x) * 3; S.sfx('boing', { pitch: 380, g: .06 }, bud.x); S.budHop = t; }
+      // the scribble: appears, grows with every jab, shrinks with every kind word
+      spring(S.sc, size(t), 30, .45, dt); spring(S.morph, t > TURN ? 1 : 0, 20, .6, dt);
+      if (t > POOF) S.once('poof', () => { S.sfx('poof', {}, bo.x - 120); S.sfx('rumble', { d: .8 }); });
+      [10.2, 13.4].forEach((a, i) => { if (t > a) S.once('grow' + i, () => { S.sfx('drain', {}, bo.x); S.sfx('scribble', { v: 1 }, bo.x - 120); }); });
+      KIND.forEach((a, i) => { if (t > a + .8) S.once('shrink' + i, () => S.sfx('pop', { pitch: 600 + i * 200 }, bo.x - 120)); });
+      if (t > TURN) S.once('turn', () => { S.sfx('twinkle', { pitch: 1318.5 }, bo.x - 120); S.sfx('arp', { notes: [0, 2, 4, 7] }); });
+      if (t > 16.8) S.once('pad', () => S.sfx('pad', { root: 293.66, d: 6.5 }));
+      if (t > BIG + .4) S.once('yay', () => { S.sfx('sparkle', { n: 9 }, bo.x); });
+      if (t > 22.2) S.once('cheer', () => S.sfx('laugh', { n: 3, k: 1.5, g: .7 }, bo.x - 120));
+      S.once('amb', () => S.sfx('birds', { d: LOOP, g: .8 }));
+
+      if (t > 3.4 && t < LEAVE + .6) { S.camGoal.x = SPOT - 40; S.camGoal.z = t > 13 && t < 21.6 ? 1.12 : .92; S.camGoal.kz = 1.2; S.camGoal.kx = 1.6; S.camGoal.y = GROUND - 40; }
+    },
+    drawSky(S, ctx, t, v) {
+      for (let i = 0; i < 3; i++) {
+        const W = v.right - v.left + 400, x = v.left - 200 + (1 - ((t / 36 + i / 3 + .6) % 1)) * W;
+        sprite(ctx, SPRITES.cloud, x, v.top + (v.bottom - v.top) * (.15 + i * .06), 9, { X: '#ebe8f4' });
+      }
+    },
+    drawBack(S, ctx, t) {
+      for (let i = 0; i < 16; i++) { const x = 560 + i * 60 + hash(i) * 30; ctx.strokeStyle = PAL.green; ctx.lineWidth = 4; for (let k = -1; k <= 1; k++) { ctx.beginPath(); ctx.moveTo(x + k * 4, GROUND + 2); ctx.lineTo(x + k * 4 + Math.sin(t * 1.4 + i) * 2, GROUND - 14); ctx.stroke(); } }
+    },
+    drawFront(S, ctx, t) {
+      const bo = S.bo, top = bo.top(), b = S.ball, sc = S.sc.x, m = S.morph.x;
+      // the ball
+      ctx.fillStyle = PAL.sky; ctx.strokeStyle = '#111'; ctx.lineWidth = 5;
+      ctx.beginPath(); ctx.arc(b.x, b.y, BR, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+      ctx.lineWidth = 3; ctx.beginPath(); ctx.arc(b.x, b.y, BR, -.4 + t * 3, 1.2 + t * 3); ctx.stroke();
+      // the count, popping above Bo while the ball stays up
+      if (S.count > 0 && (b.mode === 'air')) { const n = Math.min(9, S.count); sprite(ctx, SPRITES['d' + Math.min(7, n)] || SPRITES.d7, top.x + 80, top.y - 70, 6, { X: t > FLICKS[3] ? PAL.violet : '#111' }); }
+      // the scribble / the buddy: hovers at Bo's shoulder
+      if (sc > .02) {
+        const { x, y, r } = S.budPos;
+        // ink scribble: a tangle of loops that boils, fading as it turns kind
+        if (m < .98) {
+          ctx.save(); ctx.globalAlpha = 1 - m; ctx.strokeStyle = SCRIB; ctx.lineWidth = 3.5 + sc;
+          ctx.beginPath(); const fr = Math.floor(t * 12);
+          for (let i = 0; i <= 70; i++) { const a = i * .55, rr = r * (.45 + .55 * hash(i * 1.3 + fr * .7)); const px = x + Math.cos(a) * rr, py = y + Math.sin(a) * rr * .9; i ? ctx.lineTo(px, py) : ctx.moveTo(px, py); }
+          ctx.stroke();
+          // cross little eyes and a frown
+          ctx.fillStyle = '#fff'; ctx.lineWidth = 3;
+          for (const s of [-1, 1]) { ctx.beginPath(); ctx.arc(x + s * r * .3, y - r * .1, 6 + sc * 2, 0, Math.PI * 2); ctx.fill(); ctx.stroke(); ctx.fillStyle = '#111'; ctx.beginPath(); ctx.arc(x + s * r * .3 + 2, y - r * .1 + 1, 3 + sc, 0, Math.PI * 2); ctx.fill(); ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.moveTo(x + s * r * .52, y - r * .36); ctx.lineTo(x + s * r * .12, y - r * .24); ctx.stroke(); }
+          ctx.restore();
+        }
+        // the buddy it becomes: small, round, lavender, smiling
+        if (m > .02) {
+          ctx.save(); ctx.globalAlpha = m; const rb = 30 * outBack(m);
+          ctx.fillStyle = '#e4dcff'; ctx.strokeStyle = '#111'; ctx.lineWidth = 5;
+          ctx.beginPath(); ctx.arc(x, y, rb, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+          ctx.lineWidth = 4; for (const s of [-1, 1]) { ctx.beginPath(); ctx.arc(x + s * 10, y - 2, 6, Math.PI * 1.15, Math.PI * 1.85); ctx.stroke(); }
+          ctx.fillStyle = PAL.pink; ctx.globalAlpha = .8 * m; ctx.beginPath(); ctx.ellipse(x - 18, y + 8, 6, 3.5, 0, 0, Math.PI * 2); ctx.ellipse(x + 18, y + 8, 6, 3.5, 0, 0, Math.PI * 2); ctx.fill();
+          ctx.globalAlpha = m; ctx.strokeStyle = PAL.violet; ctx.lineWidth = 4; ctx.beginPath(); ctx.moveTo(x, y - rb); ctx.quadraticCurveTo(x + 6, y - rb - 18, x - 4, y - rb - 26); ctx.stroke();
+          ctx.restore();
+          if (m < .9 && t > TURN) for (let i = 0; i < 6; i++) { const a = i / 6 * Math.PI * 2 + t * 3; sprite(ctx, SPRITES.sparkle, x + Math.cos(a) * 54, y + Math.sin(a) * 44, 3, { X: PAL.violet }, 1 - m); }
+        }
+      }
+    },
+  });
+})();

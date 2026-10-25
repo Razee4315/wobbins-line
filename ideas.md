@@ -34,11 +34,31 @@ line and a few pixel colours. Each idea is written as a visual metaphor, never l
 | **Busy** | Rushing past what matters | Bo rushes parcels past a friend waving a birthday cake, faster each trip; the friend gives up and starts to leave; Bo notices just in time | "slow down for the ones who wait." |
 | **Rain Check** | Cancelling plans | Bo sends the invite back for a cozy night in, gets lonely as the party glows in the distance, then goes the next morning | "not every plan needs a rain check. sometimes, go anyway." |
 
+## Season 6 · little things (built)
+
+Every one opens on a small mystery (what is Bo doing?), then reveals it, escalates, turns, and ends on the quote.
+
+| Short | The struggle | The metaphor | Closing line |
+|---|---|---|---|
+| **The Other Line** | Impatience | Two ice-cream lines; whichever one Bo picks stops moving. Bo sits, waits, watches the light change, and gets the biggest cone | "the other line always looks faster. yours is moving too." |
+| **Why Was I Here?** | Forgetting | A thought bubble (water the plant) pops every time Bo walks through the doorway, even tiptoeing; so the plant rides along on Bo's head | "it's not just you. doorways really do make you forget." |
+| **Lost** | Losing things | Frantic search: cushions, drawer, rug, plant, a racing clock. The keys hang off Bo's tuft from the first frame | "slow down. it's usually closer than you think." |
+| **Small Talk** | Awkward silence | A bus stop; the silence between two strangers swells into a heavy "..." (crickets). "nice... weather?" and it pours; one umbrella | "every friend was a stranger once." |
+| **Can't Sleep** | Night thoughts | Counted sheep start carrying worries (the alarm, that email, 2015) and won't leave; Bo opens the window and they float off as stars | "you don't have to solve tomorrow tonight." |
+
+## Season 7 · heavy things (built)
+
+| Short | The struggle | The metaphor | Closing line |
+|---|---|---|---|
+| **Just in Case** | Overpacking life | Umbrella, sweater, lamp, duck, ladder stacked on Bo's head "just in case"; Bo can't get up the hill until it all goes | "you don't have to carry every just-in-case." |
+| **Heavy** | Asking for help | A kite stuck in a tree; "no no, I've got it!", jumps, a crate. Then "could you help me?" and a tower of friends | "asking for help isn't weak. it's how we reach higher." |
+| **Fine** | Pretending you're okay | A painted smile for every "how are you?"; it slips, cracks, falls off, and the rain cloud returns, until a friend sits in it with Bo | "you don't have to be fine all the time." |
+| **Comfort Zone** | Stepping out | A warm dome in a grey world that shrinks the longer Bo stays; each step out blooms colour back | "comfort zones grow every time you step out." |
+| **Inner Voice** | The inner critic | A grumbly ink scribble grows with every jab at Bo's keepy-uppy; spoken to kindly, it shrinks into a cheering buddy | "talk to yourself the way you would talk to a friend." |
+
 ## Backlog (fresh ideas)
 
-- **Comfort Zone** — Bo lives inside a small chalk circle on the line; everything good happens just outside it. One toe over, then a step. *"everything you want is one step outside."*
 - **Burnout** — Bo is a candle-flame keeper, lighting everyone else's lanterns until Bo's own flame is a flicker; Bo finally lights its own first. *"you can't pour from an empty cup."*
-- **3 a.m.** — at night, small worries cast enormous shadows on the wall; Bo turns on a lamp and they're tiny. *"it's always bigger in the dark."*
 - **Gratitude** — Bo walks past small good things without seeing them (a flower, a sunbeam, a friend's wave); the second time round Bo collects each one into a growing pixel bouquet. *"look how much you already have."*
 - **Restart** — Bo's tower falls; Bo stares at the mess, then builds something different (and better) from the same blocks. *"starting over isn't starting from zero."*
 
@@ -49,3 +69,7 @@ line and a few pixel colours. Each idea is written as a visual metaphor, never l
 - Perfectionism among young people has risen steadily since the late 1980s, fastest in "socially prescribed" perfectionism (feeling others expect you to be perfect).
 - The "social battery" is a metaphor, not a clinical term, but it is the everyday language people use for social drain.
 - Waiting on a read-but-unanswered message brings on anxiety sooner than an unread one; typing dots that appear and vanish are often described as worse than the reply itself.
+- The "doorway effect" is real: walking through a doorway (an event boundary) makes people forget what they were about to do, more than walking the same distance in one room (Radvansky et al.).
+- Comfort zones shrink with avoidance: the longer something is avoided, the scarier it gets, which is why the dome in Comfort Zone gets smaller.
+- Sound for these shorts follows cartoon-foley practice: heightened, layered, synced to the motion; soft by design (warm low-pass on the mix, no instant attacks), with quiet ambience beds and an Animal-Crossing-style murmured voice for the captions instead of typewriter clicks.
+- Hand-made feel: the motion stays smooth at 60 fps while the line "boils" (redrawn with tiny jitter about 12 times a second), blinks come at uneven gaps, and standing characters breathe.

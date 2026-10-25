@@ -1,0 +1,172 @@
+/* cant-sleep: extracted from ../cant-sleep.html by scripts/sync-shorts.py. Do not edit here. */
+(function () {
+  const Shorts = Object.assign(Object.create(window.Shorts), { play: story => { (window.WL_STORIES ||= {})['cant-sleep'] = story; } });
+  // Dusk. Bo comes home yawning, hops into bed, lamp off... and eyes snap open. Counting sheep:
+  // one, two, three. Then the sheep start bringing worries (the alarm, that email, that thing from
+  // 2015) and they don't leave. The room fills up. Bo gets up, opens the window, breathes out, and
+  // the worries float away and become stars. Bo sleeps; dawn comes; Bo walks on.
+  const { PAL, SPRITES, sprite, zzz, lerp, seg, sine, outBack, clamp, hash, spring, mix, ramp, GROUND } = Shorts;
+  const V = 120, HOUSE_A = 700, HOUSE_B = 1500, TOP = GROUND - 420, BED = 1000, WIN = 1290, LAMP = 830;
+  const DAWN = '#ffe2e2', DUSK = '#ead6f0', NIGHT = '#7f85c1', MOON = '#fff2a8';
+  const SKY = [[0, DAWN], [4.6, DUSK], [7.4, NIGHT], [27.6, NIGHT], [31.2, '#f2d7ea'], [33.6, DAWN]];
+  const WALL = [[0, '#ffeedd'], [6.2, '#ffeedd'], [7.2, '#5f66a3'], [28.8, '#5f66a3'], [32.4, '#ffe7e2']];
+  const INBED = 6.0, LAMPOFF = 6.6, AWAKE = 8.6, UP = 22.2, BLOW = 25.0, BACK = 27.8, ASLEEP = 29.4, WAKE = 33.2, LEAVE = 34.8, LOOP = LEAVE + 7.0;
+  const SHEEP = ['.WWWW..', 'WWWWWWK', 'WWWWWKK', 'WWWWWW.', '.K..K..'];
+  const ALARM = ['X...X', '.XXX.', 'XWWWX', 'XWKWX', 'XWWWX', '.XXX.'];
+  const MAIL = ['XXXXXXX', 'XX...XX', 'X.X.X.X', 'X..X..X', 'XXXXXXX'];
+  const BLUSH = ['.XXX.', 'XKXKX', 'XXXXX', 'PXXXP', '.XXX.'];
+  const DIG = { 8: ['XXX', 'X.X', 'XXX', 'X.X', 'XXX'], 9: ['XXX', 'X.X', 'XXX', '..X', 'XXX'], ':': ['.', 'X', '.', 'X', '.'] };
+  // sheep: [time, worry]. The first three just jump the fence; the rest bring a worry and stay
+  const FLOCK = [[10.6, null], [11.8, null], [13.0, null], [14.2, 'alarm'], [15.8, 'mail'], [17.4, 'blush'],
+    [18.7, 'alarm'], [19.1, 'mail'], [19.5, 'blush'], [19.9, 'mail'], [20.2, 'alarm'], [20.5, 'blush']];
+
+  Shorts.play({
+    title: "Can't Sleep",
+    accent: PAL.violet,
+    voice: { pitch: .95 },
+    loopAfter: LOOP,
+    paperAt: t => ramp(t, SKY),
+    captions: [
+      [8.9, 10.2, '...still awake.', MOON],
+      [10.9, 11.9, 'one sheep...', MOON],
+      [12.1, 13.1, 'two sheep...', MOON],
+      [14.4, 16.0, 'did i set the *alarm?*', MOON],
+      [16.2, 17.8, 'i never replied to *that email.*', MOON],
+      [17.9, 19.6, 'that thing i said in *2015...*', MOON],
+      [20.6, 21.8, '*so many thoughts.*', MOON],
+      [23.8, 25.2, 'tomorrow can *wait.*', MOON],
+      [30.4, 37.4, "you don't have to solve tomorrow *tonight.*"],
+    ],
+    init(S) {
+      S.bo = S.addChar({ x: 0, walk: V });
+      S.sheep = FLOCK.map(([at, w], i) => ({ at, w, i, gone: null, star: null, hx: 0, hy: 0 }));
+      S.snore = 1.2; S.cr = 0; S.win = { x: 0, v: 0 }; S.blanket = { x: 0, v: 0 };
+    },
+    update(S, t, dt) {
+      const bo = S.bo, c = bo.cmd;
+      S.plan(bo, t, [
+        [0, { x: BED - 140, speed: V, accel: 420, eye: 'open' }],
+        [3.6, { eye: 'flat' }], [3.8, () => S.sfx('yawn', {}, bo.x)],            // so sleepy
+        [5.4, { crouch: .2 }], [5.7, { crouch: 0 }], [5.7, () => { bo.jump(260, -540); S.sfx('creak', {}, BED); }],
+        [INBED, { x: BED, speed: 60 }],
+        [INBED + .5, { sit: 1, eye: 'happy' }], [INBED + .5, () => S.sfx('rustle', { n: 4 }, BED)],
+        [LAMPOFF, () => S.sfx('tock', { f: 1200, gain: .6 }, LAMP)],
+        [7.0, { eye: 'closed' }],
+        [AWAKE, { eye: 'wide', lookY: -.4 }], [AWAKE, () => S.sfx('bulb', {}, bo.x)],   // ...eyes open
+        [10.4, { eye: 'open', lookX: .6, lookY: -.8 }],                          // watching the sheep
+        [14.4, { eye: 'wide' }], [16.3, { eye: 'sad' }], [18.0, { eye: 'squeeze' }],
+        [19.6, { crouch: .3, eye: 'squeeze', lookY: 0 }],                        // hides under the blanket
+        [UP - .5, { crouch: 0, eye: 'flat' }],
+        [UP, { sit: 0 }], [UP + .2, () => { bo.jump(200, -480); S.sfx('creak', {}, BED); }],
+        [UP + .4, { x: WIN - 70, speed: 110, accel: 400, eye: 'open', lookX: 0 }],
+        [23.4, () => { S.win.v += 6; S.sfx('door', {}, WIN); S.sfx('windbed', { d: 6.4, g: 1 }, WIN); }],
+        [23.6, { lookY: -.8, lookX: .6 }], [23.7, () => S.sfx('breathIn', { d: 1.3 }, bo.x)],
+        [23.8, () => S.sfx('pad', { root: 220, d: 7 })],
+        [BLOW, { eye: 'closed', tilt: -.08 }], [BLOW, () => S.sfx('breathOut', { d: 2 }, bo.x)],
+        [26.6, { eye: 'happy', tilt: 0 }],
+        [BACK, { x: BED - 130, speed: 120, accel: 400, eye: 'open', lookY: 0, lookX: 0 }],
+        [BACK + 1.2, { crouch: .2 }], [BACK + 1.45, { crouch: 0 }], [BACK + 1.45, () => { bo.jump(230, -520); S.sfx('creak', {}, BED); }],
+        [BACK + 1.6, { x: BED, speed: 60 }],
+        [ASLEEP - .1, { sit: 1, eye: 'closed' }], [ASLEEP, () => S.sfx('musicbox', { notes: [4, 2, 0, 2, 4, 4, 4], gap: .42, oct: .5, g: .03 })],
+        [WAKE, { eye: 'happy' }], [WAKE + .2, () => S.sfx('tweet', { k: 1 })],
+        [WAKE + .9, { sit: 0 }], [WAKE + 1.1, () => { bo.jump(260, -460); S.sfx('creak', {}, BED); }],
+        [LEAVE, { x: 1e6, speed: V, accel: 450, eye: 'open' }],
+      ]);
+      // sheep: jump the little fence over the bed; worry-sheep stop and hover, crowding the room
+      for (const s of S.sheep) {
+        if (t >= s.at) S.once('baa' + s.i, () => { S.sfx('baa', { k: .9 + hash(s.i) * .3 }, BED); if (s.w) S.sfx('drain', { gain: .5 }, BED); });
+        if (s.w && t > BLOW + .2 + s.i * .18 && !s.gone) { s.gone = t; S.sfx('twinkle', { pitch: 1046.5 * Math.pow(1.122, s.i % 7) }, WIN); }
+      }
+      if (t > 7.4 && t < UP) S.once('night1', () => S.sfx('night', { d: 22, g: .7 }));
+      if (t > 23.4) S.once('night2', () => S.sfx('night', { d: 7, g: 1.4 }, WIN));
+      if (t > ASLEEP && t < WAKE - .2) { S.snore += dt; if (S.snore >= 1.8) { S.snore = 0; S.sfx('snore', {}, bo.x); } }
+      if (t > 31.6) S.once('dawn', () => S.sfx('birds', { d: LOOP - 31.6, g: .9 }));
+      S.once('amb', () => S.sfx('room', { d: LOOP, g: .6 }));
+      spring(S.win, t > 23.4 && t < 29 ? 1 : 0, 30, .55, dt);
+
+      if (t > 3.0 && t < LEAVE + .4) { S.camGoal.x = (BED + WIN) / 2 - 30; S.camGoal.z = t > 19.6 && t < UP ? 1.05 : .88; S.camGoal.kx = 1.6; S.camGoal.kz = 1.2; }
+    },
+    drawSky(S, ctx, t, v) {
+      // stars: a few at night, then one more for every worry let go
+      const nite = sine(seg(t, 5, 7.6)) * (1 - sine(seg(t, 30, 32.4)));
+      for (let i = 0; i < 18; i++) sprite(ctx, i % 3 ? SPRITES.dot : SPRITES.sparkle, v.left + hash(i) * (v.right - v.left), v.top + hash(i + .5) * (TOP - v.top + 60), i % 3 ? 3 : 2.4, { X: '#fff' }, nite * (.5 + .5 * Math.sin(t * 2 + i)));
+      // the moon crosses slowly, and sets at dawn
+      const mx = lerp(WIN - 300, WIN + 600, seg(t, 5, 33)), my = TOP - 140 + Math.pow(seg(t, 28, 33), 2) * 300;
+      sprite(ctx, SPRITES.moon, mx, my, 9, { X: '#fff6c8' }, nite);
+      // the room, cut open: lamp-warm, then moonlit blue
+      ctx.fillStyle = ramp(t, WALL); ctx.fillRect(HOUSE_A, TOP, HOUSE_B - HOUSE_A, GROUND - TOP);
+      if (t < LAMPOFF) { ctx.fillStyle = PAL.yellow; ctx.globalAlpha = .22; ctx.beginPath(); ctx.arc(LAMP, GROUND - 150, 150, 0, Math.PI * 2); ctx.fill(); ctx.globalAlpha = 1; }
+      // window onto the night (the moon and stars show through it)
+      ctx.fillStyle = mix(ramp(t, SKY), '#3e4480', nite * .6); ctx.fillRect(WIN - 70, TOP + 70, 140, 150);
+      for (let i = 0; i < 5; i++) sprite(ctx, SPRITES.dot, WIN - 50 + hash(i * 3) * 100, TOP + 90 + hash(i * 5) * 110, 2.5, { X: '#fff' }, nite);
+    },
+    drawBack(S, ctx, t) {
+      const J = i => S.J(i);
+      ctx.lineWidth = 6; ctx.strokeStyle = '#111';
+      ctx.beginPath(); ctx.moveTo(HOUSE_A + J(1) * .3, GROUND + 2); ctx.lineTo(HOUSE_A, TOP); ctx.lineTo(HOUSE_B, TOP); ctx.lineTo(HOUSE_B + J(2) * .3, GROUND - 260); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(HOUSE_A - 40, TOP); ctx.lineTo((HOUSE_A + HOUSE_B) / 2, TOP - 160); ctx.lineTo(HOUSE_B + 40, TOP); ctx.stroke();
+      // window frame and shutters that swing open
+      ctx.lineWidth = 5; ctx.strokeRect(WIN - 70, TOP + 70, 140, 150);
+      const o = S.win.x;
+      ctx.fillStyle = PAL.sky;
+      ctx.beginPath(); ctx.rect(WIN - 70, TOP + 70, 70 * (1 - o * .85), 150); ctx.fill(); ctx.stroke();
+      ctx.beginPath(); ctx.rect(WIN + 70 - 70 * (1 - o * .85), TOP + 70, 70 * (1 - o * .85), 150); ctx.fill(); ctx.stroke();
+      // bedside lamp
+      ctx.lineWidth = 5; ctx.fillStyle = PAL.brown; ctx.fillRect(LAMP - 34, GROUND - 80, 68, 80); ctx.strokeRect(LAMP - 34, GROUND - 80, 68, 80);
+      ctx.beginPath(); ctx.moveTo(LAMP, GROUND - 80); ctx.lineTo(LAMP, GROUND - 130); ctx.stroke();
+      ctx.fillStyle = t < LAMPOFF ? PAL.yellow : '#fff'; ctx.beginPath(); ctx.moveTo(LAMP - 30, GROUND - 130); ctx.lineTo(LAMP - 18, GROUND - 170); ctx.lineTo(LAMP + 18, GROUND - 170); ctx.lineTo(LAMP + 30, GROUND - 130); ctx.closePath(); ctx.fill(); ctx.stroke();
+      // the bed
+      ctx.fillStyle = PAL.brown; ctx.beginPath(); ctx.roundRect(BED - 130, GROUND - 150, 26, 150, 6); ctx.fill(); ctx.stroke();
+      ctx.beginPath(); ctx.roundRect(BED + 104, GROUND - 100, 26, 100, 6); ctx.fill(); ctx.stroke();
+      ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.roundRect(BED - 110, GROUND - 64, 220, 40, 10); ctx.fill(); ctx.stroke();
+      ctx.beginPath(); ctx.ellipse(BED - 74, GROUND - 76, 34, 16, 0, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+      // the clock on the lamp table: the night gets later
+      const mins = t < 10 ? 23 * 60 + 40 : t < 21 ? lerp(2 * 60 + 47, 3 * 60 + 12, seg(t, 14, 21)) : t < ASLEEP ? 3 * 60 + 14 : lerp(3 * 60 + 20, 7 * 60, seg(t, ASLEEP, WAKE));
+      const hh = Math.floor(mins / 60) % 12 || 12, mm = Math.floor(mins % 60), digs = `${hh}:${String(mm).padStart(2, '0')}`;
+      let x = LAMP - (digs.length - 1) * 7; for (const ch of digs) { sprite(ctx, DIG[ch] || SPRITES['d' + ch], x, GROUND - 46, 3.2, { X: t > 7.4 && t < 31 ? PAL.red : '#111' }); x += ch === ':' ? 9 : 15; }
+    },
+    drawFront(S, ctx, t) {
+      const bo = S.bo, top = bo.top();
+      // the blanket covers Bo in bed
+      const inBed = (t > INBED + .3 && t < UP + .15) || (t > BACK + 1.75 && t < WAKE + 1.15);
+      if (inBed) {
+        ctx.fillStyle = PAL.sky; ctx.lineWidth = 5; ctx.strokeStyle = '#111';
+        const up = t > 19.6 && t < UP - .5 ? 26 : 0;
+        ctx.beginPath(); ctx.moveTo(BED - 60, GROUND - 24); ctx.quadraticCurveTo(BED - 70, top.y + 70 - up, BED, top.y + 64 - up); ctx.quadraticCurveTo(BED + 90, top.y + 70 - up, BED + 112, GROUND - 24); ctx.closePath(); ctx.fill(); ctx.stroke();
+        for (let i = 0; i < 4; i++) sprite(ctx, SPRITES.star, BED - 30 + i * 36, top.y + 100 - up + (i % 2) * 18, 3, { X: '#fff' });
+      }
+      // the sheep and their worries
+      const fence = { x: BED + 60, y: GROUND - 330 };
+      ctx.lineWidth = 6; ctx.strokeStyle = '#fff';
+      if (t > 10.2 && t < 26) { ctx.globalAlpha = seg(t, 10.2, 10.6) * (1 - seg(t, 25.4, 26)); for (const dx of [-36, 36]) { ctx.beginPath(); ctx.moveTo(fence.x + dx, fence.y); ctx.lineTo(fence.x + dx, fence.y - 70); ctx.stroke(); } ctx.beginPath(); ctx.moveTo(fence.x - 50, fence.y - 50); ctx.lineTo(fence.x + 50, fence.y - 50); ctx.moveTo(fence.x - 50, fence.y - 24); ctx.lineTo(fence.x + 50, fence.y - 24); ctx.stroke(); ctx.globalAlpha = 1; }
+      ctx.strokeStyle = '#111';
+      let n = 0;
+      for (const s of S.sheep) {
+        if (t < s.at) continue;
+        const u = (t - s.at) / 1.1;
+        let x, y, a = 1;
+        if (!s.w) { if (u > 1) continue; x = lerp(fence.x - 260, fence.x + 260, u); y = fence.y - 40 - Math.sin(Math.PI * u) * 110; }
+        else {
+          // hover where they stop, bobbing; later they drift out of the window and turn into stars
+          const k = n++, hx = lerp(BED - 220, BED + 230, hash(k * 1.7)), hy = GROUND - 280 - hash(k * 2.3) * 190;
+          const arrive = sine(clamp(u * 1.4)), bob = Math.sin(t * 2 + k) * 6;
+          x = lerp(fence.x - 260, hx, arrive); y = lerp(fence.y - 40, hy, arrive) + bob;
+          if (s.gone) { const g = sine(clamp((t - s.gone) / 1.6)); const sx = WIN + 260 + hash(k) * 420, sy = TOP - 200 - hash(k + .3) * 220; x = lerp(x, sx, g); y = lerp(y, sy, g) - Math.sin(Math.PI * g) * 90; a = 1 - g; if (g >= 1) { sprite(ctx, SPRITES.star, sx, sy, 3.6, { X: PAL.yellow }, (1 - seg(t, 30.6, 32.4)) * (.7 + .3 * Math.sin(t * 3 + k))); continue; } }
+        }
+        const grey = s.w ? sine(seg(t, 17, 21)) * .55 * (s.gone ? 0 : 1) : 0;
+        sprite(ctx, SHEEP, x, y, 9.5, { W: mix('#ffffff', '#b9bccf', grey), K: '#111' }, a);
+        if (s.w) {
+          const ic = s.w === 'alarm' ? [ALARM, { X: PAL.red, W: '#fff', K: '#111' }] : s.w === 'mail' ? [MAIL, { X: PAL.orange }] : [BLUSH, { X: PAL.peach, K: '#111', P: PAL.pink }];
+          sprite(ctx, ic[0], x + 4, y - 56, 6.5, ic[1], a);
+        }
+        if (s.gone && (t - s.gone) < 1.6) sprite(ctx, SPRITES.sparkle, x + 40, y - 14, 3.6, { X: PAL.yellow }, 1 - (t - s.gone) / 1.6);
+      }
+      // the sheep count, top corner of the room
+      const counted = S.sheep.filter(s => t >= s.at && !s.w).length;
+      if (t > 10.6 && t < 14.6 && counted) sprite(ctx, SPRITES['d' + counted], HOUSE_A + 60, TOP + 60, 6, { X: '#fff' }, 1 - seg(t, 14.2, 14.6));
+      // z z z
+      if (t > 7.0 && t < AWAKE) zzz(ctx, top.x - 10, top.y, t, seg(t, 7, 7.4) * (1 - seg(t, AWAKE - .3, AWAKE)));
+      if (t > ASLEEP && t < WAKE) zzz(ctx, top.x - 10, top.y, t, seg(t, ASLEEP, ASLEEP + .4) * (1 - seg(t, WAKE - .3, WAKE)));
+    },
+  });
+})();

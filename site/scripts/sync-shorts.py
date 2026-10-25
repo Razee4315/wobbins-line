@@ -17,7 +17,9 @@ ENGINE2 = ['one-more', 'the-hill', 'bloom', 'hurry', 'what-if',
            'last-minute', 'yes', 'perfect', 'battery', 'seen',
            'tomorrow', 'highlight-reel', 'small-steps', 'snooze', 'reset',
            'monday-mountain', 'imposter', 'decision', 'busy', 'rain-check',
-           'the-cloud', 'the-seed', 'the-gap']
+           'the-cloud', 'the-seed', 'the-gap',
+           'the-other-line', 'why-was-i-here', 'lost', 'small-talk', 'cant-sleep',
+           'just-in-case', 'heavy', 'fine', 'comfort-zone', 'inner-voice']
 
 VIEW_OLD = """      const unit = Math.min(cw / (portrait ? 640 : 1200), ch / 600) * this.cam.z.x;
       const gy = ch * (portrait ? .64 : .7);"""

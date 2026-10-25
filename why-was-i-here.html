@@ -1,0 +1,195 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Why Was I Here?</title>
+</head>
+<body>
+<script src="sfx.js?v=6"></script>
+<script src="engine2.js?v=6"></script>
+<script>
+// Bo comes home, sees the plant drooping and gets an idea (a thought bubble: the watering can).
+// Bo marches to the kitchen... and the idea pops the moment Bo walks through the doorway. Again.
+// And again, even tiptoeing. So Bo carries the plant along, and the plant does the remembering.
+// (The "doorway effect" is real: walking through a doorway makes people forget.)
+const { PAL, SPRITES, sprite, lerp, seg, sine, outBack, clamp, hash, spring, mix, ramp, GROUND } = Shorts;
+const V = 160, HOUSE_A = 640, HOUSE_B = 2000, TOP = GROUND - 430;
+const SOFA = 860, TABLE = 1060, DOOR = 1300, SINK = 1580, SILL = 1820, CLOCK = 760, STOP = DOOR + 130, BACK = TABLE - 130;
+const CAN = ['..XX...', '.X..X..', 'XXXXXXX', 'XXXXXXX.X', 'XXXXXXX.X', 'XXXXXXXX.', '.XXXXX...'];
+// each trip: [bulb, leave, (pop happens at the door)]
+const TRIPS = [[6.2, 6.7], [13.9, 14.3], [19.9, 20.4]];
+const CARRY = 28.8, WATER = 35.8, SET = 39.5, LEAVE = 40.4, LOOP = LEAVE + 5.8;
+const evening = t => sine(seg(t, 8, 34));
+
+Shorts.play({
+  title: 'Why Was I Here?',
+  accent: PAL.green,
+  voice: { pitch: 1 },
+  loopAfter: LOOP,
+  captions: [
+    [8.8, 10.6, '...why was i here?'],
+    [15.7, 17.0, '*again?*'],
+    [20.9, 22.7, "don't forget. don't forget."],
+    [24.4, 25.4, '*no!*'],
+    [29.3, 30.9, "okay. *you're coming with me.*"],
+    [34.4, 35.4, 'oh! *right.*'],
+    [37.8, 44.6, "it's not just you. *doorways really do make you forget.*"],
+  ],
+  init(S) {
+    S.bo = S.addChar({ x: 0, walk: V });
+    S.thought = null; S.pops = []; S.wilt = { x: 1, v: 0 }; S.plant = { mode: 'table', x: TABLE, y: GROUND - 64, t0: 0, fx: 0, fy: 0 };
+    S.ask = null; S.tick = 0; S.water = 0; S.bloom = 0; S.crossed = 0; S.lastSide = -1;
+  },
+  update(S, t, dt) {
+    const bo = S.bo, c = bo.cmd;
+    const idea = () => { S.thought = { t0: t }; S.ask = null; S.sfx('bulb', {}, bo.x); };
+    S.plan(bo, t, [
+      [0, { x: TABLE - 150, speed: V, accel: 480 }],
+      [5.4, { lookX: .8, lookY: .3, eye: 'sad' }],                        // the poor plant
+      [TRIPS[0][0], () => idea()], [TRIPS[0][0], { eye: 'wide', lookY: -.4 }],
+      [TRIPS[0][1], { x: STOP, speed: 240, accel: 900, eye: 'open', lookX: 0, lookY: 0, tilt: .05 }],
+      [9.3, { tilt: 0, eye: 'flat' }], [9.4, { face: -1, lookX: .6 }], [9.9, { face: 1 }], [10.4, { face: -1, tilt: .1 }],
+      [10.8, { x: BACK, speed: 220, accel: 600, tilt: 0 }],
+      [13.4, { face: 1, eye: 'open', lookX: .9, lookY: .3 }],
+      [TRIPS[1][0], () => idea()], [TRIPS[1][0], { eye: 'wide' }],
+      [TRIPS[1][1], { x: STOP, speed: 300, accel: 1000, eye: 'open', lookX: 0, lookY: 0, tilt: .08 }],
+      [16.0, { tilt: 0, eye: 'flat' }], [16.6, { face: -1 }],
+      [16.9, { x: BACK, speed: 220, accel: 600 }],
+      [19.5, { face: 1, lookX: .8, lookY: .3 }],
+      [TRIPS[2][0], () => idea()], [TRIPS[2][0], { eye: 'wide' }],
+      [TRIPS[2][1], { x: STOP, speed: 100, accel: 300, eye: 'squeeze', crouch: .12, lookX: 0, lookY: 0 }],   // tiptoe, hold the thought in
+      [24.2, { crouch: 0, eye: 'wide', tilt: -.1 }], [24.2, () => S.sfx('gasp', {}, bo.x)],
+      [25.0, { eye: 'sad', tilt: .12 }], [25.0, () => S.sfx('breathOut', { d: 1.4 }, bo.x)],
+      [25.7, { face: -1, tilt: 0 }],
+      [25.9, { x: TABLE - 110, speed: 200, accel: 600, eye: 'flat' }],
+      [CARRY - .4, { face: 1, eye: 'open', lookX: .8, lookY: .2 }],
+      [CARRY, { crouch: .25 }],
+      [CARRY + .3, () => { S.plant.mode = 'lift'; S.plant.t0 = t; S.plant.fx = S.plant.x; S.plant.fy = S.plant.y; S.sfx('rustle', { n: 4 }, TABLE); S.sfx('toss', { pitch: 340 }, TABLE); }],
+      [CARRY + .3, { crouch: 0 }],
+      [CARRY + .8, { eye: 'happy', lookX: 0, lookY: 0 }],
+      [31.0, { x: SINK, speed: 150, accel: 450, eye: 'open' }],
+      [34.2, { lookY: -1, lookX: .3, eye: 'wide' }], [34.2, () => { S.thought = { t0: t, keep: true }; S.ask = null; S.sfx('bulb', {}, bo.x); }],   // the plant reminds Bo
+      [34.9, { eye: 'happy', lookY: -.4 }],
+      [WATER - .3, { crouch: .2 }], [WATER, { crouch: 0 }], [WATER, () => { bo.jump(0, -300); S.water = t; S.sfx('tock', { f: 600 }, SINK); }],   // hop the tap on
+      [WATER + .6, { lookY: -1, eye: 'squeeze' }],
+      [37.0, () => { S.bloom = t; S.thought = null; S.sfx('arp', { notes: [0, 2, 4, 7, 9] }); S.sfx('sparkle', { n: 8 }, SINK); }],
+      [37.0, { eye: 'happy', lookY: -.6 }],
+      [37.5, { x: SILL - 30, speed: 110, accel: 400 }],
+      [SET - .2, { crouch: .2 }], [SET + .1, { crouch: 0 }],
+      [SET + .1, () => { S.plant.mode = 'set'; S.plant.t0 = t; const top = bo.top(); S.plant.fx = top.x; S.plant.fy = top.y - 26; S.sfx('tock', { f: 900 }, SILL); }],
+      [LEAVE, { x: 1e6, speed: V, accel: 450, eye: 'open', lookX: 0, lookY: 0 }],
+    ]);
+    // the doorway eats the thought: crossing it pops the bubble (and, at the very end, a tiny "?")
+    const side = Math.sign(bo.x - DOOR);
+    if (side !== S.lastSide) {
+      if (side > 0 && S.thought && !S.thought.keep) {
+        const top = bo.top(); S.pops.push({ x: top.x + 40, y: top.y - 90, t0: t });
+        S.thought = null; S.ask = { t0: t + .25 }; S.sfx('pop', { pitch: 760 }, DOOR); S.sfx('poof', {}, DOOR);
+      }
+      S.lastSide = side;
+    }
+    if (bo.x > HOUSE_B + 40 && t > LEAVE) S.once('backdoor', () => { S.ask = { t0: t, small: true }; S.sfx('pluck', { n: 4, oct: .5, g: .06 }, bo.x); S.sfx('pluck', { n: 2, oct: .5, g: .06 }, bo.x + 1); });
+    if (S.ask && t - S.ask.t0 > (S.ask.small ? 1.4 : 3.6)) S.ask = null;
+    if (S.ask && t >= S.ask.t0) S.once('ask' + Math.round(S.ask.t0 * 10), () => { if (!S.ask.small) { S.sfx('pluck', { n: 4, oct: .5, g: .07 }, bo.x); S.sfx('pluck', { n: 2, oct: .5, g: .07 }, bo.x); } });
+    // the plant droops until it's watered
+    spring(S.wilt, S.bloom ? 0 : 1, 60, .35, dt);
+    // indoors: the wall clock ticks, the room is quiet
+    S.tick += dt; if (S.tick >= 1 && bo.x > HOUSE_A - 200 && bo.x < HOUSE_B) { S.tick = 0; S.sfx('tick', { tock: Math.round(t) % 2, gain: .5 }, CLOCK); }
+    if (S.water && t < WATER + 1.8) { S.wq = (S.wq ?? 0) + dt; if (S.wq > .12) { S.wq = 0; S.sfx('stream', { v: .8 }, SINK); } }
+    if (S.water && t > WATER + .5) S.once('splashOnBo', () => { S.sfx('splash', {}, SINK); S.sfx('laugh', { k: 1.1, n: 3, g: .7 }, SINK); });
+    S.once('amb', () => S.sfx('room', { d: LOOP, g: .8 }));
+
+    // the plant: on its table, lifted onto Bo's head, set on the kitchen sill
+    const P = S.plant, top = bo.top();
+    if (P.mode === 'lift' || P.mode === 'head') {
+      const u = clamp((t - P.t0) / .45);
+      P.x = lerp(P.fx, top.x, sine(u)); P.y = lerp(P.fy, top.y - 26, sine(u)) - Math.sin(Math.PI * u) * 80;
+      if (u >= 1) P.mode = 'head';
+    } else if (P.mode === 'set') {
+      const u = clamp((t - P.t0) / .45);
+      P.x = lerp(P.fx, SILL + 40, sine(u)); P.y = lerp(P.fy, GROUND - 176, sine(u)) - Math.sin(Math.PI * u) * 60;
+    }
+
+    // camera: follow Bo home, then hold the doorway with a room either side
+    if (t > 2.6 && t < SET - .2) { S.camGoal.x = DOOR - 40; S.camGoal.z = .8; S.camGoal.kx = 1.6; S.camGoal.kz = 1.4; }
+    else if (t >= SET - .2 && t < LEAVE + 1) { S.camGoal.x = (bo.x + SILL) / 2; S.camGoal.z = .9; S.camGoal.kx = 1.6; S.camGoal.kz = 1.4; }
+  },
+  drawSky(S, ctx, t, v) {
+    const e = evening(t);
+    // outside stays plain paper; inside, the light warms towards evening (the window shows the sunset)
+    // the house, cut open like a doll's house: warm living room, cool kitchen
+    ctx.fillStyle = mix('#fff4cf', '#ffe2b0', e); ctx.fillRect(HOUSE_A, TOP, DOOR - HOUSE_A, GROUND - TOP);
+    ctx.fillStyle = mix('#e4f1ff', '#d9defa', e); ctx.fillRect(DOOR, TOP, HOUSE_B - DOOR, GROUND - TOP);
+    // windows: the living-room one shows the sky outside
+    const win = (x, w, h, y) => { ctx.fillStyle = mix('#bfe6ff', '#ffb27a', e); ctx.fillRect(x - w / 2, y, w, h); if (e > .5) sprite(ctx, SPRITES.sun, x + 30, y + h - 34 + (1 - e) * 20, 4, { X: PAL.orange }, (e - .5) * 2); ctx.lineWidth = 5; ctx.strokeStyle = '#111'; ctx.strokeRect(x - w / 2, y, w, h); ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x, y + h); ctx.moveTo(x - w / 2, y + h / 2); ctx.lineTo(x + w / 2, y + h / 2); ctx.stroke(); };
+    win(1030, 150, 120, TOP + 70); win(SILL + 20, 120, 110, TOP + 80);
+  },
+  drawBack(S, ctx, t) {
+    const J = i => S.J(i);
+    ctx.lineWidth = 6; ctx.strokeStyle = '#111';
+    // walls and roof line
+    ctx.beginPath(); ctx.moveTo(HOUSE_A + J(1) * .3, GROUND + 2); ctx.lineTo(HOUSE_A, TOP); ctx.lineTo(HOUSE_B, TOP); ctx.lineTo(HOUSE_B + J(2) * .3, GROUND - 250); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(HOUSE_A - 40, TOP); ctx.lineTo((HOUSE_A + HOUSE_B) / 2, TOP - 170); ctx.lineTo(HOUSE_B + 40, TOP); ctx.stroke();
+    // the doorway everyone forgets in: two posts and a lintel
+    ctx.lineWidth = 7;
+    ctx.beginPath(); ctx.moveTo(DOOR - 55, GROUND + 2); ctx.lineTo(DOOR - 55 + J(3) * .3, GROUND - 270); ctx.lineTo(DOOR + 55, GROUND - 270); ctx.lineTo(DOOR + 55 + J(4) * .3, GROUND + 2); ctx.stroke();
+    // living room: sofa, side table, wall clock
+    ctx.lineWidth = 5; ctx.fillStyle = PAL.sky;
+    ctx.beginPath(); ctx.roundRect(SOFA - 130, GROUND - 120, 40, 120, 12); ctx.fill(); ctx.stroke();
+    ctx.beginPath(); ctx.roundRect(SOFA - 120, GROUND - 58, 250, 58, 12); ctx.fill(); ctx.stroke();
+    ctx.beginPath(); ctx.roundRect(SOFA + 110, GROUND - 84, 30, 84, 10); ctx.fill(); ctx.stroke();
+    ctx.fillStyle = PAL.brown; ctx.beginPath(); ctx.roundRect(TABLE - 45, GROUND - 40, 90, 14, 5); ctx.fill(); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(TABLE - 32, GROUND - 26); ctx.lineTo(TABLE - 32, GROUND + 2); ctx.moveTo(TABLE + 32, GROUND - 26); ctx.lineTo(TABLE + 32, GROUND + 2); ctx.stroke();
+    const cy = TOP + 110; ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(CLOCK, cy, 34, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+    ctx.lineWidth = 4; const a1 = t * .4, a2 = t * Math.PI * 2 / 60 * 6;
+    ctx.beginPath(); ctx.moveTo(CLOCK, cy); ctx.lineTo(CLOCK + Math.sin(a1) * 16, cy - Math.cos(a1) * 16); ctx.moveTo(CLOCK, cy); ctx.lineTo(CLOCK + Math.sin(a2) * 25, cy - Math.cos(a2) * 25); ctx.stroke();
+    // kitchen: counter with a sink and tap, a shelf with the watering can Bo never quite reaches
+    ctx.lineWidth = 5; ctx.fillStyle = '#fff';
+    ctx.beginPath(); ctx.roundRect(SINK - 110, GROUND - 92, 220, 92, 6); ctx.fill(); ctx.stroke();
+    ctx.fillStyle = PAL.grey; ctx.fillRect(SINK - 60, GROUND - 92, 120, 14); ctx.strokeRect(SINK - 60, GROUND - 92, 120, 14);
+    ctx.lineWidth = 7; ctx.beginPath(); ctx.moveTo(SINK + 70, GROUND - 92); ctx.lineTo(SINK + 70, GROUND - 300); ctx.quadraticCurveTo(SINK + 70, GROUND - 330, SINK + 40, GROUND - 330); ctx.lineTo(SINK + 26, GROUND - 330); ctx.stroke();
+    ctx.lineWidth = 5; ctx.fillStyle = PAL.brown; ctx.fillRect(SINK - 150, TOP + 150, 150, 12); ctx.strokeRect(SINK - 150, TOP + 150, 150, 12);
+    sprite(ctx, CAN, SINK - 80, TOP + 128, 6, { X: PAL.green });
+    sprite(ctx, ['XXX', 'X.X', 'XXX'], SINK - 125, TOP + 136, 6, { X: PAL.pink });
+    // the sill under the kitchen window
+    ctx.fillStyle = PAL.brown; ctx.fillRect(SILL - 60, GROUND - 156, 160, 12); ctx.strokeRect(SILL - 60, GROUND - 156, 160, 12);
+  },
+  drawFront(S, ctx, t) {
+    const bo = S.bo, top = bo.top();
+    // the water from the tap (lands on the plant on Bo's head)
+    if (S.water && t < WATER + 1.9) {
+      const k = sine(seg(t, S.water, S.water + .2)) * (1 - seg(t, WATER + 1.6, WATER + 1.9));
+      for (let i = 0; i < 14; i++) { const u = ((t * 3 + i / 14) % 1), y = lerp(GROUND - 326, top.y - 40, u); sprite(ctx, ['X', 'X'], SINK + 30 + Math.sin(i) * 3, y, 5, { X: PAL.sky }, k); }
+    }
+    // the plant
+    const P = S.plant, px = P.mode === 'head' ? top.x : P.x, py = P.mode === 'head' ? top.y - 26 : P.y;
+    const w = S.wilt.x, sway = Math.sin(t * 1.6) * .05;
+    ctx.fillStyle = PAL.orange; ctx.lineWidth = 4; ctx.strokeStyle = '#111';
+    ctx.beginPath(); ctx.moveTo(px - 26, py - 12); ctx.lineTo(px + 26, py - 12); ctx.lineTo(px + 19, py + 22); ctx.lineTo(px - 19, py + 22); ctx.closePath(); ctx.fill(); ctx.stroke();
+    ctx.strokeStyle = PAL.green; ctx.lineWidth = 5;
+    const ang = w * 1.25 + sway, hx = px + Math.sin(ang) * 58, hy = py - 12 - Math.cos(ang) * 58;
+    ctx.beginPath(); ctx.moveTo(px, py - 12); ctx.quadraticCurveTo(px, py - 50, hx, hy); ctx.stroke();
+    ctx.fillStyle = mix(PAL.green, PAL.dim, w * .7);
+    for (const s of [-1, 1]) { ctx.beginPath(); ctx.moveTo(px, py - 34); ctx.quadraticCurveTo(px + s * 18, py - 50 + w * 18, px + s * 30, py - 38 + w * 26); ctx.quadraticCurveTo(px + s * 14, py - 30, px, py - 34); ctx.fill(); }
+    const fl = S.bloom ? outBack(clamp((t - S.bloom) / .5)) : 0;
+    if (fl > .05) sprite(ctx, ['..X..', '.XXX.', 'XXCXX', '.XXX.', '..X..'], hx, hy, 6 * fl, { X: PAL.pink, C: PAL.yellow });
+    else { ctx.fillStyle = PAL.dim; ctx.beginPath(); ctx.arc(hx, hy, 7, 0, Math.PI * 2); ctx.fill(); }
+    // the thought bubble: a watering can, floating above Bo; it wobbles harder on the tiptoe trip
+    if (S.thought) {
+      const u = outBack(clamp((t - S.thought.t0) / .35)), tiptoe = t > TRIPS[2][1] && t < 24.2, shake = tiptoe ? Math.sin(t * 22) * 3 : 0;
+      const bx = top.x + 70 + shake, by = top.y - 110 + Math.sin(t * 2.4) * 4;
+      ctx.fillStyle = '#fff'; ctx.strokeStyle = '#111'; ctx.lineWidth = 4;
+      for (const [dx, dy, r] of [[-38, 56, 6], [-24, 34, 10]]) { ctx.beginPath(); ctx.arc(bx + dx * u, by + dy * u, r * u, 0, Math.PI * 2); ctx.fill(); ctx.stroke(); }
+      ctx.beginPath(); ctx.ellipse(bx, by, 62 * u, 46 * u, 0, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+      sprite(ctx, CAN, bx + 4, by, 6 * u, { X: PAL.green });
+    }
+    // popped thoughts burst into little bits
+    for (const p of S.pops) { const u = (t - p.t0) / .5; if (u > 1) continue; for (let i = 0; i < 8; i++) { const a = i / 8 * Math.PI * 2; sprite(ctx, SPRITES.dot, p.x + Math.cos(a) * (20 + u * 70), p.y + Math.sin(a) * (16 + u * 50), 4, { X: i % 2 ? PAL.green : '#111' }, 1 - u); } }
+    // the big "?"
+    if (S.ask && t >= S.ask.t0) { const k = outBack(clamp((t - S.ask.t0) / .3)); sprite(ctx, SPRITES.ask, top.x + 6, top.y - 60 + Math.sin(t * 3) * 3, (S.ask.small ? 3.6 : 7) * k, { X: PAL.violet }); }
+  },
+});
+</script>
+</body>
+</html>

@@ -9,7 +9,7 @@
   WL.pointer = { x: innerWidth / 2, y: innerHeight / 2 };
   addEventListener('pointermove', e => { WL.pointer.x = e.clientX; WL.pointer.y = e.clientY; }, { passive: true });
 
-  const VERSION = 10;   // bump with the ?v= in index.html when site files change
+  const VERSION = 12;   // bump with the ?v= in index.html when site files change
   const STORY_IDS = WL_EPISODES.map(e => e.id);
   const SCRIPTS = [
     'https://cdn.jsdelivr.net/npm/gsap@3.13.0/dist/gsap.min.js',
@@ -223,7 +223,8 @@
   function rotor() {
     const pill = document.querySelector('[data-rotor]'), word = pill.querySelector('.pill__word');
     const words = [['putting it off', '#ffa300'], ['saying yes', '#ff77a8'], ['overthinking', '#7b5cff'], ['waiting for a reply', '#29adff'],
-      ['five more minutes', '#ff004d'], ['wanting it perfect', '#ffec27'], ['comparing', '#00e436'], ['bad days', '#3b7dd8']];
+      ['five more minutes', '#ff004d'], ['wanting it perfect', '#ffec27'], ['comparing', '#00e436'], ['bad days', '#3b7dd8'],
+      ['losing your keys', '#ffa300'], ['awkward silences', '#ff77a8'], ['3am thoughts', '#7b5cff'], ['asking for help', '#29adff']];
     let i = 0;
     const fit = () => { pill.style.width = (word.offsetWidth + parseFloat(getComputedStyle(pill).paddingLeft) * 2) + 'px'; };
     pill.style.setProperty('--ep', words[0][1]); fit();

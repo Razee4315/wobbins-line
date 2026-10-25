@@ -1,0 +1,181 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Small Talk</title>
+</head>
+<body>
+<script src="sfx.js?v=6"></script>
+<script src="engine2.js?v=6"></script>
+<script>
+// A bus stop. A stranger comes and stands next to Bo. "hi." "hi." Then nothing: the silence
+// between them grows into a heavy "..." (and the crickets come out). "nice... weather?" says Bo,
+// and the sky opens. Bo's umbrella pops up; Bo shuffles over and shares it. They laugh; the "..."
+// turns into hearts. The rain stops, the stranger's bus comes, they wave, and Bo walks on.
+const { PAL, SPRITES, sprite, lerp, seg, sine, outBack, clamp, hash, spring, mix, ramp, GROUND } = Shorts;
+const V = 140, STOP = 880, PAL_X = 1100, POLE = 990;
+const RAIN = [15.4, 29.4], OPEN = 17.6, SHARE = 19.6, BUS_IN = 29.8, BOARD = 31.6, BUS_OUT = 32.6, LEAVE = 34.6, LOOP = LEAVE + 7.4;
+const rainy = t => sine(seg(t, RAIN[0] - .6, RAIN[0] + .8)) * (1 - sine(seg(t, RAIN[1] - .4, RAIN[1] + 1.4)));
+const busX = t => t < BUS_IN ? 3000 : t < BOARD ? lerp(2600, PAL_X + 40, sine(seg(t, BUS_IN, BOARD - .4))) : t < BUS_OUT ? PAL_X + 40 : PAL_X + 40 - 1800 * Math.pow(seg(t, BUS_OUT, BUS_OUT + 2.4), 1.6);
+const PAL_VOICE = { pitch: 1.28 };
+
+Shorts.play({
+  title: 'Small Talk',
+  accent: PAL.red,
+  voice: { pitch: 1 },
+  loopAfter: LOOP,
+  paperAt: t => mix('#ffffff', '#e6eaf1', rainy(t)),
+  captions: [
+    [6.7, 7.6, 'hi.'],
+    [7.9, 8.8, 'hi.', null, PAL_VOICE],
+    [10.2, 11.6, '...', null, false],
+    [13.6, 15.2, 'nice... *weather?*'],
+    [16.4, 17.4, '*oh no.*', null, PAL_VOICE],
+    [20.4, 21.8, 'want to share?'],
+    [22.2, 23.2, '*yes please!*', null, PAL_VOICE],
+    [25.0, 26.4, 'i kind of love rain.', null, PAL_VOICE],
+    [26.8, 27.8, '*me too!*'],
+    [33.0, 40.2, 'every friend was a *stranger* once.'],
+  ],
+  init(S) {
+    S.bo = S.addChar({ x: 0, walk: V }); S.focus = S.bo;
+    S.pal = S.addChar({ x: 1700, face: -1, hair: 'antenna', hairColor: PAL.green, blush: PAL.pink, fill: '#e3fbef', gain: .5 });
+    S.drops = []; S.splash = []; S.dropN = 0; S.dropT = 0; S.splashN = 0; S.umb = { x: 0, v: 0 }; S.hearts = []; S.cr = 0;
+  },
+  update(S, t, dt) {
+    const bo = S.bo, pal = S.pal, c = bo.cmd, p = pal.cmd;
+    S.plan(bo, t, [
+      [0, { x: STOP, speed: V, accel: 450 }],
+      [4.8, { lookX: -.2 }],
+      [5.6, { lookX: .8, eye: 'open' }],                                    // someone's coming
+      [6.6, { eye: 'happy' }], [7.4, { eye: 'open', lookX: 0 }],
+      [9.4, { lookX: .7 }], [9.7, { lookX: 0, lookY: -.6 }],                 // glance... look away
+      [11.0, { lookY: 0 }], [11.4, () => S.sfx('hum', { notes: [4, 3, 4], gap: .3, g: .03 }, bo.x)],
+      [12.0, { lookX: .7 }], [12.25, { lookX: -.4, eye: 'flat' }],
+      [13.2, { eye: 'open', lookX: .5, lookY: -.4 }],
+      [RAIN[0], { lookY: -1, eye: 'wide' }],
+      [OPEN, { eye: 'squeeze', crouch: .15 }], [OPEN + .25, { crouch: 0, eye: 'happy', lookY: 0 }],
+      [18.8, { lookX: .9, eye: 'open' }],
+      [SHARE, { x: PAL_X - 150, speed: 70, accel: 300 }],                   // shuffles over
+      [20.9, { eye: 'happy' }],
+      [23.4, () => { S.sfx('laugh', { n: 4 }, bo.x); S.sfx('laugh', { n: 3, k: 1.3 }, pal.x); }],
+      [27.0, { eye: 'happy' }],
+      [RAIN[1], { lookY: -.8, eye: 'open' }],
+      [BOARD - .6, { lookX: .9, lookY: 0 }],
+      [BUS_OUT + .2, { eye: 'happy' }],
+      [33.6, { crouch: .2 }], [33.85, { crouch: 0 }], [33.85, () => bo.jump(0, -420)],   // bye!
+      [LEAVE, { x: 1e6, speed: V, accel: 450, eye: 'open', lookX: 0, lookY: 0 }],
+    ]);
+    S.plan(pal, t, [
+      [2.6, { x: PAL_X, speed: 150, accel: 400, face: -1 }],
+      [6.9, { face: -1, eye: 'happy' }], [8.8, { face: 1, eye: 'open' }],
+      [9.5, { face: -1 }], [9.75, { face: 1, lookY: -.5 }],                   // glances back, looks away
+      [11.0, { lookY: 0 }], [12.0, { face: -1 }], [12.3, { face: 1, eye: 'flat' }],
+      [RAIN[0] + .4, { lookY: -1, eye: 'wide' }],
+      [16.4, { crouch: .2, eye: 'squeeze', lookY: 0 }],                      // getting soaked
+      [21.0, { crouch: 0, face: -1, eye: 'open' }],
+      [22.2, { eye: 'happy' }],
+      [23.0, { crouch: .2 }], [23.3, { crouch: 0 }], [23.3, () => pal.jump(0, -360)],
+      [25.0, { eye: 'open' }], [26.8, { eye: 'happy' }],
+      [RAIN[1] + .4, { face: 1, lookY: -.6, eye: 'open' }],
+      [BOARD - .5, { face: -1, eye: 'happy' }],
+      [BOARD, () => { pal.hidden = true; S.sfx('hiss', {}, PAL_X); }],
+    ]);
+    if (t > 16.4 && t < SHARE + 1.2) pal.cmd.crouch = .2 + .03 * Math.sin(t * 30);   // shivering in the rain
+    // crickets during the awkward silence
+    if (t > 10.0 && t < 13.4) { S.cr += dt; if (S.cr > .9) { S.cr = 0; S.sfx('chirp', { k: .62, gain: .7 }); } }
+    // weather and the bus
+    if (t > RAIN[0] - .4) S.once('thunder', () => S.sfx('rumble', { d: 2.2 }));
+    if (t > RAIN[0]) S.once('rainbed', () => S.sfx('rainbed', { d: RAIN[1] - RAIN[0] + 1.2, g: 1 }));
+    if (t > OPEN) S.once('umb', () => { S.umb.v += 12; S.sfx('umbrella', {}, bo.x); });
+    if (t > BUS_IN) S.once('bus', () => S.sfx('bus', { d: 5 }, 1600));
+    if (t > BOARD - .5) S.once('busStop', () => S.sfx('hiss', {}, PAL_X));
+    if (t > BUS_OUT - .1) S.once('honk', () => S.sfx('honk', {}, PAL_X));
+    S.once('amb1', () => S.sfx('birds', { d: RAIN[0] + .4, g: .8 }));
+    if (t > RAIN[1] + .6) S.once('amb2', () => S.sfx('birds', { d: LOOP - RAIN[1], g: .9 }));
+    spring(S.umb, t > OPEN && t < RAIN[1] + .8 ? 1 : 0, 90, .32, dt);
+
+    // the rain: across the whole view, stopped by the umbrella
+    // (spawned around the camera, not the rendered view, so the soundtrack pass hears the same rain)
+    const rk = rainy(t), cx = S.cam.x.x;
+    if (rk > .05) {
+      S.dropT += dt; const rate = .012 / rk;
+      while (S.dropT > rate) { S.dropT -= rate; const n = S.dropN++; S.drops.push({ x: cx - 900 + hash(n) * 1800, y: GROUND - 900 - hash(n + .4) * 80 }); }
+    }
+    const top = bo.top(), u = S.umb.x, canopy = { x: top.x + 40 * u, y: top.y - 130 * u, r: 150 * u };
+    S.canopy = canopy;
+    S.drops = S.drops.filter(d => {
+      d.y += 1100 * dt; d.x -= 120 * dt;
+      const hit = (y, on) => { S.splash.push({ x: d.x, y, t0: t }); const k = S.splashN++; if (on && k % 4 === 0) S.sfx('tap', { dull: .7, gain: .6 }, d.x); else if (k % 9 === 0) S.sfx('rain', { v: 1 }, d.x); return false; };
+      if (u > .5 && Math.abs(d.x - canopy.x) < canopy.r && d.y > canopy.y - Math.sqrt(Math.max(0, canopy.r * canopy.r - (d.x - canopy.x) ** 2)) * .55) return hit(d.y, true);
+      if (d.y >= GROUND) return hit(GROUND, false);
+      return true;
+    });
+    S.splash = S.splash.filter(s => t - s.t0 < .2);
+    // the "..." becomes hearts once they share
+    if (t > SHARE + 3.6) S.once('hearts', () => { for (let i = 0; i < 6; i++) S.hearts.push({ x: (bo.x + PAL_X) / 2 + (i - 2.5) * 22, t0: t + i * .08 }); S.sfx('sparkle', { n: 6 }, PAL_X); });
+
+    if (t > 4.6 && t < BUS_OUT + 1.8) { S.camGoal.x = (STOP + PAL_X) / 2 + 30; S.camGoal.z = t < 9 ? 1.05 : t < RAIN[0] ? 1.25 : .95; S.camGoal.kz = 1.2; S.camGoal.kx = 2; }
+  },
+  drawSky(S, ctx, t, v) {
+    const rk = rainy(t);
+    for (let i = 0; i < 4; i++) {
+      const W = v.right - v.left + 400, x = v.left - 200 + (1 - ((t / 40 + i / 4 + .1) % 1)) * W;
+      sprite(ctx, SPRITES.cloud, x, v.top + (v.bottom - v.top) * (.16 + i * .05) + rk * 30, 9 + rk * 5, { X: mix('#ebe8f4', '#a9b0bf', rk) });
+    }
+    const after = sine(seg(t, RAIN[1] + .2, RAIN[1] + 2.6)) * (1 - seg(t, LEAVE + 2, LEAVE + 4));
+    if (after > .01) {
+      ctx.save(); ctx.globalAlpha = after * .85; const cx = (STOP + PAL_X) / 2 + 200, cy = GROUND + 60;
+      [PAL.red, PAL.orange, PAL.yellow, PAL.lime, PAL.sky, PAL.violet].forEach((col, i) => { ctx.fillStyle = col; const r = 520 - i * 16; for (let a = Math.PI; a < Math.PI * 2; a += .02) { const x = cx + Math.cos(a) * r, y = cy + Math.sin(a) * r; if (y < GROUND) ctx.fillRect(Math.round(x / 8) * 8, Math.round(y / 8) * 8, 8.5, 8.5); } });
+      ctx.restore();
+    }
+  },
+  drawBack(S, ctx, t) {
+    // the bus, on the road just behind the pavement
+    const bx = busX(t);
+    if (bx < 2800 && bx > -900) {
+      ctx.save(); ctx.translate(bx, GROUND - 26); const sc = .92; ctx.scale(sc, sc);
+      ctx.fillStyle = PAL.yellow; ctx.lineWidth = 6; ctx.strokeStyle = '#111';
+      ctx.beginPath(); ctx.roundRect(-230, -250, 460, 220, 34); ctx.fill(); ctx.stroke();
+      for (let i = 0; i < 4; i++) { ctx.fillStyle = '#d9f1ff'; ctx.fillRect(-200 + i * 100, -222, 76, 70); ctx.strokeRect(-200 + i * 100, -222, 76, 70); }
+      ctx.fillStyle = '#111'; ctx.fillRect(-232, -110, 464, 10);
+      for (const wx of [-150, 150]) { ctx.fillStyle = '#333'; ctx.beginPath(); ctx.arc(wx, -28, 34, 0, Math.PI * 2); ctx.fill(); ctx.fillStyle = PAL.grey; ctx.beginPath(); ctx.arc(wx, -28, 13, 0, Math.PI * 2); ctx.fill(); }
+      // the new friend, waving from the first window
+      if (t > BOARD) { ctx.fillStyle = '#e3fbef'; ctx.beginPath(); ctx.ellipse(-162, -176, 30, 26, 0, 0, Math.PI * 2); ctx.fill(); ctx.lineWidth = 5; ctx.stroke(); ctx.lineWidth = 4; ctx.beginPath(); ctx.arc(-150, -184, 7, 0, Math.PI * 2); ctx.stroke(); ctx.strokeStyle = PAL.green; ctx.beginPath(); ctx.moveTo(-168, -200); ctx.lineTo(-176 + Math.sin(t * 14) * 6, -224); ctx.stroke(); ctx.fillStyle = PAL.green; ctx.beginPath(); ctx.arc(-176 + Math.sin(t * 14) * 6, -226, 6, 0, Math.PI * 2); ctx.fill(); }
+      ctx.restore();
+    }
+    // the bus-stop sign
+    ctx.lineWidth = 6; ctx.strokeStyle = '#111';
+    ctx.beginPath(); ctx.moveTo(POLE, GROUND + 2); ctx.lineTo(POLE + S.J(1) * .3, GROUND - 300); ctx.stroke();
+    ctx.fillStyle = PAL.red; ctx.beginPath(); ctx.arc(POLE, GROUND - 320, 34, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+    sprite(ctx, ['XXXXX', 'XWXWX', 'XXXXX', '.X.X.'], POLE, GROUND - 320, 7, { X: '#fff', W: PAL.red });
+  },
+  drawFront(S, ctx, t) {
+    const bo = S.bo, top = bo.top(), u = S.umb.x, cn = S.canopy;
+    // the awkward "...": three dots that swell and get heavier, then turn into hearts
+    const grow = seg(t, 8.8, 14.6) * (1 - seg(t, SHARE + 3.2, SHARE + 3.6)), mx = (bo.x + S.pal.x) / 2, my = GROUND - 270 + grow * 40;
+    if (grow > .01 && !S.pal.hidden) for (let i = 0; i < 3; i++) { const s = 6 + grow * 15, j = grow > .6 ? Math.sin(t * 18 + i) * 2 * grow : 0; sprite(ctx, SPRITES.dot, mx + (i - 1) * (s * 3.2), my + j + grow * 18 * Math.sin(i), s / 2, { X: mix('#9a9aa2', '#2b2b33', grow) }); }
+    for (const h of S.hearts) { const k = (t - h.t0) / 1.6; if (k < 0 || k > 1) continue; sprite(ctx, SPRITES.heart, h.x + Math.sin(k * 6 + h.x) * 10, GROUND - 220 - k * 160, 4, { X: PAL.pink }, 1 - k * k); }
+    // rain and splashes
+    ctx.strokeStyle = '#8fa3c2'; ctx.lineWidth = 3;
+    for (const d of S.drops) { ctx.beginPath(); ctx.moveTo(d.x + 2, d.y - 20); ctx.lineTo(d.x, d.y); ctx.stroke(); }
+    for (const s of S.splash) { const k = (t - s.t0) / .2; ctx.lineWidth = 2.5 * (1 - k) + .5; for (const sd of [-1, 1]) { ctx.beginPath(); ctx.moveTo(s.x + sd * 3, s.y - 2); ctx.lineTo(s.x + sd * (6 + 10 * k), s.y - 6 - 8 * k + 12 * k * k); ctx.stroke(); } }
+    // Bo's umbrella: folded up like a little antenna, then it pops open
+    ctx.strokeStyle = '#111'; ctx.lineWidth = 5;
+    if (u < .12) {
+      ctx.beginPath(); ctx.moveTo(top.x + 24, top.y + 6); ctx.lineTo(top.x + 30, top.y - 70); ctx.stroke();
+      ctx.fillStyle = PAL.red; ctx.beginPath(); ctx.moveTo(top.x + 30, top.y - 74); ctx.lineTo(top.x + 20, top.y - 20); ctx.lineTo(top.x + 40, top.y - 20); ctx.closePath(); ctx.fill(); ctx.stroke();
+    } else {
+      ctx.beginPath(); ctx.moveTo(top.x + 24, top.y + 6); ctx.lineTo(cn.x, cn.y); ctx.stroke();
+      ctx.fillStyle = PAL.red; ctx.beginPath(); ctx.moveTo(cn.x - cn.r, cn.y + 8);
+      ctx.quadraticCurveTo(cn.x, cn.y - cn.r * .9, cn.x + cn.r, cn.y + 8);
+      for (let i = 4; i >= 0; i--) { const x0 = cn.x - cn.r + (i + 1) * cn.r * .4, x1 = x0 - cn.r * .4; ctx.quadraticCurveTo((x0 + x1) / 2, cn.y - 10, x1, cn.y + 8); }
+      ctx.closePath(); ctx.fill(); ctx.stroke();
+      ctx.fillStyle = '#fff'; ctx.globalAlpha = .5; ctx.beginPath(); ctx.ellipse(cn.x - cn.r * .35, cn.y - cn.r * .3, cn.r * .16, cn.r * .07, -.5, 0, Math.PI * 2); ctx.fill(); ctx.globalAlpha = 1;
+    }
+  },
+});
+</script>
+</body>
+</html>

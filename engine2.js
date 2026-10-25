@@ -45,6 +45,12 @@
     birdB: ['.......', 'XX...XX', '..XXX..'],
     check: ['....X', '...X.', 'X.X..', '.X...'],
     note: ['..XX', '..X.', '..X.', 'XXX.', 'XXX.'],
+    star: ['..X..', '.XXX.', 'XXXXX', '.XXX.', '..X..'],
+    moon: ['..XXX..', '.XXX...', 'XXX....', 'XXX....', 'XXX....', '.XXX...', '..XXX..'],
+    sun: ['X..X..X', '.XXXXX.', '.XXXXX.', 'XXXXXXX', '.XXXXX.', '.XXXXX.', 'X..X..X'],
+    bang: ['XX', 'XX', 'XX', 'XX', '..', 'XX'],
+    ask: ['.XXX.', 'X...X', '...X.', '..X..', '.....', '..X..'],
+    bulb: ['.XXX.', 'XXXXX', 'XXXXX', '.XXX.', '..B..', '.BBB.'],
     d0: ['XXX', 'X.X', 'X.X', 'X.X', 'XXX'], d1: ['.X.', 'XX.', '.X.', '.X.', 'XXX'], d2: ['XXX', '..X', 'XXX', 'X..', 'XXX'],
     d3: ['XXX', '..X', 'XXX', '..X', 'XXX'], d4: ['X.X', 'X.X', 'XXX', '..X', '..X'], d5: ['XXX', 'X..', 'XXX', '..X', 'XXX'],
     d6: ['XXX', 'X..', 'XXX', 'X.X', 'XXX'], d7: ['XXX', '..X', '.X.', '.X.', '.X.'],
@@ -58,6 +64,12 @@
       ctx.beginPath(); ctx.moveTo(zx - s / 2, zy - s / 2); ctx.lineTo(zx + s / 2, zy - s / 2); ctx.lineTo(zx - s / 2, zy + s / 2); ctx.lineTo(zx + s / 2, zy + s / 2); ctx.stroke();
     }
     ctx.restore();
+  }
+  // colour over time: stops = [[t, '#hex'], ...], eased between neighbours (for skies and paper)
+  function ramp(t, stops) {
+    if (t <= stops[0][0]) return stops[0][1];
+    for (let i = 1; i < stops.length; i++) if (t <= stops[i][0]) return mix(stops[i - 1][1], stops[i][1], sine(seg(t, stops[i - 1][0], stops[i][0])));
+    return stops[stops.length - 1][1];
   }
   function sprite(ctx, rows, x, y, px, colors, alpha = 1) {
     const h = rows.length, w = rows[0].length;
@@ -137,7 +149,9 @@
           this.vx += clamp(want - this.vx, -c.accel * dt, c.accel * dt);
         }
         this.x += this.vx * dt;
-        spring(this.q, c.crouch, 340, .3, dt);
+        // standing still, the body breathes a little, so a held pose never looks frozen
+        const still = 1 - clamp(Math.abs(this.vx) / 30);
+        spring(this.q, c.crouch + still * (this.breathe ?? .011) * Math.sin(this.t * 2.5 + (this.seed ?? 0)), 340, .3, dt);
       } else if (this.mode === 'air') {
         this.vy += GRAV * dt; this.x += this.vx * dt; this.y += this.vy * dt;
         spring(this.q, -clamp(Math.abs(this.vy) / 2800, 0, .13), 340, .45, dt);
@@ -233,7 +247,8 @@
 
   class Show {
     constructor(story, opts = {}) {
-      this.story = story; this.boil = false;
+      // hand-drawn line boil is on unless a story turns it off
+      this.story = story; this.boil = story.boil ?? true;
       if (opts.loop) { this.T = opts.loop.T; this.startState = opts.loop.startState; } else this.computeLoop();
       this.reset();
     }
@@ -277,7 +292,7 @@
       for (const c of this.chars) c.t = 0;
       this.fx = []; this.parts = [];
     }
-    addChar(o) { const c = new Character(this, o); this.chars.push(c); return c; }
+    addChar(o) { const c = new Character(this, o); c.seed = this.chars.length * 1.7; this.chars.push(c); return c; }
     once(key, fn) { if (!this.fired.has(key)) { this.fired.add(key); fn(); } }
     plan(c, t, list) {
       list.forEach(([at, v], i) => {
@@ -293,11 +308,17 @@
       const pan = x === undefined ? 0 : clamp((x - this.cam.x.x) / 520, -.7, .7);
       this.onSfx({ t: this.t, name, p, pan });
     }
+    // typed captions make a sound as they appear: a soft murmured voice (story.voice = { pitch },
+    // or per caption as its 5th item; false = silent); story.voice: false falls back to a muted key click
     captionBlips() {
-      (this.story.captions || []).forEach(([a, b, text], i) => {
+      (this.story.captions || []).forEach(([a, b, text, , vo], i) => {
         const plain = text.replace(/\*/g, ''), n = this.t < a || this.t > b ? 0 : Math.floor(plain.length * seg(this.t, a, a + Math.min(1.3, plain.length * .055)) + 1e-6);
-        const prev = this.capShown[i] ?? 0;
-        if (n > prev && plain[n - 1] !== ' ') this.sfx('blip', { k: n });
+        const prev = this.capShown[i] ?? 0, ch = plain[n - 1];
+        if (n > prev && ch !== ' ') {
+          const voice = vo === undefined ? (this.story.voice ?? { pitch: 1 }) : vo;   // everyone murmurs unless a story sets voice: false
+          if (voice) { if (n % 2 === 0 || n === plain.length) this.sfx('voice', { k: n + i * 7, ch, pitch: voice.pitch ?? 1, g: voice.g ?? 1, rise: /\?\W*$/.test(plain) && n > plain.length - 4 ? 1 : 0, last: n === plain.length }); }
+          else if (vo === undefined) this.sfx('blip', { k: n });
+        }
         this.capShown[i] = n;
       });
     }
@@ -367,6 +388,11 @@
       this.T = T;
     }
     canBlink() { return this.t > .6 && this.t < this.T - .6; }
+    // blinks come at uneven gaps (2.4–4.6 s), and now and then twice in a row, like a living face
+    blinking(c) {
+      const t = c.t + .9, k = Math.floor(t / 3.4), at = k * 3.4 + hash(k * 1.3 + (c.seed ?? 0)) * 1.8, u = t - at;
+      return (u >= 0 && u < .12) || (hash(k + .7) > .72 && u >= .24 && u < .34);
+    }
 
     // ---- rendering ----
     viewFor(cw, ch) {
@@ -381,7 +407,7 @@
         left: cx - cw / 2 / unit, right: cx + cw / 2 / unit, top: cy - gy / unit, bottom: cy + (ch - gy) / unit,
       };
     }
-    J(i) { return this.boil ? (hash(i * 3.17 + this.boilFrame * 31.7) - .5) * 2.4 : 0; }
+    J(i) { return this.boil ? (hash(i * 3.17 + this.boilFrame * 31.7) - .5) * (this.story.boilAmt ?? 2.0) : 0; }
     ink(ctx) { ctx.strokeStyle = INK; ctx.fillStyle = INK; ctx.globalAlpha = 1; ctx.lineWidth = 6; ctx.lineCap = 'round'; ctx.lineJoin = 'round'; }
 
     render(ctx, cw, ch) {
@@ -460,7 +486,7 @@
       ctx.save(); ctx.translate(e.x + this.J(300) * .3, e.y + this.J(301) * .3); ctx.rotate(c.rot.x); ctx.scale(c.dir, 1);
       ctx.lineWidth = 4.5;
       let state = c.cmd.eye;
-      if (state === 'open' && this.canBlink() && ((c.t + .9) % 3.7) < .13) state = 'blink';
+      if (state === 'open' && this.canBlink() && this.blinking(c)) state = 'blink';
       const px = clamp(1.5 + c.lookX.x * 4, -5, 5.5) * Math.abs(c.fw), py = clamp(c.lookY.x * 4.5, -5, 5);
       const ball = (r, pr, ox, oy) => {
         ctx.fillStyle = PAPER; ctx.beginPath(); ctx.arc(0, 0, r, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
@@ -737,7 +763,7 @@
   }
 
   window.Shorts = {
-    play, exportMP4, Show, GROUND, STAND, BODY_H, GRAV, INK, PAPER, PAL, SPRITES, sprite, zzz,
+    play, exportMP4, Show, GROUND, STAND, BODY_H, GRAV, INK, PAPER, PAL, SPRITES, sprite, zzz, ramp,
     clamp, lerp, seg, sine, outCubic, inCubic, outBack, hash, spring, mix,
   };
 })();

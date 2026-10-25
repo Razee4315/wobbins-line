@@ -1,0 +1,162 @@
+/* lost: extracted from ../lost.html by scripts/sync-shorts.py. Do not edit here. */
+(function () {
+  const Shorts = Object.assign(Object.create(window.Shorts), { play: story => { (window.WL_STORIES ||= {})['lost'] = story; } });
+  // Morning. Bo gets to the key hook by the door: empty. Cushions fly, the drawer empties, the rug
+  // lifts, the plant gets searched, the clock races. Bo finally stops and breathes, and hears a tiny
+  // jingle: the keys have been hanging off Bo's hair the whole time (watch from the first frame).
+  const { PAL, SPRITES, sprite, lerp, seg, sine, outBack, clamp, hash, spring, mix, GROUND, GRAV } = Shorts;
+  const V = 150, HOUSE_A = 660, HOUSE_B = 1880, TOP = GROUND - 430;
+  const HOOK = 760, CUSH = 960, DRAWER = 1170, RUG = 1370, PLANT = 1580, DOOR = 1780, CLOCK = 1270;
+  const PANIC = [16.4, 19.8], CALM = 19.8, NOTICE = 23.4, OPEN = 28.6, LEAVE = 29.2, LOOP = LEAVE + 7.4;
+  const KEY = ['XXX....', 'X.XXXXX', 'XXX.X.X'];
+  const ITEMS = {
+    cushion: { rows: ['.XXXX.', 'XXXXXX', 'XXXXXX', '.XXXX.'], px: 9 },
+    sock: { rows: ['XX..', 'XX..', 'XX..', 'XXXX', 'XXXX'], px: 6 },
+    book: { rows: ['XXXXX', 'XWWWX', 'XWWWX', 'XXXXX'], px: 7 },
+    duck: { rows: ['.XX..', 'XXXO.', '.XXX.', 'XXXXX', '.XXX.'], px: 6 },
+    spoon: { rows: ['.XX', 'XXX', '.X.', '.X.', '.X.'], px: 5 },
+    paper: { rows: ['XXXX', 'X..X', 'XXXX', 'X..X', 'XXXX'], px: 6 },
+    leaf: { rows: ['..X', '.XX', 'XX.'], px: 6 },
+  };
+  // [time, item, from x, colour, vx, vy]
+  const TOSSES = [
+    [8.7, 'cushion', CUSH, PAL.pink, -260, -900], [9.0, 'cushion', CUSH, PAL.sky, 200, -980], [9.3, 'cushion', CUSH, PAL.yellow, -60, -1100],
+    [11.7, 'sock', DRAWER, PAL.red, -320, -900], [11.95, 'book', DRAWER, PAL.blue, 260, -820], [12.2, 'duck', DRAWER, PAL.yellow, -140, -1050], [12.45, 'spoon', DRAWER, PAL.grey, 340, -760], [12.7, 'paper', DRAWER, '#ffffff', -40, -700],
+    [15.3, 'leaf', PLANT, PAL.green, -200, -700], [15.5, 'leaf', PLANT, PAL.lime, 220, -760],
+    [16.8, 'paper', DRAWER, '#ffffff', 300, -700], [17.3, 'sock', CUSH, PAL.violet, -380, -800], [17.9, 'book', DRAWER, PAL.orange, 200, -900], [18.4, 'cushion', CUSH, PAL.lime, 320, -800], [18.9, 'duck', RUG, PAL.yellow, -260, -950],
+  ];
+
+  Shorts.play({
+    title: 'Lost',
+    accent: PAL.orange,
+    voice: { pitch: 1 },
+    loopAfter: LOOP,
+    captions: [
+      [6.0, 7.6, 'where are my *keys?*'],
+      [9.9, 11.0, 'not here.'],
+      [13.4, 14.8, 'under the *rug?*'],
+      [16.8, 18.4, "i'm going to be *late!*"],
+      [20.4, 22.0, 'okay. *breathe.*'],
+      [23.8, 24.6, '...hm?'],
+      [25.2, 26.2, '*oh.*'],
+      [28.6, 35.0, "slow down. *it's usually closer than you think.*"],
+    ],
+    init(S) {
+      S.bo = S.addChar({ x: 0, walk: V });
+      S.items = []; S.keys = { a: { x: 0, v: 0 } }; S.drawer = { x: 0, v: 0 }; S.rug = { x: 0, v: 0 }; S.door = { x: 0, v: 0 };
+      S.tick = 0; S.sweat = []; S.sweatT = 0; S.jingleT = 0;
+    },
+    update(S, t, dt) {
+      const bo = S.bo, c = bo.cmd;
+      S.plan(bo, t, [
+        [0, { x: HOOK + 40, speed: V, accel: 480 }],
+        [4.6, { lookY: -.7, lookX: -.4 }],                                   // the key hook...
+        [5.3, { eye: 'wide' }], [5.3, () => { S.sfx('boing', { pitch: 300, g: .08 }, HOOK); S.sfx('gasp', {}, bo.x); }],
+        [7.7, { x: CUSH - 60, speed: 300, accel: 1300, eye: 'open', lookX: 0, lookY: 0 }],
+        [8.5, { tilt: .3, crouch: .15 }], [9.6, { tilt: 0, crouch: 0, eye: 'flat' }],
+        [10.6, { x: DRAWER - 70, speed: 300, accel: 1300, eye: 'open' }],
+        [11.4, { tilt: .25, lookY: .5 }], [12.9, { tilt: 0, lookY: 0 }],
+        [13.2, { x: RUG - 40, speed: 300, accel: 1300 }],
+        [13.9, { crouch: .22 }], [14.2, { crouch: 0 }], [14.2, () => { S.rug.v += 9; S.sfx('whoosh', { d: .4 }, RUG); S.sfx('poof', {}, RUG); }],
+        [14.6, { x: PLANT - 80, speed: 300, accel: 1300 }],
+        [15.1, { tilt: .3, lookY: .6 }], [15.8, { tilt: 0, lookY: 0 }],
+        [PANIC[0], { x: CUSH, speed: 480, accel: 2200, eye: 'squeeze' }], [PANIC[0], () => S.sfx('slip', {}, bo.x)],
+        [17.1, { x: PLANT, speed: 480 }], [17.9, { x: DRAWER - 40, speed: 480 }], [18.6, { x: RUG + 60, speed: 480 }], [19.3, { x: CLOCK, speed: 300 }],
+        [CALM, { sit: 1, eye: 'sad', tilt: .1 }], [CALM, () => S.sfx('thump', { g: .4 }, bo.x)],
+        [20.6, { eye: 'closed', tilt: 0 }], [20.8, () => S.sfx('breathIn', { d: 1.3 }, bo.x)],
+        [22.3, () => S.sfx('breathOut', { d: 1.6 }, bo.x)],
+        [NOTICE, { eye: 'open', lookY: -.3 }],
+        [24.2, { lookY: -1, lookX: -.5, tilt: -.16, eye: 'wide' }],           // looks up at its own hair
+        [25.1, { eye: 'happy', tilt: -.05 }], [25.2, () => S.sfx('laugh', { n: 4, k: 1.05 }, bo.x)],
+        [26.4, { sit: 0, tilt: 0, lookY: 0, lookX: 0 }],
+        [26.8, { crouch: .2 }], [27.05, { crouch: 0, eye: 'happy' }], [27.05, () => bo.jump(0, -460)],
+        [27.8, { x: DOOR - 40, speed: 170, accel: 500, eye: 'open' }],
+        [OPEN, () => { S.door.v += 6; S.sfx('door', {}, DOOR); S.sfx('birds', { d: 6, g: 1 }); }],
+        [LEAVE, { x: 1e6, speed: V, accel: 450 }],
+      ]);
+      // things fly out of wherever Bo is searching
+      TOSSES.forEach(([at, k, x, col, vx, vy], i) => { if (t >= at) S.once('toss' + i, () => { S.items.push({ k, x, y: GROUND - 80, vx, vy, rot: 0, spin: (hash(i) - .5) * 14, col, rest: false }); S.sfx('toss', { pitch: 260 + hash(i) * 200 }, x); }); });
+      for (const it of S.items) {
+        if (it.rest) continue;
+        it.vy += GRAV * .75 * dt; it.x += it.vx * dt; it.y += it.vy * dt; it.rot += it.spin * dt;
+        if (it.y > GROUND - 12 && it.vy > 0) { it.y = GROUND - 12; it.vy *= -.32; it.vx *= .6; it.spin *= .5; if (Math.abs(it.vy) < 90) { it.rest = true; it.rot = Math.round(it.rot / (Math.PI / 2)) * (Math.PI / 2); } S.sfx('tock', { f: 300 + hash(it.x) * 250, gain: .5 }, it.x); }
+      }
+      if (t > 11.3) S.once('drawer', () => { S.drawer.v += 8; S.sfx('tock', { f: 420 }, DRAWER); });
+      spring(S.drawer, t > 11.3 ? 1 : 0, 80, .5, dt); spring(S.rug, 0, 30, .18, dt);
+      spring(S.door, t > OPEN ? 1 : 0, 26, .6, dt);
+      // the keys swing from Bo's tuft: a little pendulum pushed by Bo's motion
+      spring(S.keys.a, clamp(-bo.vx * .0025 - (bo.tuft ? bo.tuft.vx * .002 : 0), -1.1, 1.1), 40, .12, dt);
+      if (Math.abs(S.keys.a.v) > 2.2 && t - S.jingleT > .35) { S.jingleT = t; S.sfx('jingle', { n: 3, gain: .35 }, bo.x); }
+      if (t > 22.9) S.once('jingleCalm', () => { S.keys.a.v += 3.5; S.sfx('jingle', { n: 5, gain: .9 }, bo.x); });
+      // the wall clock: ticks calmly, races during the panic, calms when Bo does
+      const rate = t > PANIC[0] && t < CALM ? .25 : t > CALM && t < 23 ? 1.4 : 1;
+      S.tick += dt; if (S.tick >= rate && t < LEAVE) { S.tick = 0; S.sfx('tick', { tock: Math.round(t * 4) % 2, gain: .55 }, CLOCK); }
+      // sweat while panicking
+      if (t > PANIC[0] && t < CALM) { S.sweatT += dt; if (S.sweatT > .14) { S.sweatT = 0; const top = bo.top(); S.sweat.push({ x: top.x, y: top.y + 10, vx: (hash(t * 9) - .5) * 300, vy: -260 - hash(t * 3) * 200, t0: t }); } }
+      for (const d of S.sweat) { d.vy += 1600 * dt; d.x += d.vx * dt; d.y += d.vy * dt; }
+      S.sweat = S.sweat.filter(d => t - d.t0 < .8);
+      S.once('amb', () => S.sfx('room', { d: LOOP, g: .8 }));
+
+      if (t > 3.4 && t < LEAVE + .6) { S.camGoal.x = clamp(bo.x, HOOK + 160, DOOR - 220); S.camGoal.z = .86; S.camGoal.kx = t > PANIC[0] && t < CALM ? 3 : 2; }
+      if (t > CALM && t < 26.4) { S.camGoal.x = bo.x; S.camGoal.z = 1.25; S.camGoal.kz = 1.2; }
+    },
+    drawSky(S, ctx, t, v) {
+      ctx.fillStyle = '#fff6dc'; ctx.fillRect(HOUSE_A, TOP, HOUSE_B - HOUSE_A, GROUND - TOP);
+      // morning light pours in once the front door opens
+      const d = S.door.x;
+      if (d > .02) { ctx.fillStyle = PAL.yellow; ctx.globalAlpha = .25 * clamp(d); ctx.beginPath(); ctx.moveTo(DOOR - 50, GROUND - 260); ctx.lineTo(DOOR - 50 - 220 * d, GROUND); ctx.lineTo(DOOR + 50, GROUND); ctx.closePath(); ctx.fill(); ctx.globalAlpha = 1; }
+    },
+    drawBack(S, ctx, t) {
+      const J = i => S.J(i);
+      ctx.lineWidth = 6; ctx.strokeStyle = '#111';
+      ctx.beginPath(); ctx.moveTo(HOUSE_A + J(1) * .3, GROUND + 2); ctx.lineTo(HOUSE_A, TOP); ctx.lineTo(HOUSE_B, TOP); ctx.lineTo(HOUSE_B + J(2) * .3, GROUND + 2); ctx.stroke();
+      // the key hook: a little board with an empty peg and a key-shaped outline
+      ctx.lineWidth = 4; ctx.fillStyle = PAL.brown; ctx.fillRect(HOOK - 40, GROUND - 300, 80, 46); ctx.strokeRect(HOOK - 40, GROUND - 300, 80, 46);
+      ctx.fillStyle = '#111'; ctx.beginPath(); ctx.arc(HOOK, GROUND - 280, 5, 0, Math.PI * 2); ctx.fill();
+      ctx.setLineDash([5, 6]); ctx.strokeStyle = '#fff'; ctx.strokeRect(HOOK - 18, GROUND - 272, 36, 12); ctx.setLineDash([]); ctx.strokeStyle = '#111';
+      // a bench with cushions (once thrown, they're gone from here)
+      ctx.lineWidth = 5; ctx.fillStyle = PAL.brown; ctx.beginPath(); ctx.roundRect(CUSH - 90, GROUND - 52, 180, 16, 6); ctx.fill(); ctx.stroke();
+      for (const x of [CUSH - 72, CUSH + 72]) { ctx.beginPath(); ctx.moveTo(x, GROUND - 36); ctx.lineTo(x, GROUND + 2); ctx.stroke(); }
+      if (t < 8.7) sprite(ctx, ITEMS.cushion.rows, CUSH - 40, GROUND - 74, 9, { X: PAL.pink });
+      if (t < 9.0) sprite(ctx, ITEMS.cushion.rows, CUSH + 30, GROUND - 74, 9, { X: PAL.sky });
+      if (t < 9.3) sprite(ctx, ITEMS.cushion.rows, CUSH - 5, GROUND - 104, 9, { X: PAL.yellow });
+      // the chest of drawers; the top drawer slides open
+      ctx.fillStyle = PAL.lav; ctx.beginPath(); ctx.roundRect(DRAWER - 70, GROUND - 150, 140, 150, 6); ctx.fill(); ctx.stroke();
+      const dx = S.drawer.x * 46; ctx.fillStyle = PAL.violet;
+      ctx.beginPath(); ctx.roundRect(DRAWER - 60 - dx, GROUND - 140, 120, 38, 4); ctx.fill(); ctx.stroke();
+      ctx.beginPath(); ctx.roundRect(DRAWER - 60, GROUND - 92, 120, 38, 4); ctx.fill(); ctx.stroke();
+      ctx.fillStyle = '#111'; for (const y of [GROUND - 121, GROUND - 73]) { ctx.beginPath(); ctx.arc((y < GROUND - 100 ? DRAWER - dx : DRAWER), y, 5, 0, Math.PI * 2); ctx.fill(); }
+      // wall clock
+      const cy = TOP + 110; ctx.fillStyle = '#fff'; ctx.lineWidth = 5; ctx.beginPath(); ctx.arc(CLOCK, cy, 40, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+      const race = t < PANIC[0] ? t * .05 : t < CALM ? PANIC[0] * .05 + (t - PANIC[0]) * .9 : PANIC[0] * .05 + (CALM - PANIC[0]) * .9 + (t - CALM) * .05;
+      ctx.lineWidth = 4; ctx.beginPath(); ctx.moveTo(CLOCK, cy); ctx.lineTo(CLOCK + Math.sin(race / 12) * 18, cy - Math.cos(race / 12) * 18); ctx.moveTo(CLOCK, cy); ctx.lineTo(CLOCK + Math.sin(race) * 29, cy - Math.cos(race) * 29); ctx.stroke();
+      // the plant in its pot
+      ctx.fillStyle = PAL.orange; ctx.lineWidth = 4; ctx.beginPath(); ctx.moveTo(PLANT - 34, GROUND - 64); ctx.lineTo(PLANT + 34, GROUND - 64); ctx.lineTo(PLANT + 25, GROUND); ctx.lineTo(PLANT - 25, GROUND); ctx.closePath(); ctx.fill(); ctx.stroke();
+      ctx.fillStyle = PAL.green; for (const [a, l] of [[-.5, 80], [0, 100], [.45, 76], [-.2, 60], [.25, 64]]) { ctx.save(); ctx.translate(PLANT, GROUND - 64); ctx.rotate(a + Math.sin(t * 1.3 + a * 5) * .04); ctx.beginPath(); ctx.ellipse(0, -l / 2, 12, l / 2, 0, 0, Math.PI * 2); ctx.fill(); ctx.restore(); }
+      // the front door (swings open into the morning)
+      ctx.fillStyle = '#ffffff'; ctx.fillRect(DOOR - 50, GROUND - 260, 100, 260);
+      ctx.lineWidth = 6; ctx.strokeRect(DOOR - 50, GROUND - 260, 100, 260);
+      const w = 100 * (1 - S.door.x * .85);
+      ctx.fillStyle = PAL.red; ctx.fillRect(DOOR - 50, GROUND - 260, w, 260); ctx.strokeRect(DOOR - 50, GROUND - 260, w, 260);
+      if (w > 30) { ctx.fillStyle = '#111'; ctx.beginPath(); ctx.arc(DOOR - 50 + w - 16, GROUND - 130, 6, 0, Math.PI * 2); ctx.fill(); }
+    },
+    drawFront(S, ctx, t) {
+      // the rug (it lifts like a wave when Bo checks under it)
+      const r = S.rug.x; ctx.fillStyle = PAL.red; ctx.lineWidth = 4;
+      ctx.beginPath(); ctx.moveTo(RUG - 110, GROUND + 3);
+      for (let i = 0; i <= 20; i++) { const u = i / 20, x = RUG - 110 + u * 220, y = GROUND + 3 - Math.max(0, Math.sin(u * Math.PI)) * r * 9 * (1 - u * .4); ctx.lineTo(x, y); }
+      ctx.lineTo(RUG + 110, GROUND + 9); ctx.lineTo(RUG - 110, GROUND + 9); ctx.closePath(); ctx.fill(); ctx.stroke();
+      for (const it of S.items) { const I = ITEMS[it.k]; ctx.save(); ctx.translate(it.x, it.y); ctx.rotate(it.rot); sprite(ctx, I.rows, 0, 0, I.px, { X: it.col, W: '#fff', O: PAL.orange }); ctx.restore(); }
+      for (const d of S.sweat) sprite(ctx, ['.X.', 'XXX', 'XXX'], d.x, d.y, 3.5, { X: PAL.sky }, 1 - (t - d.t0) / .8);
+      // the keys, hanging off Bo's tuft the entire time
+      const T = S.bo.tuft; if (T) {
+        const a = S.keys.a.x, rx = T.x, ry = T.y + 4;
+        ctx.strokeStyle = PAL.orange; ctx.lineWidth = 3.5; ctx.beginPath(); ctx.arc(rx, ry + 9, 10, 0, Math.PI * 2); ctx.stroke();
+        ctx.save(); ctx.translate(rx, ry + 19); ctx.rotate(a); sprite(ctx, KEY, 0, 21, 4.4, { X: PAL.yellow }); ctx.rotate(.5); sprite(ctx, KEY, 0, 19, 4, { X: PAL.orange }); ctx.restore();
+        ctx.strokeStyle = '#111';
+      }
+      // the moment Bo finds them: a little sparkle round the keys
+      if (t > 24.4 && t < 26) { const T2 = S.bo.tuft; for (let i = 0; i < 4; i++) { const a = t * 3 + i * 1.6; sprite(ctx, SPRITES.sparkle, T2.x + Math.cos(a) * 34, T2.y + 26 + Math.sin(a) * 24, 3, { X: PAL.yellow }, 1 - seg(t, 25.6, 26)); } }
+    },
+  });
+})();

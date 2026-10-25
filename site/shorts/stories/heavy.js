@@ -1,0 +1,154 @@
+/* heavy: extracted from ../heavy.html by scripts/sync-shorts.py. Do not edit here. */
+(function () {
+  const Shorts = Object.assign(Object.create(window.Shorts), { play: story => { (window.WL_STORIES ||= {})['heavy'] = story; } });
+  // Bo walks along flying a kite. A gust blows it into a tree. Bo jumps, and jumps higher. A friend
+  // offers a hand: "no no, I've got it!" A crate: so close. Another friend: "I'm fine." Then, quietly:
+  // "...could you help me?" Two friends make a tower, Bo climbs to the top, and the kite flies again.
+  const { PAL, SPRITES, sprite, lerp, seg, sine, outBack, clamp, hash, spring, mix, GROUND, STAND } = Shorts;
+  const V = 130, TREE = 1180, UNDER = 1150, CRATE0 = 880, BRANCH = { x: 1210, y: GROUND - 440 }, STRING_END = { x: 1170, y: GROUND - 350 };
+  const GUST = 4.2, SNAP = 5.0, ASK = 23.8, BUILD = 26.6, FREE = 29.3, TUMBLE = 30.1, LEAVE = 33.6, LOOP = LEAVE + 7.4;
+  const KITE = ['...X...', '..XYX..', '.XXYXX.', 'XXXYXXX', '.YYYYY.', '..XYX..', '...X...'];
+
+  Shorts.play({
+    title: 'Heavy',
+    accent: PAL.blue,
+    voice: { pitch: 1 },
+    loopAfter: LOOP,
+    // the crate is something to stand on, but the drawn line stays flat
+    ground: (x, t, S) => S.crate && S.crate.up && Math.abs(x - S.crate.x) < 46 ? GROUND - 80 : GROUND,
+    lineAt: () => GROUND,
+    captions: [
+      [5.6, 6.8, 'my *kite!*'],
+      [10.8, 12.0, 'need a hand?', null, { pitch: 1.3 }],
+      [12.4, 13.8, "no no, i've *got it!*"],
+      [17.4, 18.4, 'so close...'],
+      [19.4, 20.6, 'we can help!', null, { pitch: 1.15 }],
+      [20.8, 21.8, "i'm *fine.*"],
+      [ASK, ASK + 1.6, '...could you help me?', null, { pitch: .92, g: .8 }],
+      [25.6, 26.6, '*of course!*', null, { pitch: 1.25 }],
+      [31.6, 39.0, "asking for help isn't weak. *it's how we reach higher.*"],
+    ],
+    init(S) {
+      S.pink = S.addChar({ x: 1900, face: -1, hair: 'curl', blush: PAL.pink, fill: '#ffe9f2', gain: .5 });
+      S.blue = S.addChar({ x: 2100, face: -1, hair: 'antenna', hairColor: PAL.blue, fill: '#e6f0ff', gain: .5 });
+      S.bo = S.addChar({ x: 0, walk: V }); S.focus = S.bo;
+      S.kite = null; S.kv = { x: 0, y: 0 }; S.mode = 'fly'; S.crate = { x: CRATE0, up: false, tip: { x: 0, v: 0 } }; S.flap = 0; S.climb = [];
+    },
+    update(S, t, dt) {
+      const bo = S.bo, c = bo.cmd, pink = S.pink, blue = S.blue;
+      S.plan(bo, t, [
+        [0, { x: 760, speed: V, accel: 450, lookX: -.3, lookY: -.6, eye: 'happy' }],
+        [GUST, { eye: 'wide', lookY: -.8 }],
+        [SNAP, () => { S.sfx('pop', { pitch: 500 }, bo.x); S.sfx('gasp', {}, bo.x); }],
+        [5.4, { x: UNDER, speed: 300, accel: 1100, eye: 'open', lookX: .3, lookY: -1 }],
+        [6.9, { crouch: .2 }], [7.15, { crouch: 0 }], [7.15, () => bo.jump(0, -540)],
+        [8.1, { crouch: .24 }], [8.35, { crouch: 0 }], [8.35, () => bo.jump(0, -640)],
+        [9.3, { crouch: .28 }], [9.55, { crouch: 0 }], [9.55, () => { bo.jump(0, -720); S.sfx('slip', {}, bo.x); }],
+        [10.6, { face: 1, lookX: .7, lookY: 0 }],
+        [12.3, { eye: 'happy' }], [12.6, { face: -1 }], [12.9, { face: 1 }], [13.2, { face: -1, eye: 'open' }],   // "no no!"
+        [13.8, { x: CRATE0 - 80, speed: 220, accel: 700 }],
+        [14.6, { face: 1, x: UNDER - 110, speed: 110, accel: 400 }],           // pushes the crate under the kite
+        [16.1, { crouch: .22 }], [16.35, { crouch: 0 }], [16.35, () => { bo.jump(230, -540); }],
+        [16.7, { x: UNDER, speed: 40 }],
+        [16.9, { crouch: .26, lookY: -1 }], [17.15, { crouch: 0 }], [17.15, () => bo.jump(0, -660)],
+        [18.2, () => { bo.jump(-260, -380); S.crate.tip.v -= 6; S.sfx('slip', {}, bo.x); }],   // wobbles off the crate
+        [18.3, { x: UNDER - 230, speed: 60 }],
+        [18.8, { sit: 1, eye: 'dizzy' }], [18.8, () => S.sfx('dizzy', {}, bo.x)],
+        [20.0, { eye: 'flat', lookX: .6 }],
+        [22.0, { sit: 0, eye: 'open' }], [22.3, { crouch: .2 }], [22.5, { crouch: 0 }], [22.5, () => bo.jump(0, -300)],   // one sad little hop
+        [23.0, { sit: 1, eye: 'sad', tilt: .1 }], [23.0, () => S.sfx('breathOut', { d: 1.4 }, bo.x)],
+        [ASK, { face: 1, lookX: .8, lookY: .2, eye: 'open', tilt: 0 }],
+        [25.6, { eye: 'happy', sit: 0 }],
+        [BUILD + 1.2, { x: UNDER - 60, speed: 120, accel: 400 }],
+        [TUMBLE + 1.2, { eye: 'happy', lookY: -.6, lookX: -.3 }],
+        [LEAVE, { x: 1e6, speed: V, accel: 450, eye: 'happy', lookX: -.3, lookY: -.6 }],
+      ]);
+      S.plan(pink, t, [
+        [10.0, { x: UNDER + 170, speed: 150, accel: 400, face: -1 }],
+        [10.8, { eye: 'happy' }], [13.8, { eye: 'sad' }], [16.4, { eye: 'open', lookY: -.8 }], [18.5, { eye: 'wide', lookY: 0 }],
+        [25.6, { eye: 'happy' }], [BUILD, { x: UNDER + 100, speed: 160, accel: 500 }],
+        [BUILD + .5, { crouch: .2 }], [BUILD + .75, { crouch: 0, x: S.crate.x }], [BUILD + .75, () => pink.jump(-240, -560)],   // onto the crate
+        [TUMBLE + 1.6, { eye: 'happy' }],
+      ]);
+      S.plan(blue, t, [
+        [18.4, { x: UNDER + 290, speed: 200, accel: 500, face: -1 }],
+        [19.4, { eye: 'happy' }], [20.8, { eye: 'sad' }],
+        [25.6, { eye: 'happy' }], [BUILD + .2, { x: UNDER + 120, speed: 160, accel: 500 }],
+        [TUMBLE + 1.6, { eye: 'happy' }],
+      ]);
+      // the crate: Bo nudges it along, it's a step to stand on; it tips when Bo falls off
+      const cr = S.crate;
+      if (t > 14.6 && t < 16.0 && bo.x > cr.x - 120) cr.x = Math.max(cr.x, bo.x + 100);
+      if (t > 14.6 && t < 16.0) { S.roll = (S.roll ?? 0) + dt; if (S.roll > .18 && Math.abs(bo.vx) > 20) { S.roll = 0; S.sfx('roll', { v: .6 }, cr.x); } }
+      cr.up = (t > 15.9 && t < 18.4) || (t > BUILD + .7 && t < TUMBLE + .12);
+      spring(cr.tip, 0, 60, .3, dt);
+      if (t > 16.5) S.once('crateLand', () => S.sfx('tock', { f: 420 }, cr.x));
+
+      // the tower: pink stands under the kite, blue climbs onto pink's head, Bo climbs onto blue's
+      const onHead = (who, base, t0) => {
+        const top = base.top(), u = clamp((t - t0) / .5), hx = top.x, hy = top.y - STAND + 10;
+        if (u < 1 && !who.towered) { const fx = who.towerFrom ??= { x: who.x, y: who.y }; who.hold(lerp(fx.x, hx, sine(u)), lerp(fx.y, hy, sine(u)) - Math.sin(Math.PI * u) * 120); }
+        else { who.towered = true; who.hold(hx, hy); }
+        who.heldFeet = i => ({ x: who.hx + (i ? 11 : -11), y: top.y + 6, rot: 0 });
+      };
+      if (t > BUILD + 1.3 && t < TUMBLE) { onHead(blue, pink, BUILD + 1.3); if (t > BUILD + .9) S.once('climb1', () => S.sfx('toss', { pitch: 360 }, UNDER)); }
+      if (t > BUILD + 2.0 && t < TUMBLE) { onHead(bo, blue, BUILD + 2.0); if (t > BUILD + 1.7) S.once('climb2', () => S.sfx('toss', { pitch: 430 }, UNDER)); }
+      if (t > BUILD + 2.4 && t < TUMBLE) [pink, blue, bo].forEach((m, i) => { m.cmd.tilt = Math.sin(t * 5 + i) * .05 * (i + 1); });
+      if (t >= TUMBLE) S.once('tumble', () => {
+        blue.release(220, -420); bo.release(-160, -520); [blue, bo].forEach(m => { m.towerFrom = null; m.towered = false; m.heldFeet = null; });
+        [pink, blue, bo].forEach(m => m.cmd.tilt = 0); pink.jump(170, -420);
+        S.sfx('laugh', { n: 4 }, bo.x); S.sfx('laugh', { n: 3, k: 1.3 }, pink.x); S.sfx('laugh', { n: 3, k: 1.15 }, blue.x);
+      });
+      if (t > TUMBLE + .3) { blue.cmd.x = UNDER + 240; pink.cmd.x = UNDER + 120; }
+
+      // the kite: flies behind Bo on a string tied to its tuft; the gust drops it in the tree
+      const T = bo.tuft;
+      if (T) {
+        const fly = { x: T.x - 170 + Math.sin(t * 1.3) * 18, y: T.y - 240 + Math.sin(t * 1.9) * 14 };
+        if (!S.kite) S.kite = { ...fly };
+        let tgt = fly;
+        if (t > GUST && t < FREE) tgt = { x: BRANCH.x + Math.sin(t * 6) * 3, y: BRANCH.y + Math.sin(t * 7) * 2 };
+        const k = t > GUST && t < SNAP + .4 ? 3.2 : t > FREE && t < FREE + 1.2 ? 2 : 5;
+        S.kite.x += (tgt.x - S.kite.x) * Math.min(1, dt * k); S.kite.y += (tgt.y - S.kite.y) * Math.min(1, dt * k);
+      }
+      if (t > FREE) S.once('free', () => { S.sfx('catch', { pitch: 640 }, bo.x); S.sfx('arp', { notes: [0, 2, 4, 7, 9] }); S.sfx('sparkle', { n: 9 }, BRANCH.x); });
+      if (t > BUILD + 3.6 && t < FREE) bo.cmd.lookY = -1;
+      S.flap += dt; if (S.flap > .55 && (t < GUST || t > FREE + .4)) { S.flap = 0; S.sfx('flap', {}); }
+      if (t > GUST) S.once('gust', () => S.sfx('windbed', { d: 2.4, g: 1.6 }));
+      S.once('amb', () => { S.sfx('birds', { d: LOOP, g: .8 }); S.sfx('windbed', { d: LOOP, g: .35 }); });
+
+      if (t > 4.4 && t < LEAVE + .4) { S.camGoal.x = UNDER + 20; S.camGoal.y = GROUND - 90; S.camGoal.z = t > BUILD && t < TUMBLE + .6 ? .74 : .82; S.camGoal.kx = 1.6; S.camGoal.kz = 1.2; }
+    },
+    drawSky(S, ctx, t, v) {
+      for (let i = 0; i < 3; i++) {
+        const W = v.right - v.left + 400, x = v.left - 200 + (1 - ((t / 40 + i / 3 + .7) % 1)) * W;
+        sprite(ctx, SPRITES.cloud, x, v.top + (v.bottom - v.top) * (.12 + i * .06), 9, { X: '#ebe8f4' });
+      }
+    },
+    drawBack(S, ctx, t) {
+      // the tree
+      ctx.lineWidth = 6; ctx.strokeStyle = '#111'; ctx.fillStyle = PAL.brown;
+      ctx.beginPath(); ctx.moveTo(TREE - 22, GROUND + 4); ctx.quadraticCurveTo(TREE - 30, GROUND - 160, TREE - 12, GROUND - 290); ctx.lineTo(TREE + 14, GROUND - 290); ctx.quadraticCurveTo(TREE + 26, GROUND - 160, TREE + 22, GROUND + 4); ctx.fill(); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(TREE + 8, GROUND - 230); ctx.lineTo(TREE + 90, GROUND - 300); ctx.stroke();
+      ctx.fillStyle = PAL.lime;
+      for (const [dx, dy, rx, ry] of [[-70, -360, 110, 80], [60, -380, 120, 86], [0, -440, 120, 80], [-20, -330, 130, 70]]) { ctx.beginPath(); ctx.ellipse(TREE + dx + S.J(dx) * .4, GROUND + dy, rx, ry, 0, 0, Math.PI * 2); ctx.fill(); ctx.stroke(); }
+      ctx.fillStyle = PAL.green; for (let i = 0; i < 9; i++) sprite(ctx, ['.X.', 'XXX'], TREE - 140 + hash(i) * 280, GROUND - 470 + hash(i + .5) * 170, 4, { X: PAL.green });
+      // the crate
+      const cr = S.crate; ctx.save(); ctx.translate(cr.x, GROUND); ctx.rotate(cr.tip.x * .06);
+      ctx.fillStyle = PAL.orange; ctx.lineWidth = 5; ctx.fillRect(-46, -80, 92, 80); ctx.strokeRect(-46, -80, 92, 80);
+      ctx.beginPath(); ctx.moveTo(-46, -80); ctx.lineTo(46, 0); ctx.moveTo(46, -80); ctx.lineTo(-46, 0); ctx.stroke(); ctx.restore();
+    },
+    drawFront(S, ctx, t) {
+      const bo = S.bo, T = bo.tuft, K = S.kite; if (!K) return;
+      // the string: tied to Bo's tuft, or snapped and dangling from the branch
+      ctx.strokeStyle = '#111'; ctx.lineWidth = 2.5;
+      const attached = t < SNAP || t > FREE;
+      if (attached && T) { ctx.beginPath(); ctx.moveTo(T.x, T.y); ctx.quadraticCurveTo((T.x + K.x) / 2 + 30, (T.y + K.y) / 2 + 60, K.x, K.y + 20); ctx.stroke(); }
+      else { const sw = Math.sin(t * 1.6) * 10; ctx.beginPath(); ctx.moveTo(K.x, K.y + 20); ctx.quadraticCurveTo(K.x - 10 + sw, (K.y + STRING_END.y) / 2, STRING_END.x + sw * 1.4, STRING_END.y); ctx.stroke(); }
+      // the tail of little bows
+      for (let i = 0; i < 4; i++) { const u = (i + 1) / 5, x = K.x + 8 + i * 14 + Math.sin(t * 5 + i) * 6, y = K.y + 26 + i * 18; sprite(ctx, ['X.X', '.X.', 'X.X'], x, y, 3, { X: [PAL.red, PAL.yellow, PAL.sky, PAL.pink][i] }); }
+      ctx.save(); ctx.translate(K.x, K.y); ctx.rotate(Math.sin(t * 2.2) * .12 + (t > GUST && t < SNAP + .3 ? .8 : 0)); sprite(ctx, KITE, 0, 0, 8, { X: PAL.red, Y: PAL.yellow }); ctx.restore();
+      if (t > FREE && t < FREE + 1) for (let i = 0; i < 5; i++) { const a = i / 5 * Math.PI * 2 + t * 4; sprite(ctx, SPRITES.sparkle, K.x + Math.cos(a) * 60, K.y + Math.sin(a) * 50, 3, { X: PAL.yellow }, 1 - (t - FREE)); }
+    },
+  });
+})();

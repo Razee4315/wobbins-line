@@ -1,8 +1,10 @@
 /* sfx.js — synthesized sound effects for the line shorts.
    Everything is built from soft sine/triangle tones and filtered noise with gentle
    envelopes, a little shared reverb and a soft compressor, so it stays clean
-   (no hiss, no harsh edges). The same code plays live in an AudioContext and
-   renders offline into an OfflineAudioContext for the MP4 soundtrack. */
+   (no hiss, no harsh edges). The master bus is warmed with a low-pass and a high
+   shelf cut, attacks never start instantly (no clicks), and quiet ambience beds
+   (room, birds, night, rain) sit underneath. The same code plays live in an
+   AudioContext and renders offline into an OfflineAudioContext for the MP4 soundtrack. */
 (function () {
   const hash = n => { const s = Math.sin(n * 91.7 + 17.3) * 43758.5453; return s - Math.floor(s); };
   // C major pentatonic, C5 upwards
@@ -24,11 +26,14 @@
     }
     const master = ctx.createGain(); master.gain.value = 1.5;
     const hp = ctx.createBiquadFilter(); hp.type = 'highpass'; hp.frequency.value = 32;
+    // warmth: nothing sharp above ~6 kHz, and a gentle dip in the bright, tiring range
+    const warm = ctx.createBiquadFilter(); warm.type = 'lowpass'; warm.frequency.value = 6200; warm.Q.value = .5;
+    const shelf = ctx.createBiquadFilter(); shelf.type = 'highshelf'; shelf.frequency.value = 3200; shelf.gain.value = -4;
     const comp = ctx.createDynamicsCompressor();
-    comp.threshold.value = -18; comp.knee.value = 10; comp.ratio.value = 3; comp.attack.value = .004; comp.release.value = .25;
+    comp.threshold.value = -20; comp.knee.value = 14; comp.ratio.value = 2.6; comp.attack.value = .006; comp.release.value = .3;
     const verb = ctx.createConvolver(); verb.buffer = ir;
-    const verbOut = ctx.createGain(); verbOut.gain.value = .5;
-    master.connect(hp); verb.connect(verbOut).connect(hp); hp.connect(comp).connect(ctx.destination);
+    const verbOut = ctx.createGain(); verbOut.gain.value = .55;
+    master.connect(hp); verb.connect(verbOut).connect(hp); hp.connect(warm).connect(shelf).connect(comp).connect(ctx.destination);
     b = { master, verb, white, brown };
     banks.set(ctx, b); return b;
   }
@@ -47,6 +52,7 @@
     param.exponentialRampToValueAtTime(.0001, t + a + d);
   }
   function tone(ctx, out, { type = 'sine', f, f2, t, a = .003, d = .2, g = .3, glide, vib = 0, vibRate = 7 }) {
+    a = Math.max(a, .007);                       // never an instant attack: that's the click that sounds "digital"
     const o = ctx.createOscillator(); o.type = type;
     o.frequency.setValueAtTime(f, t);
     if (f2) o.frequency.exponentialRampToValueAtTime(f2, t + (glide ?? a + d));
@@ -58,6 +64,7 @@
     o.connect(e).connect(out); o.start(t); o.stop(t + a + d + .05);
   }
   function noise(ctx, out, { t, a = .002, d = .1, g = .2, type = 'lowpass', f = 1000, f2, q = .7, brown = false, seed = 0 }) {
+    a = Math.max(a, .005);
     const B = bank(ctx), s = ctx.createBufferSource(); s.buffer = brown ? B.brown : B.white;
     const fl = ctx.createBiquadFilter(); fl.type = type; fl.Q.value = q;
     fl.frequency.setValueAtTime(f, t);
@@ -66,10 +73,11 @@
     s.connect(fl).connect(e).connect(out);
     s.start(t, hash(seed + t) * 2, a + d + .05);
   }
+  // a soft glass bell: the upper partials are kept quiet and short so it rings, not pings
   const bell = (ctx, out, t, f, g, d = 1.3) => {
-    tone(ctx, out, { f, t, d, g });
-    tone(ctx, out, { f: f * 2.76, t, d: d * .6, g: g * .32 });
-    tone(ctx, out, { f: f * 5.4, t, d: d * .3, g: g * .12 });
+    tone(ctx, out, { f, t, a: .012, d, g });
+    tone(ctx, out, { f: f * 2.76, t, a: .01, d: d * .45, g: g * .2 });
+    tone(ctx, out, { f: f * 4.2, t, a: .01, d: d * .18, g: g * .05 });
   };
   const marimba = (ctx, out, t, f, g) => {
     tone(ctx, out, { f, t, d: .9, g });
@@ -96,17 +104,17 @@
       if (v > .55) S.boing(c, o, t + .05, { pitch: 170, g: .07 * v });
     },
     skid: (c, o, t) => noise(c, o, { t, a: .01, d: .12, g: .05, type: 'bandpass', f: 1500, f2: 600, q: .8 }),
-    tap: (c, o, t, p) => {                      // glassy screen tap
+    tap: (c, o, t, p) => {                      // soft screen tap
       const dull = p.dull ?? 0;
-      tone(c, o, { f: 2300 - 1000 * dull, f2: 1800 - 800 * dull, t, d: .045, g: .09 - .03 * dull });
-      noise(c, o, { t, d: .015, g: .03, type: 'highpass', f: 3200 });
+      tone(c, o, { f: 1500 - 600 * dull, f2: 1200 - 500 * dull, t, d: .05, g: .075 - .025 * dull });
+      noise(c, o, { t, d: .02, g: .02, type: 'bandpass', f: 2200, q: 1.2 });
     },
     pop: (c, o, t, p) => {                      // bubbly blip
       const f = p.pitch ?? 620, dull = p.dull ?? 0;
       tone(c, o, { f: f * (1 - .35 * dull), f2: f * (2.1 - dull), t, d: .09, g: (p.g ?? .15) * (1 - .5 * dull), glide: .05 });
     },
     ding: (c, o, t, p) => bell(c, o, t, p.pitch ?? 1568, p.g ?? .13),
-    twinkle: (c, o, t, p) => { const f = p.pitch ?? 2093; bell(c, o, t, f, .05, .5); bell(c, o, t + .08, f * 1.5, .04, .5); },
+    twinkle: (c, o, t, p) => { const f = Math.min(p.pitch ?? 1568, 1760); bell(c, o, t, f, .045, .6); bell(c, o, t + .09, f * 1.5, .03, .6); },
     beep: (c, o, t, p) => tone(c, o, { type: 'triangle', f: p.pitch ?? 880, t, a: .005, d: .13, g: .06 }),
     powerDown: (c, o, t) => {
       tone(c, o, { type: 'triangle', f: 720, f2: 60, t, a: .01, d: .95, g: .1, glide: .9 });
@@ -131,27 +139,27 @@
       tone(c, o, { f: 420, f2: 300, t: t + .22, a: .01, d: .3, g: .06 });
     },
     rumble: (c, o, t, p) => noise(c, o, { t, a: .4, d: p.d ?? 1.3, g: .2, f: 120, f2: 70, brown: true }),
-    dizzy: (c, o, t) => { for (let i = 0; i < 4; i++) tone(c, o, { f: [1760, 2093, 1760, 2349][i], t: t + i * .09, a: .005, d: .12, g: .03, vib: 40, vibRate: 22 }); },
+    dizzy: (c, o, t) => { for (let i = 0; i < 4; i++) tone(c, o, { f: [1318.5, 1568, 1318.5, 1760][i], t: t + i * .1, a: .01, d: .14, g: .026, vib: 30, vibRate: 18 }); },
     chime: (c, o, t, p) => marimba(c, o, t, p.f ?? PENTA[p.n ?? 0], p.g ?? .12),
     arp: (c, o, t, p) => (p.notes ?? [0, 2, 4, 5, 7]).forEach((n, i) => marimba(c, o, t + i * (p.gap ?? .07), PENTA[n], p.g ?? .09)),
     sparkle: (c, o, t, p) => { for (let i = 0; i < (p.n ?? 6); i++) bell(c, o, t + hash(i + t) * .5, PENTA[5 + Math.floor(hash(i * 3 + t) * 6)], .025, .45); },
     whoosh: (c, o, t, p) => { const d = p.d ?? .5; noise(c, o, { t, a: d * .45, d: d * .55, g: .06 * (p.v ?? 1), type: 'bandpass', f: 300, f2: 1700, q: .9 }); },
     whistle: (c, o, t, p) => { const d = p.d ?? .8; tone(c, o, { f: p.f ?? 900, f2: p.f2 ?? 1800, t, a: d * .35, d: d * .65, g: .025, glide: d, vib: 6, vibRate: 6 }); },
     brush: (c, o, t) => noise(c, o, { t, a: .09, d: .26, g: .035, type: 'bandpass', f: 1900, f2: 900, q: .7 }),
-    tick: (c, o, t, p) => {
-      const f = p.tock ? 2100 : 3100;
-      noise(c, o, { t, d: .018, g: .1, type: 'bandpass', f, q: 7 });
-      tone(c, o, { f, t, d: .014, g: .025 });
+    tick: (c, o, t, p) => {                     // a little wooden clock tick
+      const f = p.tock ? 1300 : 1800;
+      noise(c, o, { t, d: .02, g: .07, type: 'bandpass', f, q: 4 });
+      tone(c, o, { f: f * .5, t, d: .02, g: .02 });
     },
-    ring: (c, o, t) => tone(c, o, { f: 2637, t, a: .004, d: .22, g: .022, vib: 180, vibRate: 26 }),
+    ring: (c, o, t) => tone(c, o, { f: 1760, t, a: .01, d: .26, g: .02, vib: 90, vibRate: 20 }),
     wind: (c, o, t, p) => noise(c, o, { t, a: .06, d: .14, g: .05 * Math.min(1, p.v ?? .5), type: 'bandpass', f: 500 + 800 * (p.v ?? .5), q: .5, seed: t }),
     trip: (c, o, t) => {
       noise(c, o, { t, a: .005, d: .1, g: .1, type: 'bandpass', f: 1300, f2: 400, q: .8 });
       tone(c, o, { f: 600, f2: 980, t: t + .03, a: .02, d: .25, g: .05, glide: .2 });
     },
     shatter: (c, o, t) => {
-      for (let i = 0; i < 12; i++) tone(c, o, { f: 2400 + hash(i) * 2800, t: t + hash(i + .5) * .35, a: .002, d: .06 + hash(i + .2) * .22, g: .025 + hash(i + .7) * .03 });
-      noise(c, o, { t, d: .2, g: .06, type: 'highpass', f: 3800 });
+      for (let i = 0; i < 12; i++) tone(c, o, { f: 1700 + hash(i) * 1900, t: t + hash(i + .5) * .35, a: .004, d: .06 + hash(i + .2) * .22, g: .02 + hash(i + .7) * .022 });
+      noise(c, o, { t, d: .2, g: .045, type: 'bandpass', f: 2800, q: .8 });
       tone(c, o, { f: 180, f2: 70, t, d: .15, g: .12 });
     },
     heart: (c, o, t, p) => {                    // lub-dub
@@ -165,11 +173,12 @@
     poof: (c, o, t) => { noise(c, o, { t, d: .18, g: .05, f: 1600, f2: 400 }); tone(c, o, { f: 420, f2: 260, t, d: .1, g: .05 }); },
     chirp: (c, o, t, p) => {
       const k = p.k ?? 1;
-      tone(c, o, { f: 2500 * k, f2: 3700 * k, t, a: .004, d: .07, g: .045, glide: .05 });
-      tone(c, o, { f: 2900 * k, f2: 4200 * k, t: t + .1, a: .004, d: .08, g: .04, glide: .05 });
+      tone(c, o, { f: 2000 * k, f2: 2900 * k, t, a: .01, d: .08, g: .032, glide: .06 });
+      tone(c, o, { f: 2300 * k, f2: 3200 * k, t: t + .11, a: .01, d: .09, g: .028, glide: .06 });
     },
     flap: (c, o, t) => noise(c, o, { t, a: .01, d: .06, g: .03, type: 'bandpass', f: 900, q: 1 }),
-    blip: (c, o, t, p) => tone(c, o, { f: 1400 + (p.k ?? 0) % 5 * 60, t, a: .002, d: .028, g: .02 }),
+    // caption typing: a muted typewriter key, never the same twice
+    blip: (c, o, t, p) => { const k = p.k ?? 0; tone(c, o, { f: 760 + hash(k * 1.7) * 160, t, a: .006, d: .03, g: .011 }); noise(c, o, { t, d: .012, g: .006, type: 'bandpass', f: 1800 + hash(k) * 600, q: 1.5 }); },
     // ---- season 3 ----
     snore: (c, o, t) => { noise(c, o, { t, a: .5, d: .7, g: .05, type: 'bandpass', f: 320, f2: 190, q: .8, brown: true }); tone(c, o, { f: 92, f2: 80, t, a: .4, d: .6, g: .025 }); },
     dab: (c, o, t, p) => {                      // a soft paint dab: tiny pluck, a different note each time
@@ -209,9 +218,89 @@
     },
     splash: (c, o, t) => { noise(c, o, { t, d: .26, g: .12, f: 2400, f2: 380 }); tone(c, o, { f: 620, f2: 200, t, d: .12, g: .06 }); },
     flip: (c, o, t) => { noise(c, o, { t, d: .03, g: .045, type: 'bandpass', f: 2600, q: 2 }); tone(c, o, { f: 1200, t: t + .03, d: .02, g: .02 }); },
+    // ---- a voice: a soft murmured syllable, vowel from the letter, pitch per speaker ----
+    voice: (c, o, t, p) => {
+      const ch = (p.ch || 'a').toLowerCase(), k = p.k ?? 0;
+      const vow = 'aeiou'.includes(ch) ? ch : 'aeiouaeo'[(ch.charCodeAt(0) || 0) % 8];
+      const [f1, f2] = { a: [760, 1180], e: [470, 1700], i: [340, 2000], o: [500, 860], u: [370, 760] }[vow];
+      const wob = 1 + (hash(k * 1.31) - .5) * .14, rise = p.rise ? 1 + .22 * Math.min(1, p.rise) : 1;
+      const f0 = 236 * (p.pitch ?? 1) * wob * rise, d = p.last ? .13 : .075, g = .11 * (p.g ?? 1);
+      const osc = c.createOscillator(); osc.type = 'sawtooth';
+      osc.frequency.setValueAtTime(f0 * 1.05, t); osc.frequency.exponentialRampToValueAtTime(f0 * (p.last ? .86 : .97), t + d);
+      const soft = c.createBiquadFilter(); soft.type = 'lowpass'; soft.frequency.value = 2400; soft.Q.value = .4;
+      const e = c.createGain(); e.gain.setValueAtTime(.0001, t); e.gain.linearRampToValueAtTime(g, t + .016);
+      e.gain.setValueAtTime(g * .8, t + d * .6); e.gain.exponentialRampToValueAtTime(.0001, t + d + .03);
+      osc.connect(soft);
+      for (const [f, q, gg] of [[f1, 5, .7], [f2, 7, .32]]) { const bp = c.createBiquadFilter(); bp.type = 'bandpass'; bp.frequency.value = f; bp.Q.value = q; const bg = c.createGain(); bg.gain.value = gg; soft.connect(bp).connect(bg).connect(e); }
+      e.connect(o); osc.start(t); osc.stop(t + d + .06);
+    },
+    // ---- season 6/7: ambience beds, voices and props ----
+    // beds hold steady for p.d seconds (they loop with the film, so a bed can run the whole episode)
+    room: (c, o, t, p) => bed(c, o, { t, d: p.d ?? 10, g: .022 * (p.g ?? 1), f: p.f ?? 420, brown: true }),
+    birds: (c, o, t, p) => {                    // a soft morning: a far bed of air plus a few distant tweets
+      const d = p.d ?? 10; bed(c, o, { t, d, g: .012 * (p.g ?? 1), f: 1400, type: 'bandpass', q: .4 });
+      for (let i = 0, n = Math.floor(d / 1.9); i < n; i++) if (hash(i * 3.1 + t) > .45) S.tweet(c, o, t + i * 1.9 + hash(i + t) * 1.2, { k: .8 + hash(i * 5 + t) * .4, g: .5 * (p.g ?? 1) });
+    },
+    tweet: (c, o, t, p) => { const k = p.k ?? 1, g = .022 * (p.g ?? 1); tone(c, o, { f: 1900 * k, f2: 2500 * k, t, a: .015, d: .07, g, glide: .06 }); tone(c, o, { f: 2100 * k, f2: 1700 * k, t: t + .1, a: .015, d: .09, g: g * .8, glide: .08 }); },
+    night: (c, o, t, p) => {                    // crickets far away over a dark room tone
+      const d = p.d ?? 10; bed(c, o, { t, d, g: .03 * (p.g ?? 1), f: 300, brown: true });
+      for (let x = .3; x < d - .4; x += .62 + hash(x * 7 + t) * .3) for (let j = 0; j < 3; j++) tone(c, o, { f: 3300 + hash(x) * 200, t: t + x + j * .055, a: .008, d: .03, g: .006 * (p.g ?? 1) });
+    },
+    rainbed: (c, o, t, p) => bed(c, o, { t, d: p.d ?? 10, g: .05 * (p.g ?? 1), f: p.f ?? 1700, type: 'bandpass', q: .5 }),
+    windbed: (c, o, t, p) => bed(c, o, { t, d: p.d ?? 10, g: .04 * (p.g ?? 1), f: 520, type: 'bandpass', q: .6, brown: true, lfo: .18 }),
+    pad: (c, o, t, p) => {                      // a long, warm chord for the quiet emotional turn
+      const r = p.root ?? 261.63, d = p.d ?? 6, g = p.g ?? 1;
+      for (const [m, gg, det] of [[1, .032, -2], [1.5, .022, 3], [2, .018, -3], [2.5, .01, 2], [.5, .02, 0]]) {
+        const osc = c.createOscillator(), e = c.createGain(), lp = c.createBiquadFilter(); osc.type = 'triangle';
+        osc.frequency.value = r * m; osc.detune.value = det; lp.type = 'lowpass'; lp.frequency.value = 1400;
+        e.gain.setValueAtTime(.0001, t); e.gain.linearRampToValueAtTime(gg * g, t + Math.min(1.8, d * .3));
+        e.gain.setValueAtTime(gg * g, t + d * .6); e.gain.linearRampToValueAtTime(.0001, t + d);
+        osc.connect(lp).connect(e).connect(o); osc.start(t); osc.stop(t + d + .05);
+      }
+    },
+    pluck: (c, o, t, p) => {                    // a soft nylon-string pluck
+      const f = p.f ?? PENTA[p.n ?? 0] * (p.oct ?? .5), g = p.g ?? .1;
+      tone(c, o, { type: 'triangle', f, t, a: .006, d: .55, g });
+      tone(c, o, { f: f * 2, t, a: .006, d: .25, g: g * .3 });
+      noise(c, o, { t, d: .015, g: g * .12, type: 'bandpass', f: f * 3, q: 2 });
+    },
+    musicbox: (c, o, t, p) => (p.notes ?? [0, 2, 4, 2, 7]).forEach((n, i) => bell(c, o, t + i * (p.gap ?? .28), PENTA[n] * (p.oct ?? 1), p.g ?? .035, 1.1)),
+    hum: (c, o, t, p) => {                      // Bo humming a little tune: soft, breathy, sliding between notes
+      const notes = p.notes ?? [2, 4, 5, 4, 2], gap = p.gap ?? .32, g = p.g ?? .05;
+      notes.forEach((n, i) => {
+        const f = PENTA[n] * .5, f0 = i ? PENTA[notes[i - 1]] * .5 : f;
+        tone(c, o, { type: 'triangle', f: f0, f2: f, t: t + i * gap, a: .06, d: gap * 1.1, g, glide: .06, vib: 3, vibRate: 5.5 });
+      });
+    },
+    laugh: (c, o, t, p) => { const k = p.k ?? 1; for (let i = 0; i < (p.n ?? 3); i++) tone(c, o, { type: 'triangle', f: (560 - i * 30) * k, f2: (480 - i * 30) * k, t: t + i * .15, a: .015, d: .1, g: .045 * (p.g ?? 1), vib: 14, vibRate: 30 }); },
+    gasp: (c, o, t) => noise(c, o, { t, a: .06, d: .16, g: .06, type: 'bandpass', f: 900, f2: 1700, q: .7 }),
+    knock: (c, o, t, p) => { for (let i = 0; i < (p.n ?? 3); i++) { tone(c, o, { f: 190, f2: 120, t: t + i * .17, a: .006, d: .09, g: .16 }); noise(c, o, { t: t + i * .17, d: .03, g: .05, type: 'bandpass', f: 700, q: 1.2 }); } },
+    door: (c, o, t) => { tone(c, o, { f: 230, f2: 300, t, a: .2, d: .5, g: .025, vib: 20, vibRate: 11 }); S.knock(c, o, t + .6, { n: 1 }); },
+    jingle: (c, o, t, p) => { for (let i = 0; i < (p.n ?? 6); i++) bell(c, o, t + hash(i + t) * .3, 2200 + hash(i * 3 + t) * 900, .012, .35); },
+    zip: (c, o, t, p) => noise(c, o, { t, a: .02, d: p.d ?? .3, g: .045, type: 'bandpass', f: 900, f2: 2600, q: 2.2 }),
+    rustle: (c, o, t, p) => { for (let i = 0; i < (p.n ?? 3); i++) noise(c, o, { t: t + i * .07 + hash(i + t) * .04, a: .01, d: .07, g: .03, type: 'bandpass', f: 1600 + hash(i * 2 + t) * 900, q: .8, seed: t + i }); },
+    creak: (c, o, t) => tone(c, o, { type: 'triangle', f: 210, f2: 170, t, a: .08, d: .4, g: .02, vib: 25, vibRate: 14 }),
+    baa: (c, o, t, p) => { const k = p.k ?? 1; tone(c, o, { type: 'triangle', f: 410 * k, f2: 350 * k, t, a: .04, d: .45, g: .04, vib: 22, vibRate: 8 }); tone(c, o, { f: 820 * k, f2: 700 * k, t, a: .04, d: .3, g: .01, vib: 22, vibRate: 8 }); },
+    umbrella: (c, o, t) => { noise(c, o, { t, a: .02, d: .18, g: .08, f: 500, f2: 1800 }); tone(c, o, { f: 140, f2: 90, t, d: .12, g: .07 }); },
+    bus: (c, o, t, p) => { bed(c, o, { t, d: p.d ?? 4, g: .06, f: 160, brown: true }); tone(c, o, { f: 55, t, a: .6, d: (p.d ?? 4) - .6, g: .03 }); },
+    hiss: (c, o, t) => noise(c, o, { t, a: .02, d: .35, g: .04, type: 'bandpass', f: 2400, q: .7 }),
+    honk: (c, o, t) => { tone(c, o, { type: 'triangle', f: 392, t, a: .02, d: .25, g: .05 }); tone(c, o, { type: 'triangle', f: 494, t, a: .02, d: .25, g: .035 }); },
+    bulb: (c, o, t) => { bell(c, o, t, 1318.5, .04, .9); bell(c, o, t + .08, 1975.5, .025, .9); },
+    toss: (c, o, t, p) => tone(c, o, { f: (p.pitch ?? 300), f2: (p.pitch ?? 300) * 1.6, t, a: .01, d: .1, g: .05, glide: .08 }),
+    catch: (c, o, t, p) => { tone(c, o, { f: (p.pitch ?? 520), t, a: .006, d: .06, g: .07 }); noise(c, o, { t, d: .02, g: .02, type: 'bandpass', f: 1200, q: 1 }); },
   };
+  // a held ambience bed: loops a noise buffer, fades in and out, optional slow wobble
+  function bed(ctx, out, { t, d, g, f, type = 'lowpass', q = .7, brown = false, lfo = 0 }) {
+    const B = bank(ctx), s = ctx.createBufferSource(); s.buffer = brown ? B.brown : B.white; s.loop = true;
+    const fl = ctx.createBiquadFilter(); fl.type = type; fl.frequency.value = f; fl.Q.value = q;
+    const e = ctx.createGain(), fade = Math.min(1.2, d * .25);
+    e.gain.setValueAtTime(.0001, t); e.gain.linearRampToValueAtTime(g, t + fade);
+    e.gain.setValueAtTime(g, t + d - fade); e.gain.linearRampToValueAtTime(.0001, t + d);
+    if (lfo) { const l = ctx.createOscillator(), lg = ctx.createGain(); l.frequency.value = lfo; lg.gain.value = f * .45; l.connect(lg).connect(fl.frequency); l.start(t); l.stop(t + d + .05); }
+    s.connect(fl).connect(e).connect(out); s.start(t, hash(t) * 2); s.stop(t + d + .05);
+  }
   // reverb send per sound
-  const SEND = { charge: .4, dab: .2, tock: .1, thump: .03, snore: .05, ding: .4, twinkle: .45, swell: .55, chime: .4, arp: .4, sparkle: .5, whistle: .45, chirp: .35, boing: .2, pop: .25, powerDown: .25, dizzy: .3, shatter: .3, blip: .1, step: .05, land: .07, roll: .03, heart: .02 };
+  const SEND = { voice: .12, room: 0, birds: .3, tweet: .35, night: .2, rainbed: .1, windbed: .1, pad: .5, pluck: .3, musicbox: .45, hum: .25, laugh: .2, gasp: .1, knock: .12, door: .15, jingle: .3, zip: .05, rustle: .08, creak: .1, baa: .2, umbrella: .1, bus: .05, hiss: .1, honk: .2, bulb: .4, toss: .15, catch: .1, charge: .4, dab: .2, tock: .1, thump: .03, snore: .05, ding: .4, twinkle: .45, swell: .55, chime: .4, arp: .4, sparkle: .5, whistle: .45, chirp: .35, boing: .2, pop: .25, powerDown: .25, dizzy: .3, shatter: .3, blip: .1, step: .05, land: .07, roll: .03, heart: .02 };
 
   function play(ctx, ev, when) {
     const fn = S[ev.name]; if (!fn) return;
