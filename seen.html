@@ -1,0 +1,163 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Seen</title>
+</head>
+<body>
+<script src="sfx.js?v=4"></script>
+<script src="engine2.js?v=4"></script>
+<script>
+// Bo sends a little paper plane. "Seen." Typing... and nothing. The worry grows, Bo paces,
+// imagines the worst, until the plane flies back with a heart. They were just busy.
+const { PAL, SPRITES, sprite, lerp, seg, sine, outBack, clamp, hash, spring, mix, GROUND } = Shorts;
+const V = 130, SPOT = 700, HEART_AT = 23.3;
+const PLANE = ['X.......', 'XXX.....', 'XXXXXX..', 'XXXXXXXX', 'XXXXXX..', 'XXX.....', 'X.......'];
+const MAIL = ['XXXXXXX', 'XX...XX', 'X.X.X.X', 'X..X..X', 'XXXXXXX'];
+const ICON = {
+  q: ['.XXX.', 'X...X', '....X', '...X.', '..X..', '.....', '..X..'],
+  bang: ['XX', 'XX', 'XX', 'XX', '..', 'XX'],
+  x: ['X...X', '.X.X.', '..X..', '.X.X.', 'X...X'],
+  frown: ['XX.XX', 'XX.XX', '.....', '.XXX.', 'X...X'],
+};
+const WORRIES = [[13.0, 'q', PAL.violet], [16.2, 'x', PAL.red], [16.6, 'q', PAL.orange], [17.6, 'frown', PAL.blue], [18.6, 'bang', PAL.red], [19.4, 'frown', PAL.pink], [20.0, 'q', PAL.violet]];
+const TYPING = [[10.2, 11.7], [15.0, 15.8], [21.6, 22.6]];
+const radius = t => (35 * outBack(seg(t, 12.4, 13)) + 40 * sine(seg(t, 15.9, 16.8)) + 55 * sine(seg(t, 17, 20.5))) * (1 - seg(t, HEART_AT + .1, HEART_AT + .35));
+const anxiety = t => t < 15.9 ? .3 : t < 17 ? .6 : 1;
+const typing = t => TYPING.some(([a, b]) => t >= a && t < b);
+
+Shorts.play({
+  title: 'Seen',
+  accent: PAL.blue,
+  loopAfter: 32.2,
+  captions: [
+    [6.8, 8.4, 'sent.'],
+    [9.3, 10.9, '*seen.*'],
+    [12.6, 14.4, '...nothing?'],
+    [16.2, 18.4, 'did I say something *wrong*?'],
+    [19.0, 21.0, 'they *hate* me.'],
+    [23.6, 25.6, '"sorry! was *busy.*"'],
+    [26.4, 31.6, 'not every silence is about *you.*'],
+  ],
+  init(S) {
+    S.bo = S.addChar({ x: 0, walk: V });
+    S.tc = { x: { x: 0, v: 0 }, y: { x: 0, v: 0 }, init: false };
+    S.scr = 0; S.beat = 0; S.type = 0;
+  },
+  update(S, t, dt) {
+    const bo = S.bo;
+    S.plan(bo, t, [
+      [0, { x: SPOT, speed: V, accel: 450 }],
+      [5.0, { lookX: .5, lookY: -.2 }],
+      [5.9, () => S.sfx('pop', { pitch: 720, g: .1 }, bo.x)],             // a little message
+      [6.3, { crouch: .2 }], [6.55, { crouch: 0 }], [6.55, () => bo.jump(0, -480)],
+      [6.75, () => S.sfx('plane', {}, bo.x)],
+      [7.2, { lookX: 1, lookY: -.3, eye: 'open' }], [7.6, { eye: 'happy' }],
+      [8.6, () => S.sfx('pop', { pitch: 980, g: .07 })],
+      [9.2, () => S.sfx('ding', { pitch: 1760, g: .08 })],
+      [10.3, { eye: 'wide', tilt: .1 }],                                   // typing!
+      [11.8, { eye: 'sad', tilt: 0 }], [11.8, () => S.sfx('drain', {})],
+      [13.6, { sit: 1, lookX: .9, lookY: -.3 }],
+      [15.1, { sit: 0, eye: 'wide', tilt: .1 }],                           // again!
+      [15.9, { eye: 'sad', tilt: 0 }], [15.9, () => S.sfx('drain', {})],
+      // pacing, faster and faster
+      [17.0, { face: -1, x: 600, speed: 140, accel: 600, lookX: 0, lookY: 0 }],
+      [18.0, { face: 1, x: 790, speed: 190 }],
+      [18.9, { face: -1, x: 600, speed: 240, eye: 'squeeze' }],
+      [19.7, { face: 1, x: 790, speed: 290 }],
+      [20.4, { face: -1, x: 690, speed: 300 }],
+      [21.0, { face: 1, sit: 1, eye: 'squeeze', tilt: .12 }],
+      [22.6, { eye: 'open', tilt: 0 }],
+      [HEART_AT + .2, { eye: 'wide', lookY: -1, lookX: 0 }],
+      [HEART_AT + .7, { eye: 'happy', sit: 0 }],
+      [24.2, { crouch: .3 }], [24.2, () => S.sfx('breathOut', { d: 1.1 }, bo.x)],   // phew
+      [24.9, { crouch: 0 }], [24.9, () => bo.jump(0, -480)],
+      [26.6, { x: 1e6, speed: V, accel: 450, eye: 'open', lookX: 0, lookY: 0, tilt: 0, face: 1 }],
+    ]);
+    if (t > 17 && t < 21) bo.cmd.tilt = .06 + .03 * Math.sin(t * 20);
+
+    // the reply: back it comes, lands on Bo's head and opens into a heart
+    if (t > HEART_AT) S.once('heart', () => {
+      S.sfx('ding', { pitch: 1568, g: .14 }, bo.x); S.sfx('sparkle', { n: 8 }, bo.x); S.sfx('swell', { root: 440 }); S.sfx('poof', {});
+      S.burst(S.tc.x.x, S.tc.y.x, 30, [PAL.pink, PAL.sky, PAL.yellow, '#fff'], { speed: 420, gravity: 500, size: 8, life: 1.2 });
+      S.shake(2);
+    });
+    // worry sounds: scribble scratch, a heartbeat at the worst
+    const R = radius(t), anx = anxiety(t);
+    if (t > 12.4 && t < HEART_AT && R > 5) { S.scr += dt; if (S.scr >= lerp(.3, .06, anx)) { S.scr = 0; S.sfx('scribble', { v: clamp(R / 130) }); } }
+    if (t > 18.6 && t < HEART_AT) { S.beat += dt; if (S.beat >= .6) { S.beat = 0; S.sfx('heart', { g: .24 * seg(t, 18.6, 19.6) }); } }
+    if (typing(t)) { S.type += dt; if (S.type >= .55) { S.type = 0; S.sfx('typing', {}); } } else S.type = .5;
+    WORRIES.forEach(([at], j) => { if (t >= at) S.once('w' + j, () => S.sfx('pop', { pitch: 380 + hash(j * 3) * 300, g: .09 })); });
+
+    const top = bo.top(), tx = top.x - 10 * bo.dir, ty = top.y - R - 60;
+    if (!S.tc.init) { S.tc.x.x = tx; S.tc.y.x = ty; S.tc.init = true; }
+    spring(S.tc.x, tx, 16, .45, dt); spring(S.tc.y, ty, 16, .45, dt);
+    if (t > 18.6 && t < HEART_AT) S.shake(.4);
+    if (t > 5 && t < 26.6) { S.camGoal.x = 715; S.camGoal.z = 1; S.camGoal.kx = 2.5; }
+    if (t > 16.5 && t < HEART_AT + 1) S.camGoal.y = GROUND - 90 * sine(seg(t, 16.5, 18.5)) * (1 - sine(seg(t, HEART_AT, HEART_AT + 1)));
+  },
+  drawSky(S, ctx, t, v) {
+    for (let i = 0; i < 3; i++) {
+      const W = v.right - v.left + 400, x = v.left - 200 + (1 - ((t / S.T + i / 3 + .7) % 1)) * W;
+      sprite(ctx, SPRITES.cloud, x, v.top + (v.bottom - v.top) * (.25 + i * .06), 9, { X: '#ebe8f4' });
+    }
+  },
+  drawFront(S, ctx, t, v) {
+    const bo = S.bo, top = bo.top();
+    // the message: an envelope that folds into a plane and flies off
+    if (t > 5.9 && t < 6.75) sprite(ctx, MAIL, top.x, top.y - 40, 5 * outBack(seg(t, 5.9, 6.2)), { X: PAL.sky });
+    if (t > 6.75 && t < 8.4) {
+      const u = (t - 6.75) / 1.65;
+      sprite(ctx, PLANE, top.x + u * u * 900 + 20, top.y - 40 - u * 260 + Math.sin(u * 9) * 12, 5, { X: PAL.sky });
+    }
+    // the other side: a little status bubble at the edge of the frame
+    const bk = outBack(seg(t, 8.6, 8.9)) * (1 - seg(t, 26, 26.6));
+    if (bk > 0) {
+      const bx = v.cx + Math.min(250, (v.right - v.left) * .32), by = GROUND - 330;
+      ctx.save(); ctx.translate(bx, by); ctx.scale(bk, bk);
+      ctx.fillStyle = '#fff'; ctx.lineWidth = 5; ctx.beginPath(); ctx.roundRect(-58, -32, 116, 64, 18); ctx.fill(); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(-20, 32); ctx.lineTo(-34, 50); ctx.lineTo(-4, 32); ctx.fill(); ctx.stroke();
+      ctx.fillStyle = '#fff'; ctx.fillRect(-18, 26, 12, 9);
+      if (t > HEART_AT) sprite(ctx, SPRITES.heart, 0, 0, 5.4 * outBack(seg(t, HEART_AT, HEART_AT + .3)), { X: PAL.pink });
+      else if (typing(t)) for (let i = 0; i < 3; i++) { ctx.fillStyle = PAL.dim; ctx.beginPath(); ctx.arc(-24 + i * 24, -Math.max(0, Math.sin(t * 10 - i * .9)) * 8, 7, 0, Math.PI * 2); ctx.fill(); }
+      else {
+        const seen = t > 9.2, col = seen ? PAL.sky : PAL.dim;
+        sprite(ctx, SPRITES.check, -8, 0, 6, { X: col }); if (seen) sprite(ctx, SPRITES.check, 12, 0, 6, { X: col });
+      }
+      ctx.restore();
+    }
+    // the reply plane flying back in
+    if (t > 22.2 && t < HEART_AT) {
+      const u = sine(seg(t, 22.2, HEART_AT)), bx = v.cx + 420;
+      sprite(ctx, PLANE.map(r => [...r].reverse().join('')), lerp(bx, top.x, u), lerp(GROUND - 380, top.y - 18, u) - Math.sin(Math.PI * u) * 80, 5, { X: PAL.pink });
+    }
+    if (t > HEART_AT && t < 28.5) {
+      const u = t - HEART_AT, k = outBack(clamp(u / .35));
+      sprite(ctx, SPRITES.heart, top.x, top.y - 40 - u * 45, 7 * k * (1 + .06 * Math.sin(u * 9)), { X: PAL.pink }, 1 - seg(t, 27.4, 28.5));
+    }
+
+    // the worry scribble, same family as What If
+    const R = radius(t), anx = anxiety(t), cx = S.tc.x.x, cy = S.tc.y.x;
+    if (R > 2) {
+      ctx.fillStyle = '#fff'; ctx.lineWidth = 4;
+      for (const [k, r] of [[.3, 6], [.6, 9]]) { ctx.beginPath(); ctx.arc(lerp(top.x, cx, k), lerp(top.y - 10, cy + R * .8, k), r, 0, Math.PI * 2); ctx.fill(); ctx.stroke(); }
+      const frame = Math.floor(t * (6 + 18 * anx)), M = 100;
+      ctx.strokeStyle = '#111'; ctx.lineWidth = 4; ctx.beginPath();
+      for (let i = 0; i <= M; i++) {
+        const u = i / M, a = u * Math.PI * 2 * 6 + hash(i) * 1.4, r = R * (.3 + .7 * hash(i * 3.1 + frame * 7.7));
+        const x = cx + Math.cos(a) * r * 1.2, y = cy + Math.sin(a * 1.04) * r * .85;
+        i ? ctx.lineTo(x, y) : ctx.moveTo(x, y);
+      }
+      ctx.stroke();
+      WORRIES.forEach(([at, kind, col], j) => {
+        const k = outBack(seg(t, at, at + .4)); if (k <= 0) return;
+        const ph = t * (.5 + anx * 2.2) + j * 2.4;
+        sprite(ctx, ICON[kind], cx + Math.cos(ph) * R * .55, cy + Math.sin(ph * 1.3) * R * .4, 4.4 * k, { X: col });
+      });
+    }
+  },
+});
+</script>
+</body>
+</html>

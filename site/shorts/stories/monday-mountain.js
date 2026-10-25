@@ -1,0 +1,109 @@
+/* monday-mountain: extracted from ../monday-mountain.html by scripts/sync-shorts.py. Do not edit here. */
+(function () {
+  const Shorts = Object.assign(Object.create(window.Shorts), { play: story => { (window.WL_STORIES ||= {})['monday-mountain'] = story; } });
+  // A huge stormy mountain looms over Bo, and the longer Bo stares the bigger it gets. Bo breathes
+  // and walks toward it, and up close it's just five small steps. The weekend is at the top.
+  const { PAL, SPRITES, sprite, lerp, seg, sine, outBack, clamp, hash, spring, mix, GROUND } = Shorts;
+  const V = 130, STEP0 = 1200, SW = 90, SH = 42, N = 5, TOP0 = STEP0 + N * SW, TOP1 = TOP0 + 180, TOPX = TOP0 + 95, END = TOP1 + N * SW;
+  const LIGHTNING = [6.2, 7.4, 8.1];
+  const height = x => x < STEP0 ? 0 : x < TOP0 ? (Math.floor((x - STEP0) / SW) + 1) * SH : x < TOP1 ? N * SH : x < END ? (N - Math.floor((x - TOP1) / SW) - 1) * SH : 0;
+  const TOP_T = 19.0;   // measured: Bo reaches the top
+
+  Shorts.play({
+    title: 'Monday Mountain',
+    accent: PAL.violet,
+    loopAfter: TOP_T + 11.2,
+    ground: x => GROUND - height(x),
+    captions: [
+      [4.8, 6.6, 'monday.'],
+      [7.4, 9.2, "it's *too big.*"],
+      [9.8, 11.4, 'breathe.'],
+      [12.2, 14.0, 'one step at a time.'],
+      [TOP_T + .3, TOP_T + 2.0, 'that was it?'],
+      [TOP_T + 2.6, TOP_T + 7.6, "it's never as big *up close.*"],
+    ],
+    init(S) { S.bo = S.addChar({ x: 0, walk: V }); S.up = -1; S.down = -1; S.topT = null; S.beat = 0; },
+    update(S, t, dt) {
+      const bo = S.bo, c = bo.cmd;
+      if (S.up < 0) S.plan(bo, t, [
+        [0, { x: 700, speed: V, accel: 450 }],
+        [3.4, { lookX: 1, lookY: -.5 }], [4.4, { eye: 'wide', lookY: -.9 }],
+        [5.2, { crouch: .1, tilt: -.12, eye: 'sad' }], [7.0, { eye: 'squeeze', crouch: .18 }],
+        [9.4, { eye: 'closed', crouch: 0, tilt: 0, lookY: 0 }],
+        [11.6, { eye: 'open', lookX: .8, lookY: -.3 }],
+        [12.0, () => S.up = 0],
+      ]);
+      if (t > 5.2 && t < 9.4) c.tilt = -.12 + .03 * Math.sin(t * 36);                          // trembling
+      if (t > 9.4 && t < 11.6) { const ph = (t - 9.4) / 2; c.crouch = -.06 * Math.sin(2 * Math.PI * ph); S.once('in', () => S.sfx('breathIn', { d: 1 }, bo.x)); if (ph > .5) S.once('out', () => S.sfx('breathOut', { d: 1 }, bo.x)); }
+
+      // climbing: walk to each step and hop up, a little note each time
+      if (S.up >= 0 && S.up < N) {
+        const edge = STEP0 + S.up * SW;
+        Object.assign(c, { x: edge - 58, speed: 110, accel: 400, eye: 'open', lookX: .4, lookY: -.3, tilt: 0, crouch: 0 });
+        if (bo.mode === 'ground' && Math.abs(bo.x - (edge - 58)) < 4) { bo.jump(260, -560); S.sfx('chime', { n: S.up * 2, g: .1 }, bo.x); S.up++; c.x = edge + 40; }
+      } else if (S.up === N && S.topT === null) {
+        Object.assign(c, { x: TOPX, speed: 120, eye: 'happy', lookX: 0, lookY: 0 });
+        if (bo.mode === 'ground' && Math.abs(bo.x - TOPX) < 4) {
+          S.topT = t; S.sfx('arp', { notes: [0, 2, 4, 5, 7, 9] }); S.sfx('sparkle', { n: 8 }, bo.x); S.sfx('swell', { root: 392 });
+          S.burst(TOPX, GROUND - N * SH - 120, 40, [PAL.red, PAL.orange, PAL.yellow, PAL.lime, PAL.sky, PAL.violet], { speed: 520, gravity: 700, size: 10, life: 1.8 });
+        }
+      }
+      if (S.topT !== null) {
+        const d = t - S.topT;
+        if (d < 2.6) { c.eye = d < 1 ? 'wide' : 'happy'; c.lookY = d < 1 ? -.4 : 0; if (d > 1.1) S.once('yay', () => bo.jump(0, -520)); }
+        else if (S.down < N) {
+          if (S.down < 0) S.down = 0;
+          const edge = TOP1 + S.down * SW;
+          Object.assign(c, { x: edge - 20, speed: 120, accel: 400, eye: 'open' });
+          if (bo.mode === 'ground' && Math.abs(bo.x - (edge - 20)) < 4) { bo.jump(220, -380); S.sfx('pop', { pitch: SFX.PENTA[8 - S.down] / 2, g: .08 }, bo.x); S.down++; c.x = edge + 60; }
+        } else Object.assign(c, { x: 1e6, speed: V, accel: 450, eye: 'open', lookX: 0, lookY: 0 });
+      }
+
+      // dread: heartbeat and thunder while the mountain looms
+      if (t > 4.8 && t < 9.4) { S.beat += dt; if (S.beat >= .6) { S.beat = 0; S.sfx('heart', { g: .22 }, bo.x); } }
+      LIGHTNING.forEach((a, i) => { if (t > a) S.once('bolt' + i, () => { S.sfx('rumble', { d: 1.2 }); S.sfx('crash', {}); S.shake(4); }); });
+      if (t > 2.6 && t < 12) { S.camGoal.x = 980; S.camGoal.y = GROUND - 170; S.camGoal.z = .8; S.camGoal.kx = 2; }
+    },
+    drawSky(S, ctx, t, v) {
+      // the mountain as Bo imagines it: far away, huge, stormy... until Bo walks up to it
+      const near = sine(clamp((S.bo.x - 760) / 380)), grow = sine(seg(t, 2.6, 8.5));
+      const Hm = lerp(260, 640, grow) * (1 - near), a = seg(t, 2.6, 3.6) * (1 - near);
+      if (a > .01) {
+        const mx = v.cx + (1750 - v.cx) * .35, px = 12;
+        ctx.globalAlpha = a; ctx.fillStyle = '#5b4f80';
+        for (let y = 0; y < Hm; y += px) { const w = (Hm - y) * .85; ctx.fillRect(Math.round((mx - w) / px) * px, GROUND - y - px, Math.round(w * 2 / px) * px, px + .5); }
+        ctx.fillStyle = '#e9e6f5';
+        for (let y = Hm * .78; y < Hm; y += px) { const w = (Hm - y) * .85; ctx.fillRect(Math.round((mx - w) / px) * px, GROUND - y - px, Math.round(w * 2 / px) * px, px + .5); }
+        ctx.fillStyle = '#6d6f7a';
+        for (const [ox, oy, r] of [[-70, 10, 40], [-20, -12, 52], [40, -4, 46], [80, 14, 30]]) { ctx.beginPath(); ctx.arc(mx + ox * (Hm / 500), GROUND - Hm - 30 + oy, r * (Hm / 500 + .3), 0, Math.PI * 2); ctx.fill(); }
+        LIGHTNING.forEach(l => {
+          if (t < l || t > l + .18) return;
+          ctx.fillStyle = PAL.yellow; let x = mx, y = GROUND - Hm - 20;
+          for (let k = 0; k < 7; k++) { ctx.fillRect(x, y, 12, 26); x += (k % 2 ? 14 : -14); y += 24; }
+        });
+        ctx.globalAlpha = 1;
+      }
+      for (let i = 0; i < 3; i++) {
+        const W = v.right - v.left + 400, x = v.left - 200 + (1 - ((t / S.T + i / 3 + .55) % 1)) * W;
+        sprite(ctx, SPRITES.cloud, x, v.top + (v.bottom - v.top) * (.25 + i * .06), 9, { X: '#ebe8f4' });
+      }
+    },
+    drawBack(S, ctx, t) {
+      // five small steps, one dot per day on each riser
+      ctx.fillStyle = '#f1eefb'; ctx.beginPath(); ctx.moveTo(STEP0, GROUND + 4);
+      for (let x = STEP0; x <= END; x += SW / 2) ctx.lineTo(x, GROUND - height(x) + 7), ctx.lineTo(x + SW / 2, GROUND - height(x) + 7);
+      ctx.lineTo(END, GROUND + 4); ctx.closePath(); ctx.fill();
+      for (let k = 0; k < N; k++) {
+        const x = STEP0 + k * SW, top = GROUND - (k + 1) * SH;
+        for (let d = 0; d <= k; d++) sprite(ctx, ['XX', 'XX'], x + 14 + d * 13, top + SH / 2 + 4, 4, { X: PAL.orange });
+      }
+      // the weekend at the top: a picnic blanket and a little sun
+      const k = outBack(clamp(S.topT !== null ? (t - S.topT) / .6 : 0));
+      for (let c = 0; c < 8; c++) { ctx.fillStyle = c % 2 ? '#fff' : PAL.red; ctx.fillRect(TOP0 + 110 + c * 9, GROUND - N * SH - 6, 9, 6); }
+      if (k > 0) {
+        ctx.fillStyle = PAL.yellow; const R = 34 * k, sx = TOPX + 40, sy = GROUND - N * SH - 190;
+        for (let y = -R; y < R; y += 7) { const w = Math.sqrt(Math.max(0, R * R - (y + 3.5) ** 2)); ctx.fillRect(sx - w, sy + y, w * 2, 7.5); }
+      }
+    },
+  });
+})();

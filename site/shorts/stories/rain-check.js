@@ -1,0 +1,136 @@
+/* rain-check: extracted from ../rain-check.html by scripts/sync-shorts.py. Do not edit here. */
+(function () {
+  const Shorts = Object.assign(Object.create(window.Shorts), { play: story => { (window.WL_STORIES ||= {})['rain-check'] = story; } });
+  // An invite floats down. Bo's tired; it flies back as a paper plane, and Bo curls up in the cozy
+  // chair. Night, distant party lights, and it gets a bit lonely. Next morning, another invite. Bo goes.
+  const { PAL, SPRITES, sprite, zzz, lerp, seg, sine, outBack, clamp, hash, spring, mix, GROUND } = Shorts;
+  const V = 130, SPOT = 760, CHAIR = 735, LAMP = 860, PARTY = [1480, 1590, 1700], POLE_A = 1420, POLE_B = 1760;
+  const MAIL = ['XXXXXXX', 'XX...XX', 'X.X.X.X', 'X..X..X', 'XXXXXXX'], HAT = ['...X...', '..XYX..', '.XYXYX.', 'XYXYXYX', 'XXXXXXX'];
+  const PLANE = ['X.......', 'XXX.....', 'XXXXXX..', 'XXXXXXXX', 'XXXXXX..', 'XXX.....', 'X.......'];
+  const ARRIVE = 27.5;    // measured: Bo reaches the party
+  const sky = t => ({ eve: sine(seg(t, 11, 14)) * (1 - sine(seg(t, 14, 15.5))) + Math.max(0, 1 - Math.abs(t - 19.9) / .8) * .8, nite: sine(seg(t, 13.5, 15.5)) * (1 - sine(seg(t, 19.2, 20.6))) });
+
+  Shorts.play({
+    title: 'Rain Check',
+    accent: PAL.orange,
+    loopAfter: ARRIVE + 14.0,
+    paperAt: t => { const s = sky(t); return mix(mix('#ffffff', '#ffe2c8', s.eve), '#d6d0f0', s.nite * .95); },
+    captions: [
+      [6.0, 7.8, 'a party invite!'],
+      [8.2, 9.8, '...maybe not.'],
+      [10.6, 12.2, 'ahh. *quiet.*'],
+      [14.0, 15.4, '...'],
+      [16.0, 17.8, 'kind of lonely.'],
+      [21.0, 22.4, 'again?'],
+      [22.6, 24.2, 'okay. *just this once.*'],
+      [ARRIVE + .6, ARRIVE + 2.4, '*oh.* this is nice.'],
+      [ARRIVE + 3.4, ARRIVE + 8.6, 'not every plan needs a rain check. *sometimes, go anyway.*'],
+    ],
+    init(S) {
+      const look = [{ hair: 'curl', blush: PAL.pink, fill: '#ffe9f2' }, { hair: 'antenna', hairColor: PAL.blue, fill: '#e6f0ff' }, { hairColor: PAL.orange, blush: '#ffb08a', fill: '#fff4d6' }];
+      S.friends = PARTY.map((x, i) => S.addChar({ x, face: -1, gain: .3, ...look[i] }));
+      S.bo = S.addChar({ x: 0, walk: V }); S.focus = S.bo;
+      S.beat = 0; S.beatN = 0; S.beatT0 = 0; S.snore = 1.2; S.cricket = 0; S.flap = 0; S.arrived = false;
+    },
+    update(S, t, dt) {
+      const bo = S.bo, c = bo.cmd;
+      S.plan(bo, t, [
+        [0, { x: SPOT, speed: V, accel: 450 }],
+        [4.8, { lookY: -1, lookX: .2 }],
+        [6.0, { eye: 'happy', lookY: -.6 }],
+        [7.0, { eye: 'flat', crouch: .1, tilt: .1, lookY: 0 }], [7.0, () => S.sfx('breathOut', { d: 1 }, bo.x)],
+        [9.0, { tilt: -.2 }], [9.0, () => S.sfx('plane', {}, bo.x)], [9.4, { tilt: 0, crouch: 0 }],
+        [10.0, { sit: 1.05, eye: 'happy', lookX: 0 }], [10.2, () => S.sfx('tock', { f: 1500 }, LAMP)],     // cozy
+        [13.0, { lookX: 1, lookY: -.1, eye: 'open' }],
+        [14.6, { eye: 'sad' }], [14.6, () => S.sfx('drain', {}, bo.x)],
+        [17.6, { eye: 'closed', tilt: .15, lookX: 0 }],
+        [20.6, { eye: 'open', tilt: 0, lookY: -1 }],
+        [21.4, { sit: 0, lookY: 0 }],
+        [21.6, { lookX: -1 }], [22.1, { lookX: 1, eye: 'open' }],
+        [22.8, { crouch: .2 }], [23.05, { crouch: 0, eye: 'happy' }], [23.05, () => bo.jump(0, -460)],
+        [23.6, { x: PARTY[0] - 168, speed: 150, accel: 400, lookX: 0 }],
+      ]);
+      if (!S.arrived && t > 23.6 && Math.abs(bo.x - (PARTY[0] - 168)) < 5) {
+        S.arrived = t; S.sfx('arp', { notes: [0, 2, 4, 7, 9] }); S.sfx('sparkle', { n: 8 }, bo.x);
+        S.burst(PARTY[1], GROUND - 200, 40, [PAL.red, PAL.orange, PAL.yellow, PAL.lime, PAL.sky, PAL.violet, PAL.pink], { speed: 520, gravity: 700, size: 10, life: 1.8 });
+        S.friends.forEach((f, i) => S.once('cheer' + i, () => f.jump(0, -440 - i * 20)));
+      }
+      if (S.arrived) {
+        const d = t - S.arrived;
+        if (d < 3.6) { c.eye = 'happy'; c.crouch = .14 * Math.max(0, 1 - (t - S.beatT0) / .18); }
+        else Object.assign(c, { x: 1e6, speed: V, accel: 450, eye: 'open', crouch: 0 });
+        if (d > 3.4) S.once('swell', () => S.sfx('swell', { root: 523.25 }));
+      }
+      // the party: dancing on the beat, faint at night, close and loud in the morning
+      const party = (t > 11.5 && t < 19.5) || t > 23.5;
+      S.beat += dt;
+      if (S.beat >= .5) {
+        S.beat = 0; S.beatN++; S.beatT0 = t;
+        if (party) { const near = clamp(1 - Math.abs(bo.x - PARTY[1]) / 1100); S.sfx('thump', { g: .1 + .7 * near * near }, PARTY[1]); }
+        if (party && t < 19.5 && S.beatN % 3 === 0) S.sfx('pop', { pitch: 900 + hash(S.beatN) * 500, g: .03 }, PARTY[1]);
+      }
+      S.friends.forEach((f, i) => { f.cmd.crouch = party ? .14 * Math.max(0, 1 - ((t - S.beatT0 + i * .1) % .5) / .2) : 0; f.cmd.eye = 'happy'; if (party && S.beatN % 4 === i && t - S.beatT0 < dt * 1.5) S.once('hop' + S.beatN, () => f.jump(0, -260)); });
+      // night sounds, snoring, morning birds, the second invite
+      if (sky(t).nite > .5) { S.cricket += dt; if (S.cricket > 2.4) { S.cricket = 0; S.sfx('chirp', { k: .62, gain: .35 }); } }
+      if (t > 17.8 && t < 20.4) { S.snore += dt; if (S.snore >= 1.7) { S.snore = 0; S.sfx('snore', {}, bo.x); } }
+      if (t > 20.2) S.once('morning', () => S.sfx('chirp', { k: 1.1 }));
+      [[5.6, 'pop'], [6.0, 'twinkle'], [21.0, 'pop'], [22.6, 'twinkle']].forEach(([a, n], i) => { if (t > a) S.once('env' + i, () => S.sfx(n, { pitch: 1760 }, bo.x)); });
+      if ((t > 4.6 && t < 5.6) || (t > 20.4 && t < 21)) { S.flap += dt; if (S.flap > .3) { S.flap = 0; S.sfx('flap', {}); } }
+
+      if (t > 5 && t < 13) { S.camGoal.x = 820; S.camGoal.z = .95; }
+      else if (t >= 13 && t < 23.6) { S.camGoal.x = 1060; S.camGoal.z = .72; S.camGoal.kx = 1.6; }
+    },
+    drawSky(S, ctx, t, v) {
+      const s = sky(t);
+      if (s.nite > .35) for (let i = 0; i < 24; i++) sprite(ctx, i % 4 ? SPRITES.dot : SPRITES.sparkle, v.left + hash(i) * (v.right - v.left), v.top + hash(i + .5) * (GROUND - v.top) * .7, i % 4 ? 3 : 2.2, { X: '#fff' }, (s.nite - .35) / .65);
+      for (let i = 0; i < 3; i++) {
+        const W = v.right - v.left + 400, x = v.left - 200 + (1 - ((t / S.T + i / 3 + .9) % 1)) * W;
+        sprite(ctx, SPRITES.cloud, x, v.top + (v.bottom - v.top) * (.25 + i * .06), 9, { X: mix('#ebe8f4', '#c6bfe6', s.nite) });
+      }
+    },
+    drawBack(S, ctx, t) {
+      const s = sky(t);
+      // the cozy corner: armchair and lamp (with its warm pool of light)
+      const lampOn = t > 10.2 && t < 20.6 && !(t > 15.5 && t < 15.9 && Math.floor(t * 14) % 2);
+      if (lampOn) { ctx.fillStyle = PAL.yellow; ctx.globalAlpha = .18 + .1 * s.nite; ctx.beginPath(); ctx.arc(LAMP, GROUND - 120, 120, 0, Math.PI * 2); ctx.fill(); ctx.globalAlpha = 1; }
+      ctx.fillStyle = PAL.violet; ctx.lineWidth = 5;
+      ctx.beginPath(); ctx.roundRect(CHAIR - 80, GROUND - 120, 40, 120, 10); ctx.fill(); ctx.stroke();
+      ctx.beginPath(); ctx.roundRect(CHAIR - 70, GROUND - 46, 150, 46, 10); ctx.fill(); ctx.stroke();
+      ctx.lineWidth = 5; ctx.beginPath(); ctx.moveTo(LAMP, GROUND + 2); ctx.lineTo(LAMP, GROUND - 150); ctx.stroke();
+      ctx.fillStyle = lampOn ? PAL.yellow : '#fff'; ctx.beginPath(); ctx.moveTo(LAMP - 28, GROUND - 130); ctx.lineTo(LAMP - 16, GROUND - 170); ctx.lineTo(LAMP + 16, GROUND - 170); ctx.lineTo(LAMP + 28, GROUND - 130); ctx.closePath(); ctx.fill(); ctx.stroke();
+      // the party: string lights (glowing at night) and balloons (in the morning)
+      ctx.lineWidth = 5;
+      for (const px of [POLE_A, POLE_B]) { ctx.beginPath(); ctx.moveTo(px, GROUND + 2); ctx.lineTo(px, GROUND - 220); ctx.stroke(); }
+      ctx.lineWidth = 3; ctx.beginPath();
+      for (let i = 0; i <= 24; i++) { const u = i / 24, x = lerp(POLE_A, POLE_B, u), y = GROUND - 216 + 50 * 4 * u * (1 - u); i ? ctx.lineTo(x, y) : ctx.moveTo(x, y); }
+      ctx.stroke();
+      const B = [PAL.red, PAL.yellow, PAL.lime, PAL.sky, PAL.pink, PAL.violet];
+      for (let i = 1; i < 11; i++) {
+        const u = i / 11, x = lerp(POLE_A, POLE_B, u), y = GROUND - 216 + 50 * 4 * u * (1 - u) + 10, on = (i + S.beatN) % 3 === 0;
+        if (s.nite > .2) { ctx.fillStyle = B[i % 6]; ctx.globalAlpha = .3 * s.nite * (on ? 1 : .5); ctx.beginPath(); ctx.arc(x, y, 18, 0, Math.PI * 2); ctx.fill(); ctx.globalAlpha = 1; }
+        sprite(ctx, ['XX', 'XX'], x, y, 5, { X: B[i % 6] });
+      }
+      const bk = outBack(seg(t, 20.6, 21.3));
+      if (bk > 0) for (const [bx, col, h] of [[POLE_A + 6, PAL.red, 280], [POLE_A + 20, PAL.yellow, 250], [POLE_B - 6, PAL.sky, 280], [POLE_B - 22, PAL.pink, 250]]) {
+        const by = GROUND - h * bk + Math.sin(t * 2 + bx) * 6;
+        ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(bx, GROUND - 180); ctx.lineTo(bx + Math.sin(t * 2 + bx) * 4, by + 26); ctx.stroke();
+        ctx.fillStyle = col; ctx.beginPath(); ctx.ellipse(bx, by, 20 * bk, 25 * bk, 0, 0, Math.PI * 2); ctx.fill();
+      }
+      for (let c = 0; c < 14; c++) { ctx.fillStyle = c % 2 ? '#fff' : PAL.red; ctx.fillRect(1470 + c * 12, GROUND - 5, 12, 5); }    // picnic blanket
+    },
+    drawFront(S, ctx, t) {
+      const bo = S.bo, top = bo.top();
+      // invite #1: floats down, opens, then flies back as a paper plane
+      const env = (t0, t1, open, gone) => {
+        if (t < t0 || t > gone) return;
+        const u = seg(t, t0, t1), x = lerp(top.x + 140, top.x, sine(u)) + Math.sin(u * 9) * 30 * (1 - u), y = lerp(top.y - 420, top.y - 24, sine(u));
+        if (t < open) sprite(ctx, MAIL, x, y, 5.4, { X: PAL.orange });
+        else { const k = outBack(seg(t, open, open + .3)); sprite(ctx, HAT, top.x, top.y - 60, 5 * k, { X: '#111', Y: PAL.yellow }); sprite(ctx, MAIL, top.x, top.y - 22, 5.4, { X: PAL.orange }); }
+      };
+      env(4.6, 5.6, 6.0, 9.0);
+      if (t > 9.0 && t < 10.4) { const u = (t - 9) / 1.4; sprite(ctx, PLANE, top.x + u * u * 800 + 20, top.y - 30 - u * 260, 5, { X: PAL.orange }); }
+      env(20.4, 21.0, 21.4, 22.6);
+      if (t > 17.8 && t < 20.4) zzz(ctx, top.x, top.y, t, seg(t, 17.8, 18.2) * (1 - seg(t, 20.1, 20.4)));
+    },
+  });
+})();

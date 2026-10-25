@@ -1,0 +1,196 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>The Hill</title>
+</head>
+<body>
+<script src="sfx.js?v=4"></script>
+<script src="engine2.js?v=4"></script>
+<script>
+// Bo pushes a ball up a hill. It rolls back. The hill gets bigger. Again.
+// The third time Bo makes it, and the other side turns out to be the fun part.
+const { PAL, SPRITES, sprite, lerp, seg, sine, outBack, clamp, hash, spring, GROUND, STAND } = Shorts;
+const V = 130, HX = 1300, HW = 560, R = 56, FLAG_X = 1400, G1 = 13.4, G2 = 26.6;
+const hillH = t => 130 + 100 * sine(seg(t, G1, G1 + 1.4)) + 110 * sine(seg(t, G2, G2 + 1.4));
+const prof = u => Math.abs(u) >= 1 ? 0 : sine(clamp((1 - Math.abs(u)) / .62));
+const GRASS = Array.from({ length: 22 }, (_, i) => 700 + i * 62 + hash(i) * 30);
+const BLOOMS = [[1150, PAL.pink], [1232, PAL.yellow], [1318, PAL.blue], [1470, PAL.pink], [1520, PAL.yellow]];
+
+function stepBall(S, t, dt) {
+  const b = S.ball, bo = S.bo, gs = (S.groundAt(b.x + 4) - S.groundAt(b.x - 4)) / 8;
+  const free = S.ride || S.free, fr = free ? .25 : Math.abs(gs) < .02 ? 2.4 : .35;
+  b.vx += (free ? 700 : 1400) * gs * dt + (S.ride ? 150 * dt : 0);
+  b.vx *= Math.exp(-fr * dt); b.x += b.vx * dt;
+  if (S.pushing) {
+    // keep the ball resting against Bo's leaning head: slide it along the ground until
+    // its edge just touches the nearest point of Bo's outline
+    const pts = bo.outline(), gap = bx => {
+      const cy = S.groundAt(bx) - R; let m = Infinity;
+      for (const p of pts) m = Math.min(m, Math.hypot(p.x - bx, p.y - cy));
+      return m - (R + 3);
+    };
+    let lo = bo.x, hi = bo.x + 74 + R * 2;
+    for (let i = 0; i < 18; i++) { const mid = (lo + hi) / 2; if (gap(mid) < 0) lo = mid; else hi = mid; }
+    const nx = (lo + hi) / 2; b.vx = (nx - b.x) / dt; b.x = nx;
+  }
+  b.over = !S.pushing && !free && b.vx < -60 ? clamp(1 - Math.abs(b.x - bo.x) / (R + 70)) : 0;
+  b.y = S.groundAt(b.x) - R - b.over * 64;
+  b.ang += (b.x - b.px) / R; b.px = b.x;
+}
+
+Shorts.play({
+  title: 'The Hill',
+  accent: PAL.red,
+  loopAfter: 52.6,
+  ground: (x, t) => GROUND - hillH(t) * prof((x - HX) / HW),
+  captions: [
+    [6.6, 8.8, 'push.'],
+    [11.8, 13.4, 'oof.'],
+    [19.3, 21.6, 'push *harder.*'],
+    [24.4, 26.2, 'ow.'],
+    [29.0, 31.4, 'one more time.'],
+    [37.6, 39.4, 'almost...'],
+    [41.0, 43.0, '*made it.*'],
+    [44.8, 47.2, 'whee!'],
+    [48.2, 52.4, 'every hill has *another side.*'],
+  ],
+  init(S) {
+    S.bo = S.addChar({ x: 0, walk: V });
+    S.ball = { x: 655, px: 655, y: 0, vx: 0, ang: 0, over: 0 };
+    S.pushing = false; S.ride = false; S.free = false; S.wantRide = false; S.rollClock = 0;
+  },
+  update(S, t, dt) {
+    const bo = S.bo, b = S.ball;
+    const push = on => () => { S.pushing = on; if (!on) bo.cmd.x = bo.x; };
+    S.plan(bo, t, [
+      [0, { x: 515, speed: V, accel: 450 }],
+      [4.4, { lookX: .8, lookY: .3 }],
+      [5.0, { lookY: -1, lookX: .6, tilt: -.12 }],                        // that's a big hill
+      [6.0, { lookY: 0, lookX: .5, tilt: 0, crouch: .12 }],
+      [6.3, { tilt: .32, eye: 'squeeze', x: 900, speed: 85, accel: 300 }], [6.3, push(true)],
+      [10.2, { speed: 30 }],
+      [11.4, { eye: 'wide', crouch: 0, tilt: -.05 }], [11.4, push(false)],
+      [12.6, { eye: 'dizzy' }],
+      [13.6, { eye: 'sad', lookY: -1, tilt: -.1 }],                       // ...and it grew
+      [14.8, { lookY: 0, tilt: 0, eye: 'open' }],
+      [18.8, { face: 1, crouch: .12 }],
+      [19.0, { tilt: .32, eye: 'squeeze', x: 900, speed: 105, accel: 300 }], [19.0, push(true)],
+      [22.4, { speed: 35 }],
+      [23.8, { eye: 'wide', crouch: 0, tilt: -.05 }], [23.8, push(false)],
+      [25.6, { eye: 'dizzy' }],
+      [26.8, { eye: 'sad' }],
+      [28.4, { eye: 'open', lookY: -1, lookX: .5 }],
+      [29.4, { eye: 'squeeze', crouch: .25, lookY: 0, lookX: 0 }],
+      [29.8, { crouch: 0 }], [29.8, () => bo.jump(0, -420)],             // fine. again.
+      [30.6, { eye: 'open' }],
+      [33.6, { face: 1, crouch: .12 }],
+      [34.0, { tilt: .34, eye: 'squeeze', x: 1150, speed: 120, accel: 300 }], [34.0, push(true)],
+      [37.3, { speed: 55 }],
+      [39.2, { speed: 150 }],
+      [40.4, { tilt: 0, crouch: 0 }], [40.4, push(false)],
+      [40.6, { eye: 'happy', crouch: .2 }],
+      [40.9, { crouch: 0 }], [40.9, () => bo.jump(0, -560)],
+      [41.0, () => S.burst(FLAG_X + 20, S.groundAt(FLAG_X) - 110, 46, [PAL.red, PAL.yellow, PAL.blue, PAL.pink, PAL.lime], { speed: 560, gravity: 700, size: 10, life: 1.8 })],
+      [42.4, { eye: 'open', lookX: 1, lookY: .1 }],
+      [43.1, { crouch: .2, eye: 'happy', lookX: .6, lookY: .3 }],
+      [43.4, { crouch: 0 }], [43.4, () => { bo.jump((b.x - bo.x) / .43, -560); S.wantRide = true; }],
+      // sound
+      [11.4, () => S.sfx('slip', {}, b.x)], [23.8, () => S.sfx('slip', {}, b.x)],
+      [12.5, () => S.sfx('boing', { pitch: 200 }, bo.x)], [12.6, () => S.sfx('dizzy', {}, bo.x)], [25.6, () => S.sfx('dizzy', {}, bo.x)],
+      [G1, () => S.sfx('rumble', { d: 1.3 })], [G2, () => S.sfx('rumble', { d: 1.3 })],
+      [40.9, () => S.sfx('arp', { notes: [0, 1, 2, 3, 4, 5], gap: .075 })],
+      [41.0, () => S.sfx('sparkle', { n: 9 }, FLAG_X)],
+      ...BLOOMS.map(([fx], i) => [41.25 + i * .12, () => S.sfx('pop', { pitch: SFX.PENTA[i + 3] / 2, g: .1 }, fx)]),
+    ]);
+    // walk back down to the ball, getting on its left side
+    for (const [t0, t1, key] of [[15.0, 18.8, 'f1'], [30.6, 33.6, 'f2']]) {
+      if (t < t0 || t >= t1) continue;
+      S.once(key, () => S[key] = b.x - 124);
+      const tx = S[key];
+      Object.assign(bo.cmd, { x: tx, speed: 170, accel: 500, tilt: 0, crouch: 0, eye: 'open', face: Math.abs(bo.x - tx) > 12 ? Math.sign(tx - bo.x) : 1 });
+    }
+    // straining near the top
+    if ((t > 10.2 && t < 11.4) || (t > 22.4 && t < 23.8) || (t > 37.3 && t < 39.2)) bo.cmd.tilt = .34 + .05 * Math.sin(t * 34);
+
+    stepBall(S, t, dt);
+    if (b.over > 0) { bo.cmd.crouch = Math.max(bo.cmd.crouch, .55 * b.over); bo.cmd.eye = 'squeeze'; }
+    if (b.over > .6) S.once('squish' + (t < 20 ? 1 : 2), () => S.sfx('squish', {}, bo.x));
+    if (t > 23.8 && b.over > .85) S.once('launch', () => { bo.jump(-300, -640, -10); S.sfx('whoosh', { d: .5 }, bo.x); });
+    // the ball's rumble follows its speed; wind while riding
+    S.rollClock = (S.rollClock || 0) + dt;
+    if (S.rollClock >= .085) {
+      S.rollClock = 0;
+      if (Math.abs(b.vx) > 6) S.sfx('roll', { v: clamp(Math.abs(b.vx) / 550) }, b.x);
+      if (S.ride) S.sfx('wind', { v: clamp(b.vx / 700) }, b.x);
+    }
+    if (t > G1 && t < G1 + 1.4 || t > G2 && t < G2 + 1.4) S.shake(1.2);
+
+    // hop on and ride it down the other side
+    if (S.wantRide && !S.ride && bo.mode === 'air' && bo.vy > 0 && bo.y >= b.y - R - STAND - 2) {
+      S.ride = true; S.wantRide = false; bo.q.v += 2.5; S.sfx('boing', { pitch: 260 }, bo.x);
+      S.catch = { t0: t, dx: bo.x - (b.x - 6), dy: bo.y - (b.y - R - STAND) };
+      bo.heldFeet = i => { const a = b.ang * 1.2 + i * Math.PI; return { x: b.x - 6 + Math.cos(a) * 16, y: b.y - R - Math.max(0, Math.sin(a)) * 12 }; };
+    }
+    if (S.ride) {
+      const settle = 1 - sine(clamp((t - S.catch.t0) / .22));            // ease from the catch into riding
+      bo.hold(b.x - 6 + S.catch.dx * settle, b.y - R - STAND + 2 * Math.sin(b.ang * 2.4) + S.catch.dy * settle);
+      bo.cmd.eye = 'happy';
+      if (b.x > 1930) S.once('hop', () => {
+        S.ride = false; S.free = true; bo.release(b.vx * .55, -620);
+        Object.assign(bo.cmd, { x: 1e6, speed: V, accel: 450, eye: 'happy', lookX: 0, lookY: 0, tilt: 0 });
+      });
+    }
+    if (S.fired.has('hop')) Object.assign(bo.cmd, { x: 1e6, speed: V, accel: 450, eye: t > 49.4 ? 'open' : 'happy' });
+
+    // camera: reveal the hill, pull back as it grows
+    if (t > 4.8 && t < 6.4) { S.camGoal.x = 900; S.camGoal.z = .85; S.camGoal.kx = 3; }
+    else if (t > 6.4 && t < 43.4) S.camGoal.z = t < G1 ? .92 : t < G2 ? .82 : t < 40.4 ? .74 : .9;
+  },
+  drawSky(S, ctx, t, v) {
+    for (let i = 0; i < 3; i++) {
+      const W = v.right - v.left + 400, x = v.left - 200 + (1 - ((t / S.T + i / 3 + .25) % 1)) * W;
+      sprite(ctx, SPRITES.cloud, x, v.top + (v.bottom - v.top) * (.25 + i * .06), 9, { X: '#ebe8f4' });
+    }
+  },
+  drawBack(S, ctx, t) {
+    // grass, bending away as the ball rolls through
+    ctx.strokeStyle = PAL.green; ctx.lineWidth = 4;
+    GRASS.forEach((gx, i) => {
+      const gy = S.groundAt(gx) + 2, d = gx - S.ball.x, push = Math.abs(d) < 70 ? Math.sign(d) * (1 - Math.abs(d) / 70) * .9 : 0;
+      for (let k = -1; k <= 1; k++) {
+        const a = k * .35 + Math.sin(t * 2 + i) * .1 + push, len = 12 + 5 * (k === 0);
+        ctx.beginPath(); ctx.moveTo(gx + k * 4, gy); ctx.lineTo(gx + k * 4 + Math.sin(a) * len, gy - Math.cos(a) * len); ctx.stroke();
+      }
+    });
+    // flowers pop up on the top once Bo gets there
+    BLOOMS.forEach(([fx, col], i) => {
+      const k = outBack(seg(t, 41.2 + i * .12, 41.7 + i * .12)); if (k <= 0) return;
+      const fy = S.groundAt(fx); ctx.strokeStyle = '#111'; ctx.lineWidth = 4;
+      ctx.beginPath(); ctx.moveTo(fx, fy + 2); ctx.lineTo(fx, fy - 26 * k); ctx.stroke();
+      sprite(ctx, ['.X.', 'XCX', '.X.'], fx, fy - 26 * k, 5 * k, { X: col, C: PAL.yellow === col ? PAL.orange : '#fff' });
+    });
+    // the flag
+    const fy = S.groundAt(FLAG_X); ctx.strokeStyle = '#111'; ctx.lineWidth = 5;
+    ctx.beginPath(); ctx.moveTo(FLAG_X, fy + 2); ctx.lineTo(FLAG_X, fy - 112); ctx.stroke();
+    ctx.fillStyle = PAL.yellow;
+    for (let c = 0; c < 6; c++) for (let r = 0; r < 4; r++) {
+      const wav = Math.sin(t * 6 - c * .8) * 3 * (c / 5) + (t > 41 ? Math.sin(t * 12 - c) * 2 : 0);
+      ctx.fillRect(FLAG_X + 2 + c * 7, fy - 110 + r * 7 + wav, 7.4, 7.4);
+    }
+  },
+  drawFront(S, ctx) {
+    const b = S.ball;
+    ctx.fillStyle = PAL.red; ctx.lineWidth = 6;
+    ctx.beginPath(); ctx.arc(b.x, b.y, R, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+    ctx.lineWidth = 4;
+    ctx.beginPath(); ctx.arc(b.x, b.y, R * .62, b.ang - .9, b.ang + .9); ctx.stroke();
+    ctx.beginPath(); ctx.arc(b.x, b.y, R * .62, b.ang + Math.PI - .9, b.ang + Math.PI + .9); ctx.stroke();
+    ctx.fillStyle = '#fff';
+    ctx.fillRect(b.x - 26, b.y - 30, 8, 8); ctx.fillRect(b.x - 18, b.y - 36, 8, 8);
+  },
+});
+</script>
+</body>
+</html>

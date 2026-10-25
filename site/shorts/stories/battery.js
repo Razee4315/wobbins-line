@@ -1,0 +1,169 @@
+/* battery: extracted from ../battery.html by scripts/sync-shorts.py. Do not edit here. */
+(function () {
+  const Shorts = Object.assign(Object.create(window.Shorts), { play: story => { (window.WL_STORIES ||= {})['battery'] = story; } });
+  // A party: lights, music, friends. Bo loves it, and Bo's little battery drains with every
+  // "hey!!". At 0% Bo slips away to a quiet tree and charges back up while the party plays on.
+  const { PAL, SPRITES, sprite, lerp, seg, sine, outBack, clamp, hash, spring, mix, GROUND } = Shorts;
+  const V = 130, POLE_A = 820, POLE_B = 1300, BOOM = 1090, TREE = 1720, SEAT = 1610;
+  const SPOTS = [940, 1040, 1140, 1240];
+  // battery level changes: [time, bars]
+  const LEVELS = [[0, 4], [9.9, 3], [12.6, 2], [15.2, 1], [17.4, 0], [25.6, 1], [26.8, 2], [28.0, 3], [29.2, 4]];
+  const level = t => LEVELS.filter(([a]) => t >= a).pop()[1];
+  // friends coming over to Bo: [friend, from, to, x]
+  const VISITS = [[0, 9.4, 10.9, 975], [1, 12.0, 13.4, 975], [2, 12.1, 13.4, 1080], [0, 14.6, 16.2, 975], [1, 14.6, 16.2, 1060], [2, 14.6, 16.2, 1140], [3, 14.6, 16.2, 1220], [0, 16.8, 17.8, 975]];
+  const BUBBLES = ['heart', 'note', 'bang'];
+  // the battery rides above Bo, swinging back with speed and bouncing with the squash
+  const batteryPos = bo => { const top = bo.top(); return { x: top.x - clamp(bo.vx * .07 + bo.axs * .012, -30, 30), y: top.y - 54 + clamp(bo.q.v * 3, -14, 14) }; };
+  const beatLen = t => t < 12 ? .5 : t < 15 ? .44 : t < 17.4 ? .38 : .5;
+
+  Shorts.play({
+    title: 'Battery',
+    accent: PAL.lime,
+    paper: '#f8f5ff',
+    loopAfter: 37.8,
+    captions: [
+      [1.4, 3.6, 'party tonight!'],
+      [7.4, 9.2, '*fun!*'],
+      [12.8, 14.4, 'still fun...'],
+      [15.4, 17.0, 'so. much. fun.'],
+      [17.6, 19.0, '*0%*'],
+      [24.8, 27.0, 'recharging...'],
+      [31.0, 36.2, "it's okay to need *quiet.*"],
+    ],
+    init(S) {
+      const look = [
+        { hair: 'curl', blush: PAL.pink, fill: '#ffe9f2' }, { hair: 'antenna', hairColor: PAL.blue, fill: '#e6f0ff' },
+        { hairColor: PAL.orange, blush: '#ffb08a', fill: '#fff4d6' }, { hair: 'curl', hairColor: PAL.green, fill: '#e3fbef' },
+      ];
+      S.friends = SPOTS.map((x, i) => S.addChar({ x, face: -1, gain: .3, ...look[i] }));
+      S.bo = S.addChar({ x: 0, walk: V }); S.focus = S.bo;
+      S.beat = 0; S.beatN = 0; S.beatT0 = 0; S.notes = []; S.bubble = []; S.lastLevel = 4; S.blink = 0; S.breath = 0;
+    },
+    update(S, t, dt) {
+      const bo = S.bo;
+      // the beat: a little faster as the night gets louder
+      S.beat += dt;
+      if (S.beat >= beatLen(t)) {
+        S.beat = 0; S.beatN++; S.beatT0 = t;
+        const near = clamp(1 - Math.abs(bo.x - BOOM) / 1100);
+        S.sfx('thump', { g: .15 + .85 * near * near }, BOOM);
+        S.notes.push({ t0: t, x: BOOM + (hash(S.beatN) - .5) * 40, c: [PAL.pink, PAL.sky, PAL.yellow, PAL.violet][S.beatN % 4] });
+      }
+      S.notes = S.notes.filter(n => t - n.t0 < 2);
+      const pulse = Math.max(0, 1 - (t - S.beatT0) / .18);
+
+      S.plan(bo, t, [
+        [0, { x: 830, speed: V, accel: 450 }],
+        [5.0, { lookX: .7, lookY: -.3, eye: 'happy' }],
+        [7.2, { crouch: .2 }], [7.45, { crouch: 0 }], [7.45, () => bo.jump(0, -520)],    // yay!
+        [8.2, { eye: 'happy', lookX: .6, lookY: 0 }],
+        [15.3, { eye: 'happy' }],
+        [17.4, { eye: 'flat', sit: .6, tilt: .16, lookX: 0 }],                   // empty
+        [18.6, { sit: 0, tilt: .08, x: SEAT, speed: 135, accel: 300, eye: 'flat' }],   // slipping away
+        [23.9, { sit: 1.1, tilt: .05, eye: 'closed', crouch: .05 }],
+        [29.4, { eye: 'open', crouch: 0 }], [29.8, { eye: 'happy', sit: 0, tilt: 0 }],
+        [30.2, { crouch: .2 }], [30.45, { crouch: 0 }], [30.45, () => bo.jump(0, -480)],
+        [31.0, { x: 1e6, speed: V, accel: 450, eye: 'open', lookX: 0, lookY: 0 }],
+      ]);
+      if (t > 7.8 && t < 15.2) bo.cmd.crouch = .14 * pulse;                    // dancing
+      if (t > 15.2 && t < 17.4) bo.cmd.tilt = .05 * Math.sin(t * 34);         // forced smile, shaking
+      if (t > 24.4 && t < 29.4) {                                            // slow breaths while charging
+        const ph = (t - 24.4) / 2.4; bo.cmd.crouch = .05 - .05 * Math.sin(2 * Math.PI * ph);
+        const n = Math.floor(ph); S.once('in' + n, () => S.sfx('breathIn', { d: 1.1 }, bo.x));
+        if (ph - n > .5) S.once('out' + n, () => S.sfx('breathOut', { d: 1.2 }, bo.x));
+      }
+
+      // friends dance on the beat, and keep coming over to say hi
+      S.friends.forEach((f, i) => {
+        const v = VISITS.filter(([w, a, b]) => w === i && t >= a && t < b).pop();
+        if (v) {
+          Object.assign(f.cmd, { x: v[3], speed: 260, accel: 900, face: -1, eye: 'happy', crouch: 0, tilt: 0 });
+          const k = `v${i}-${v[1]}`;
+          if (t > v[1] + .45 && Math.abs(f.x - v[3]) < 20) S.once(k, () => { f.jump(0, -380); S.sfx('pop', { pitch: 760 + i * 110, g: .1 }, f.x); S.bubble = S.bubble || []; S.bubble.push({ f: i, t0: t, kind: BUBBLES[(i + S.beatN) % 3] }); });
+          if (t > v[1] + 1.05 && Math.abs(f.x - v[3]) < 20) S.once(k + 'b', () => f.jump(0, -320));
+        } else {
+          Object.assign(f.cmd, { x: SPOTS[i], speed: 200, accel: 600, face: i % 2 ? 1 : -1, eye: 'happy' });
+          f.cmd.crouch = .16 * Math.max(0, 1 - ((t - S.beatT0 + i * .09) % beatLen(t)) / .2);
+          f.cmd.tilt = .1 * Math.sin(t * Math.PI * 2 / (beatLen(t) * 2) + i);
+          if (S.beatN % 4 === i && t - S.beatT0 < dt * 1.5 && t > 2) S.once('hop' + S.beatN, () => f.jump(0, -280));
+        }
+      });
+
+      // every lost bar is a little sad blip
+      const L = level(t);
+      if (L !== S.lastLevel) {
+        if (L < S.lastLevel) { S.sfx(L === 0 ? 'powerDown' : 'drain', {}, bo.x); if (L === 0) S.shake(2); }
+        else { S.sfx('charge', { n: L * 2 }, bo.x); { const B = batteryPos(bo); S.burst(B.x, B.y, 8, [PAL.lime, PAL.yellow, '#fff'], { speed: 200, gravity: 300, size: 6, life: .8 }); } }
+        S.lastLevel = L;
+      }
+      if (L === 1 && t < 20) { S.blink += dt; if (S.blink > .8) { S.blink = 0; S.sfx('beep', { pitch: 440 }, bo.x); } }
+      if (t > 29.2) S.once('full', () => { S.sfx('swell', { root: 523.25 }); S.sfx('sparkle', { n: 6 }, bo.x); });
+      if (t > 24.6) S.once('ff', () => S.sfx('twinkle', { pitch: 2093, gain: .6 }, TREE));
+
+      if (t > 5 && t < 18.6) { S.camGoal.x = 1040; S.camGoal.z = .9; S.camGoal.kx = 2.5; }
+      if (t > 23 && t < 31) { S.camGoal.x = 1520; S.camGoal.z = 1.05; S.camGoal.kx = 2; }
+    },
+    drawSky(S, ctx, t, v) {
+      const w = 2 * Math.PI * Math.round(S.T / Math.PI) / S.T;              // ~2 rad/s, a whole number of twinkles per loop
+      for (let i = 0; i < 22; i++) {
+        const x = v.left + hash(i) * (v.right - v.left), y = v.top + hash(i + .5) * (GROUND - v.top) * .6;
+        sprite(ctx, i % 5 ? SPRITES.dot : SPRITES.sparkle, x, y, i % 5 ? 2.6 : 2, { X: '#c9bff0' }, .5 + .5 * Math.sin(t * w + i * 1.7));
+      }
+    },
+    drawBack(S, ctx, t) {
+      const pulse = Math.max(0, 1 - (t - S.beatT0) / .2), hype = seg(t, 7, 16) * (1 - seg(t, 17.4, 19));
+      // poles + string lights, chasing with the beat
+      ctx.lineWidth = 5;
+      for (const px of [POLE_A, POLE_B]) { ctx.beginPath(); ctx.moveTo(px, GROUND + 2); ctx.lineTo(px, GROUND - 230); ctx.stroke(); }
+      ctx.lineWidth = 3; ctx.beginPath();
+      for (let i = 0; i <= 30; i++) { const u = i / 30, x = lerp(POLE_A, POLE_B, u), y = GROUND - 226 + 60 * 4 * u * (1 - u); i ? ctx.lineTo(x, y) : ctx.moveTo(x, y); }
+      ctx.stroke();
+      const BULBS = [PAL.red, PAL.yellow, PAL.lime, PAL.sky, PAL.pink, PAL.violet];
+      for (let i = 1; i < 14; i++) {
+        const u = i / 14, x = lerp(POLE_A, POLE_B, u), y = GROUND - 226 + 60 * 4 * u * (1 - u) + 10;
+        const on = (i + S.beatN) % 3 === 0 ? 1 : .45 + .2 * hype;
+        ctx.globalAlpha = .25 * on * (.5 + hype); ctx.fillStyle = BULBS[i % 6];
+        ctx.beginPath(); ctx.arc(x, y, 16 + 8 * pulse * on, 0, Math.PI * 2); ctx.fill();
+        ctx.globalAlpha = 1; sprite(ctx, ['XX', 'XX'], x, y, 5, { X: BULBS[i % 6] });
+      }
+      // boombox
+      const s = 1 + .08 * pulse;
+      ctx.save(); ctx.translate(BOOM, GROUND - 26); ctx.scale(s, s);
+      ctx.fillStyle = '#fff'; ctx.lineWidth = 5; ctx.beginPath(); ctx.roundRect(-38, -24, 76, 48, 6); ctx.fill(); ctx.stroke();
+      ctx.lineWidth = 4; for (const sx of [-18, 18]) { ctx.beginPath(); ctx.arc(sx, 4, 11 + 2 * pulse, 0, Math.PI * 2); ctx.stroke(); }
+      ctx.beginPath(); ctx.moveTo(-20, -24); ctx.lineTo(-14, -38); ctx.lineTo(14, -38); ctx.lineTo(20, -24); ctx.stroke();
+      ctx.restore();
+      for (const n of S.notes) {
+        const u = (t - n.t0) / 2;
+        sprite(ctx, SPRITES.note, n.x + Math.sin(u * 7 + n.x) * 30, GROUND - 70 - u * 230, 5, { X: n.c }, 1 - u);
+      }
+      // the quiet tree, with fireflies while Bo recharges
+      ctx.lineWidth = 6; ctx.beginPath(); ctx.moveTo(TREE, GROUND + 2); ctx.lineTo(TREE, GROUND - 210); ctx.stroke();
+      sprite(ctx, ['...XXXX...', '.XXXXXXXX.', 'XXXXXXXXXX', 'XXXXXXXXXX', '.XXXXXXXX.', '...XXXX...'], TREE - 30 + Math.sin(t * .8) * 2, GROUND - 260, 15, { X: PAL.green });
+      const ff = sine(seg(t, 24, 25.5)) * (1 - sine(seg(t, 30, 31.5)));
+      if (ff > 0) for (let i = 0; i < 7; i++) {
+        const x = TREE - 120 + hash(i) * 240 + Math.sin(t * .9 + i * 2) * 30, y = GROUND - 60 - hash(i + .3) * 160 + Math.cos(t * 1.3 + i) * 20;
+        sprite(ctx, SPRITES.dot, x, y, 3.5, { X: PAL.yellow }, ff * (.5 + .5 * Math.sin(t * 4 + i)));
+      }
+    },
+    drawFront(S, ctx, t) {
+      // speech bubbles from friends
+      for (const b of S.bubble || []) {
+        const u = (t - b.t0) / 1.1; if (u > 1) continue;
+        const f = S.friends[b.f], top = f.top(), k = outBack(clamp(u / .25)) * (1 - seg(u, .8, 1));
+        ctx.save(); ctx.translate(top.x - 10, top.y - 60); ctx.scale(k, k);
+        ctx.fillStyle = '#fff'; ctx.lineWidth = 4; ctx.beginPath(); ctx.roundRect(-24, -20, 48, 38, 10); ctx.fill(); ctx.stroke();
+        if (b.kind === 'heart') sprite(ctx, SPRITES.heart, 0, -1, 3.4, { X: PAL.pink });
+        else if (b.kind === 'note') sprite(ctx, SPRITES.note, 0, -1, 4.6, { X: PAL.violet });
+        else sprite(ctx, ['XX', 'XX', 'XX', '..', 'XX'], 0, -1, 4.4, { X: PAL.red });
+        ctx.restore();
+      }
+      // the battery
+      const L = level(t), blinkOff = L === 1 && t < 20 && Math.floor(t * 3) % 2;
+      const col = L >= 3 ? PAL.lime : L === 2 ? PAL.yellow : PAL.red, B = batteryPos(S.bo);
+      sprite(ctx, ['XXXXXXXXXXX.', 'X.........XX', 'X.........XX', 'X.........XX', 'XXXXXXXXXXX.'], B.x, B.y, 5, { X: '#111' });
+      ctx.fillStyle = col;
+      for (let i = 0; i < L; i++) if (!blinkOff) ctx.fillRect(B.x - 25 + i * 11 - 2, B.y - 7.5, 9, 15);
+    },
+  });
+})();

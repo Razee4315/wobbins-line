@@ -1,0 +1,112 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>The Cloud</title>
+</head>
+<body>
+<script src="engine.js"></script>
+<script>
+// A little rain cloud follows Bo everywhere. Nothing shakes it off.
+// When Bo finally sits still in the rain, something green comes up.
+const L = LineShort, { seg, outBack, hash, spring, GROUND, BODY_H } = L;
+const GREY = '#a7abb2', RAIN = '#7f94b0', GREEN = '#3aa655';
+const PUFFS = [[-62, 12, 30], [-28, -8, 40], [18, -18, 46], [58, 0, 36], [82, 18, 24], [0, 20, 36], [-40, 22, 28], [40, 22, 30]];
+
+L.play({
+  title: 'The Cloud',
+  T: 31,
+  init(S) {
+    S.bo = S.addChar({ x: -120 });
+    S.cloud = { x: { x: 1450, v: 0 }, y: { x: -160, v: 0 }, dodge: { x: 0, v: 0 } };
+    S.drops = []; S.splashes = []; S.dropN = 0; S.dropClock = 0; S.sproutX = 0;
+  },
+  update(S, t, dt) {
+    const bo = S.bo, cl = S.cloud;
+    S.plan(bo, t, [
+      [0, { x: 470, speed: 120, accel: 600 }],
+      [5.4, { lookY: -1, lookX: .2, tilt: -.12 }],             // notices the cloud
+      [6.4, { eye: 'sad' }],
+      [7.2, { x: 940, speed: 190, accel: 900, lookY: 0, lookX: 0, tilt: 0 }],   // tries to walk away
+      [10.0, { lookY: -1, tilt: -.1 }],
+      [10.7, { face: -1, lookY: 0, tilt: 0, eye: 'wide' }],
+      [11.0, { x: 520, speed: 400, accel: 1500 }],             // runs the other way
+      [12.9, { lookY: -1, tilt: -.1, eye: 'sad' }],
+      [13.9, { crouch: .2, sit: .7, eye: 'squeeze', lookY: 0, tilt: .08 }],   // hides
+      [15.8, { crouch: 0, sit: 0, eye: 'open', tilt: 0 }],
+      [16.0, { face: 1, lookY: -1 }],
+      [16.3, { crouch: .26 }],
+      [16.62, { crouch: 0 }], [16.62, () => bo.jump(0, -980)],   // swats at it
+      [17.8, { crouch: .22, eye: 'squeeze' }],
+      [18.1, { crouch: 0 }], [18.1, () => bo.jump(0, -720)],
+      [18.9, { eye: 'sad', lookY: -.6 }],
+      [19.8, { sit: 1, tilt: .1, lookY: .2 }],                 // gives up, sits in the rain
+      [21.9, () => S.sproutX = bo.x + 118 * bo.dir],
+      [24.6, { lookX: 1, lookY: .8, eye: 'open', tilt: .18 }], // ...what's that?
+      [25.6, { eye: 'happy' }],
+      [27.6, { tilt: -.06, lookY: -1, lookX: .2, eye: 'open' }],
+      [28.4, { eye: 'happy' }],
+    ]);
+    if (t > 19.8) bo.cmd.crouch = .06 + .025 * Math.sin(t * 2.2);   // tired breathing
+
+    // the cloud chases on a soft, laggy spring, so it overshoots when Bo turns
+    const follow = t >= 2.2;
+    spring(cl.x, follow ? bo.x + 6 * bo.dir : 1450, 4.5, .55, dt);
+    spring(cl.y, follow ? 225 + Math.sin(t * 1.4) * 6 : -160, 3, .8, dt);
+    spring(cl.dodge, bo.mode === 'air' && bo.vy > -500 ? -95 : 0, 90, .5, dt);
+
+    const rate = t < 4 ? 0 : t < 26 ? .045 : .1;
+    if (rate) {
+      S.dropClock += dt;
+      while (S.dropClock >= rate) {
+        S.dropClock -= rate; const n = S.dropN++;
+        S.drops.push({ x: cl.x.x + (hash(n) - .5) * 160, y: cl.y.x + cl.dodge.x + 30 + hash(n + .5) * 10 });
+      }
+    }
+    S.drops = S.drops.filter(d => {
+      d.y += 950 * dt;
+      const dx = d.x - bo.x, hw = 66;
+      if (Math.abs(dx) < hw) {
+        const topY = bo.y - BODY_H * (1 - bo.q.x) * Math.sqrt(1 - (dx / hw) ** 2);
+        if (d.y >= topY) { S.splashes.push({ x: d.x, y: topY, t0: t }); return false; }
+      }
+      if (d.y >= GROUND) { S.splashes.push({ x: d.x, y: GROUND, t0: t }); return false; }
+      return true;
+    });
+    S.splashes = S.splashes.filter(s => t - s.t0 < .22);
+  },
+  drawFront(S, ctx, t) {
+    if (t > 22) {
+      const sx = S.sproutX, g = seg(t, 22, 24.6), h = 78 * outBack(g), sway = Math.sin(t * 2.3) * 3 * g;
+      ctx.strokeStyle = GREEN; ctx.fillStyle = GREEN; ctx.lineWidth = 5;
+      ctx.beginPath(); ctx.moveTo(sx, GROUND + 1); ctx.quadraticCurveTo(sx - 6, GROUND - h * .5, sx + sway, GROUND - h); ctx.stroke();
+      const lf = outBack(seg(t, 23.8, 25.4)), tx = sx + sway, ty = GROUND - h;
+      if (lf > 0) for (const s of [-1, 1]) {
+        ctx.beginPath(); ctx.moveTo(tx, ty);
+        ctx.quadraticCurveTo(tx + s * 12 * lf, ty - 22 * lf, tx + s * 34 * lf, ty - 16 * lf);
+        ctx.quadraticCurveTo(tx + s * 20 * lf, ty + 4 * lf, tx, ty);
+        ctx.fill();
+      }
+    }
+
+    ctx.strokeStyle = RAIN; ctx.lineWidth = 3;
+    for (const d of S.drops) { ctx.beginPath(); ctx.moveTo(d.x, d.y - 18); ctx.lineTo(d.x, d.y); ctx.stroke(); }
+    for (const s of S.splashes) {
+      const u = (t - s.t0) / .22; ctx.lineWidth = 2.5 * (1 - u) + .5;
+      for (const side of [-1, 1]) {
+        ctx.beginPath(); ctx.moveTo(s.x + side * 3, s.y - 2);
+        ctx.lineTo(s.x + side * (6 + 12 * u), s.y - 6 - 10 * u + 14 * u * u); ctx.stroke();
+      }
+    }
+
+    const cl = S.cloud, cx = cl.x.x, cy = cl.y.x + cl.dodge.x;
+    ctx.fillStyle = GREY;
+    for (const [ox, oy, r] of PUFFS) {
+      ctx.beginPath(); ctx.arc(cx + ox, cy + oy + Math.sin(t * 2 + ox) * 2, r, 0, Math.PI * 2); ctx.fill();
+    }
+  },
+});
+</script>
+</body>
+</html>

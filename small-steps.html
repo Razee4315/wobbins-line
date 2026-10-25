@@ -1,0 +1,165 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Small Steps</title>
+</head>
+<body>
+<script src="sfx.js?v=4"></script>
+<script src="engine2.js?v=4"></script>
+<script>
+// One drop a day, from the well to a big empty jar. Days blur past and the level barely moves.
+// Bo nearly stops. One more drop, and the jar overflows into a stream that turns everything green.
+const { PAL, SPRITES, sprite, lerp, seg, sine, outBack, clamp, hash, spring, mix, GROUND } = Shorts;
+const V = 130, WELL = 740, PICK = 860, DROPX = 1020, JAR = 1110, JW = 120, JH = 160, POND = 1420, TREE = 1340;
+const DROPS = 9;                               // the 9th one overflows
+const MONTAGE = n => n >= 2 && n < DROPS - 1;   // trips 3..10 blur by
+const DROP = ['..X..', '.XXX.', 'XXXXX', 'XXWXX', '.XXX.'];
+const FLOWERS = [[1215, PAL.pink], [1265, PAL.yellow], [1300, PAL.violet], [1390, PAL.orange], [1470, PAL.pink], [1520, PAL.yellow]];
+// measured from a run: when things happen (captions are timed to these)
+const T1 = 9.86, T2 = 13.3, SLUMP = 25.32, LAST = 33.24;
+
+Shorts.play({
+  title: 'Small Steps',
+  accent: PAL.blue,
+  loopAfter: LAST + 13.8,
+  paperAt: (t, S) => mix('#ffffff', '#dcd6f2', S ? S.night || 0 : 0),
+  captions: [
+    [1.2, 3.4, 'an empty jar.'],
+    [T1 + .2, T1 + 2.2, 'one drop.'],
+    [T2 + .2, T2 + 1.8, '...nothing.'],
+    [T2 + 4, T2 + 6, 'keep going.'],
+    [SLUMP + .2, SLUMP + 2.4, 'nothing is *happening.*'],
+    [SLUMP + 3.2, SLUMP + 4.8, 'one more.'],
+    [LAST + .6, LAST + 2.2, '*oh.*'],
+    [LAST + 4.4, LAST + 9.6, 'small steps, every day. *they add up.*'],
+  ],
+  init(S) {
+    S.bo = S.addChar({ x: 0, walk: V });
+    S.trip = 0; S.stage = null; S.t0 = 0; S.level = 0; S.carry = false; S.fly = null; S.dropTimes = [];
+    S.over = null; S.night = 0; S.flow = 0; S.sg = 0;
+  },
+  update(S, t, dt) {
+    const bo = S.bo, c = bo.cmd;
+    if (S.stage === null) S.plan(bo, t, [
+      [0, { x: PICK, speed: V, accel: 450 }],
+      [5.6, { lookX: .6, lookY: .5, face: -1 }],                        // the well
+      [6.5, { face: 1, lookX: .8, lookY: -.1 }],                        // the jar
+      [7.2, () => { S.stage = 'dip'; S.t0 = t; }],
+    ]);
+    // the trips: well -> jar, over and over; fast-forward through the middle days
+    const fast = MONTAGE(S.trip), last = S.trip === DROPS - 1, sp = fast ? 470 : last ? 110 : S.trip === 1 ? 190 : V;
+    if (S.stage === 'dip') {
+      Object.assign(c, { face: -1, x: PICK, speed: sp, accel: fast ? 1600 : 500, lookX: .5, lookY: .5, eye: last ? 'squeeze' : 'open' });
+      const d = fast ? .22 : .5;
+      c.tilt = Math.abs(bo.x - PICK) < 8 ? .34 * Math.sin(Math.PI * clamp((t - S.t0) / d)) : 0;
+      if (Math.abs(bo.x - PICK) < 8 && t - S.t0 > d * .6 && !S.carry) { S.carry = true; S.sfx('blip', { k: S.trip }); S.sfx('drip', { k: 1.3 }, WELL); }
+      if (Math.abs(bo.x - PICK) >= 8) S.t0 = t;
+      if (S.carry && t - S.t0 > d) { S.stage = 'toJar'; c.tilt = 0; }
+    } else if (S.stage === 'toJar') {
+      Object.assign(c, { face: 1, x: DROPX, speed: sp, lookX: .6, lookY: -.2 });
+      if (Math.abs(bo.x - DROPX) < 5 && Math.abs(bo.vx) < 25) { S.stage = 'drop'; S.t0 = t; }
+    } else if (S.stage === 'drop') {
+      const d = fast ? .12 : .2;
+      if (t - S.t0 < d) c.crouch = .2; else S.once('hop' + S.trip, () => { c.crouch = 0; bo.jump(0, fast ? -360 : -440); });
+      if (t - S.t0 > d + .15) S.once('throw' + S.trip, () => { S.carry = false; S.fly = { t0: t, from: { ...bo.top() } }; });
+      if (S.fly && t - S.fly.t0 > .35) {
+        S.fly = null; S.trip++; S.level = S.trip; S.dropTimes.push(t);
+        S.sfx('drip', { k: 1 + S.trip * .03 }, JAR); S.sfx('chime', { n: Math.min(10, S.trip - 1), g: .05 }, JAR);
+        if (S.trip >= DROPS) { S.stage = 'done'; S.over = t; S.sfx('splash', {}, JAR); S.sfx('arp', { notes: [0, 2, 4, 5, 7, 9, 10] }); S.sfx('swell', { root: 392 }); S.shake(3); }
+        else if (S.trip === DROPS - 1) { S.stage = 'slump'; S.t0 = t; }
+        else { S.stage = 'dip'; S.t0 = t; }
+      }
+    } else if (S.stage === 'slump') {
+      // ten drops and still not full... sit down, almost give up, then get up for one more
+      const d = t - S.t0;
+      Object.assign(c, d < 3 ? { sit: 1, eye: 'sad', lookX: .7, lookY: -.3, tilt: .1 } : { sit: 0, eye: 'squeeze', tilt: 0 });
+      if (d > 2.2) S.once('slumpHeart', () => S.sfx('heart', { g: .2 }, bo.x));
+      if (d > 3.6) { S.stage = 'dip'; S.t0 = t; }
+      if (d < .1) S.once('sad', () => S.sfx('drain', {}, bo.x));
+    } else if (S.stage === 'done') {
+      const d = t - S.over;
+      if (d > .3) Object.assign(c, { eye: 'wide', lookX: .8, lookY: .2 });
+      if (d > 1.2) c.eye = 'happy';
+      if (d > 1.5) S.once('yay1', () => bo.jump(0, -520));
+      if (d > 2.6) S.once('yay2', () => bo.jump(0, -560));
+      if (d > 3.8) Object.assign(c, { x: 1e6, speed: V, accel: 450, eye: 'open', lookX: 0, lookY: 0 });
+    }
+    // days flicker by in the montage: a quick night after every drop
+    S.night = clamp(Math.max(0, ...S.dropTimes.slice(1, DROPS - 1).map(d => 1 - Math.abs(t - d - .3) / .3)) * .9);
+    // after the overflow: the stream runs out to the pond and everything along it blooms
+    if (S.over !== null) {
+      S.flow = sine(seg(t, S.over + .3, S.over + 2.8));
+      S.sg = (S.sg || 0) + dt;
+      if (S.sg > .09) { S.sg = 0; const near = clamp(1 - Math.max(0, bo.x - POND) / 700); if (near > 0) S.sfx('stream', { v: .5 + .5 * near }, lerp(JAR, POND, .5)); }
+      FLOWERS.forEach(([fx], i) => { if (lerp(JAR + 60, POND, S.flow) > fx) S.once('fl' + i, () => S.sfx('chime', { n: 4 + i, g: .07 }, fx)); });
+      if (t > S.over + 1.8) S.once('tree', () => S.sfx('whistle', { d: 1.4, f: 700, f2: 1500 }, TREE));
+    }
+    if (t > 5.4 && (S.over === null || t < S.over + 3.8)) { S.camGoal.x = (WELL + JAR) / 2 + 20 + (S.over !== null ? 200 * S.flow : 0); S.camGoal.z = S.over !== null ? lerp(.95, .8, S.flow) : .95; S.camGoal.kx = 2.4; }
+  },
+  drawSky(S, ctx, t, v) {
+    if (S.night > .3) for (let i = 0; i < 20; i++) sprite(ctx, SPRITES.dot, v.left + hash(i) * (v.right - v.left), v.top + hash(i + .5) * (GROUND - v.top) * .7, 3, { X: '#fff' }, (S.night - .3) / .6);
+    for (let i = 0; i < 3; i++) {
+      const W = v.right - v.left + 400, x = v.left - 200 + (1 - ((t / S.T * 2 + i / 3 + .2) % 1)) * W;
+      sprite(ctx, SPRITES.cloud, x, v.top + (v.bottom - v.top) * (.25 + i * .06), 9, { X: mix('#ebe8f4', '#c6bfe6', S.night) });
+    }
+  },
+  drawBack(S, ctx, t) {
+    // the well
+    ctx.fillStyle = '#fff'; ctx.lineWidth = 5;
+    ctx.beginPath(); ctx.rect(WELL - 46, GROUND - 56, 92, 58); ctx.fill(); ctx.stroke();
+    ctx.lineWidth = 3; for (let r = 0; r < 3; r++) for (let k = 0; k < 4; k++) ctx.strokeRect(WELL - 46 + k * 23 + (r % 2 ? 11 : 0), GROUND - 56 + r * 19, 23, 19);
+    ctx.fillStyle = PAL.blue; ctx.fillRect(WELL - 40, GROUND - 62, 80, 8);
+    ctx.lineWidth = 5; ctx.beginPath(); ctx.moveTo(WELL - 40, GROUND - 56); ctx.lineTo(WELL - 40, GROUND - 120); ctx.lineTo(WELL + 40, GROUND - 120); ctx.lineTo(WELL + 40, GROUND - 56); ctx.stroke();
+    // the stream, grass and flowers it brings
+    const flow = S.flow;
+    if (flow > 0) {
+      const x1 = lerp(JAR + 60, POND, flow);
+      ctx.fillStyle = PAL.sky; ctx.globalAlpha = .9; ctx.fillRect(JAR + 50, GROUND - 7, x1 - JAR - 50, 11); ctx.globalAlpha = 1;
+      ctx.fillStyle = '#fff'; for (let i = 0; i < 12; i++) { const x = JAR + 60 + ((t * 120 + i * 47) % (x1 - JAR - 60 + 1)); ctx.fillRect(x, GROUND - 5, 10, 3); }
+      if (flow > .98) { ctx.fillStyle = PAL.sky; ctx.beginPath(); ctx.ellipse(POND + 40, GROUND - 1, 70, 9, 0, 0, Math.PI * 2); ctx.fill(); }
+      FLOWERS.forEach(([fx, col], i) => {
+        if (x1 < fx) return;
+        const k = outBack(clamp((x1 - fx) / 120)); ctx.strokeStyle = PAL.green; ctx.lineWidth = 4;
+        ctx.beginPath(); ctx.moveTo(fx, GROUND - 6); ctx.lineTo(fx, GROUND - 6 - 34 * k); ctx.stroke();
+        sprite(ctx, ['..X..', '.XXX.', 'XXCXX', '.XXX.', '..X..'], fx, GROUND - 6 - 34 * k, 5.4 * k, { X: col, C: col === PAL.yellow ? PAL.orange : PAL.yellow });
+      });
+      const tk = outBack(seg(t, S.over + 1.8, S.over + 3.2));
+      if (tk > 0) {
+        ctx.strokeStyle = '#111'; ctx.lineWidth = 6; ctx.beginPath(); ctx.moveTo(TREE, GROUND + 2); ctx.lineTo(TREE, GROUND - 150 * tk); ctx.stroke();
+        sprite(ctx, ['..XXXX..', '.XXXXXX.', 'XXXXXXXX', 'XXXXXXXX', '.XXXXXX.', '..XXXX..'], TREE, GROUND - 150 * tk - 30, 13 * tk, { X: PAL.green });
+      }
+    }
+    // the jar: water level, a tally of every drop, and finally the overflow
+    const lvl = S.over !== null ? 1 : Math.min(.93, S.level / DROPS * 1.02), wob = Math.sin(t * 3) * 2;
+    const top = GROUND - JH + 4, waterY = GROUND - 4 - lvl * (JH - 14);
+    ctx.fillStyle = PAL.sky; ctx.globalAlpha = .85;
+    ctx.beginPath(); ctx.moveTo(JAR - JW / 2 + 4, GROUND - 4);
+    for (let x = -JW / 2 + 4; x <= JW / 2 - 4; x += 8) ctx.lineTo(JAR + x, waterY + Math.sin(t * 4 + x * .1) * 2 + wob * 0);
+    ctx.lineTo(JAR + JW / 2 - 4, GROUND - 4); ctx.closePath(); ctx.fill(); ctx.globalAlpha = 1;
+    if (S.over !== null && t < S.over + 3) for (let i = 0; i < 10; i++) {                   // spilling over the rim
+      const u = ((t - S.over) * 1.6 + i / 10) % 1;
+      sprite(ctx, SPRITES.dot, JAR + JW / 2 + 6 + u * 20, top + u * (JH - 10), 4, { X: PAL.sky });
+    }
+    ctx.strokeStyle = '#111'; ctx.lineWidth = 6; ctx.beginPath();
+    ctx.moveTo(JAR - JW / 2 + 10, top - 14); ctx.lineTo(JAR - JW / 2, top); ctx.lineTo(JAR - JW / 2, GROUND); ctx.lineTo(JAR + JW / 2, GROUND); ctx.lineTo(JAR + JW / 2, top); ctx.lineTo(JAR + JW / 2 - 10, top - 14); ctx.stroke();
+    ctx.fillStyle = '#fff'; ctx.lineWidth = 3; ctx.beginPath(); ctx.rect(JAR - 34, GROUND - 92, 68, 34); ctx.fill(); ctx.stroke();
+    ctx.lineWidth = 3;
+    for (let i = 0; i < Math.min(S.level, DROPS); i++) {                                     // tally marks
+      const g = Math.floor(i / 5), k = i % 5, x = JAR - 26 + g * 26 + k * 5;
+      ctx.beginPath(); if (k < 4) { ctx.moveTo(x, GROUND - 86); ctx.lineTo(x, GROUND - 64); } else { ctx.moveTo(x - 22, GROUND - 70); ctx.lineTo(x + 2, GROUND - 80); } ctx.stroke();
+    }
+  },
+  drawFront(S, ctx, t) {
+    const bo = S.bo, top = bo.top();
+    if (S.carry) sprite(ctx, DROP, top.x, top.y - 16, 5, { X: PAL.sky, W: '#fff' });
+    if (S.fly) {
+      const u = sine(clamp((t - S.fly.t0) / .35)), x = lerp(S.fly.from.x, JAR, u), y = lerp(S.fly.from.y - 16, GROUND - 120, u) - Math.sin(Math.PI * u) * 90;
+      sprite(ctx, DROP, x, y, 5, { X: PAL.sky, W: '#fff' });
+    }
+  },
+});
+</script>
+</body>
+</html>

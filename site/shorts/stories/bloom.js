@@ -1,0 +1,166 @@
+/* bloom: extracted from ../bloom.html by scripts/sync-shorts.py. Do not edit here. */
+(function () {
+  const Shorts = Object.assign(Object.create(window.Shorts), { play: story => { (window.WL_STORIES ||= {})['bloom'] = story; } });
+  // A grey, wilted field. Bo lifts one flower; it blooms and throws its colour to the
+  // next one. Then three. Then the whole field. Bo walks on carrying a little of it.
+  const { PAL, SPRITES, sprite, lerp, seg, sine, outBack, outCubic, clamp, hash, spring, mix, GROUND } = Shorts;
+  const V = 130, COLS = [PAL.pink, PAL.yellow, PAL.blue, PAL.orange, PAL.violet, PAL.red, PAL.lime];
+  const KEY = { f1: 820, f2: 1030, f3: 1220, f4: 1330, f5: 1440, f6: 1550, f7: 1720 };
+  const BIG_AT = 19.2;
+  const FLOWERS = [];
+  const addF = (x, h, color, s = 1) => FLOWERS.push({ x, h, color, s, bloomAt: null, ang: { x: 2.3 + hash(x) * .3, v: 0 } });
+  Object.entries(KEY).forEach(([k, x], i) => addF(x, k === 'f7' ? 112 : 62 + (i % 3) * 8, k === 'f3' ? PAL.blue : k === 'f7' ? PAL.violet : COLS[i % COLS.length], k === 'f7' ? 1.6 : 1));
+  for (let x = 760, i = 0; x < 2160; x += 58 + hash(i * 7) * 34, i++) {
+    if (Object.values(KEY).some(k => Math.abs(k - x) < 46)) continue;
+    addF(x, 34 + hash(i + 2) * 46, COLS[i % COLS.length], .75 + hash(i + 5) * .35);
+  }
+  let FL = FLOWERS;   // the running show's own copy (export runs its own simulations)
+  const byX = x => FL.find(f => f.x === x);
+  const NUDGES = [[6.6, .3], [12.6, .32], [18.2, .36], [18.75, .42]];
+
+  Shorts.play({
+    title: 'Bloom',
+    accent: PAL.pink,
+    loopAfter: 32.4,
+    captions: [
+      [7.6, 9.8, 'a little *kindness*'],
+      [13.2, 15.6, 'goes a long way'],
+      [19.6, 22.6, 'and it *spreads.*'],
+      [24.6, 29.2, 'pass it on.'],
+    ],
+    init(S) {
+      S.bo = S.addChar({ x: 0, walk: V });
+      S.sparks = []; S.rings = [];
+      S.flowers = FL = FLOWERS.map(f => ({ ...f, bloomAt: null, sounded: false, ang: { x: 2.3 + hash(f.x) * .3, v: 0 } }));
+      S.carry = null; S.noteN = 0;
+    },
+    update(S, t, dt) {
+      const bo = S.bo; FL = S.flowers;
+      const bloom = x => () => { const f = byX(x); f.bloomAt = t; S.burst(f.x, GROUND - f.h, 10 * f.s, [f.color, '#fff'], { speed: 260 * f.s, gravity: 500, size: 7, life: .9 }); };
+      const spark = (from, to, dur) => () => {
+        S.sparks.push({ a: byX(from), b: byX(to), t0: t, dur, done: false });
+        S.sfx('whistle', { d: dur, f: 880, f2: 1760 }, from);
+      };
+      S.plan(bo, t, [
+        [0, { x: 720, speed: V, accel: 450 }],
+        [5.0, { lookX: .8, lookY: .6 }],
+        [5.9, { eye: 'sad' }],                                              // poor thing
+        [7.0, bloom(KEY.f1)],
+        [7.2, { eye: 'wide' }], [7.6, { eye: 'happy', crouch: .2 }],
+        [7.9, { crouch: 0 }], [7.9, () => bo.jump(0, -430)],
+        [8.2, spark(KEY.f1, KEY.f2, 1.0)],
+        [8.6, { eye: 'open', lookX: 1, lookY: -.3 }],
+        [9.3, { eye: 'happy', lookY: .2 }],
+        [9.9, { x: 1120, speed: 170, eye: 'open', lookX: 0, lookY: 0 }],
+        [12.0, { lookX: .8, lookY: .6, eye: 'sad' }],
+        [13.0, bloom(KEY.f3)],
+        [13.3, { eye: 'happy' }],
+        [13.4, spark(KEY.f3, KEY.f4, .8)], [13.4, spark(KEY.f3, KEY.f5, .95)], [13.4, spark(KEY.f3, KEY.f6, 1.1)],
+        [13.6, { crouch: .2 }], [13.85, { crouch: 0 }], [13.85, () => bo.jump(0, -460)],
+        [14.6, { crouch: .2 }], [14.8, { crouch: 0 }], [14.8, () => bo.jump(0, -520)],
+        [15.4, { x: 1610, speed: 180, eye: 'open', lookX: 0, lookY: 0 }],
+        [17.6, { lookX: .8, lookY: .5, eye: 'sad' }],                       // the biggest one
+        [BIG_AT, () => {
+          bloom(KEY.f7)(); S.shake(5);
+          for (let i = 0; i < 4; i++) S.rings.push({ t0: t + i * .12, c: COLS[i * 2 % COLS.length] });
+          for (const f of FL) if (f.bloomAt === null) f.bloomAt = t + .25 + Math.abs(f.x - KEY.f7) / 700 + hash(f.x) * .2;
+        }],
+        [19.5, { eye: 'wide' }],
+        [20.2, { eye: 'happy', crouch: .2 }], [20.5, { crouch: 0 }], [20.5, () => bo.jump(0, -620)],
+        [21.4, { crouch: .2 }], [21.6, { crouch: 0 }], [21.6, () => bo.jump(0, -450)],
+        [22.4, () => S.carry = { t0: t }],                                  // a spark comes along
+        [23.0, { x: 1e6, speed: V, accel: 450, eye: 'open', lookX: 0, lookY: 0, tilt: 0 }],
+        // sound
+        ...NUDGES.map(([at], i) => [at + .25, () => S.sfx('brush', { gain: 1 + i * .2 }, bo.x + 90)]),
+        [BIG_AT, () => { S.sfx('swell', { root: 523.25 }); S.sfx('chime', { f: 261.63, g: .16 }, KEY.f7); }],
+        [20.4, () => S.sfx('sparkle', { n: 10 })],
+        [22.4, () => S.sfx('whistle', { d: 1.6, f: 1200, f2: 1900 }, KEY.f7)],
+        [27.0, () => S.sfx('whistle', { d: 1.6, f: 1500, f2: 2600 })],
+      ]);
+      // every bloom rings a note; the cascade becomes a rising-and-falling glissando
+      for (const f of FL) if (!f.sounded && f.bloomAt !== null && t >= f.bloomAt) {
+        f.sounded = true;
+        const k = S.noteN++, tri = k % 20 <= 10 ? k % 20 : 20 - k % 20;
+        S.sfx('chime', { n: tri, g: t > BIG_AT + .1 ? .07 : .12 }, f.x);
+      }
+      // gentle nudges: lean in and lift the flower with the head
+      let p = 0;
+      for (const [at, a] of NUDGES) { const x = (t - at) / .55; if (x > 0 && x < 1) p = Math.max(p, Math.sin(Math.PI * x) * a); }
+      if (t > 6 && t < 23) bo.cmd.tilt = p;
+
+      for (const s of S.sparks) if (!s.done && t > s.t0 + s.dur) { s.done = true; s.b.bloomAt = t; S.burst(s.b.x, GROUND - s.b.h, 8, [s.b.color, '#fff'], { speed: 220, gravity: 500, size: 6, life: .8 }); }
+      for (const f of FL) spring(f.ang, f.bloomAt !== null && t >= f.bloomAt ? 0 : 2.3 + hash(f.x) * .3, 70, .32, dt);
+      S.rings = S.rings.filter(r => t - r.t0 < 1.4);
+      if (t > 19.3 && t < 23.4) { S.camGoal.x = 1560; S.camGoal.z = .7; S.camGoal.kx = 2.5; S.camGoal.kz = 2; }
+    },
+    drawSky(S, ctx, t, v) {
+      // a pixel rainbow over the field once it blooms
+      const k = sine(seg(t, 20, 22.5)) * (1 - sine(seg(t, 26, 28.5)));
+      if (k > .01) {
+        ctx.save(); ctx.globalAlpha = k * .9;
+        const cx = 1560, cy = GROUND + 40;
+        [PAL.red, PAL.orange, PAL.yellow, PAL.lime, PAL.sky, PAL.violet].forEach((c, i) => {
+          const r = 560 - i * 18; ctx.fillStyle = c;
+          for (let a = Math.PI; a < Math.PI * 2; a += .018) {
+            const x = cx + Math.cos(a) * r, y = cy + Math.sin(a) * r;
+            if (y < GROUND) ctx.fillRect(Math.round(x / 9) * 9, Math.round(y / 9) * 9, 9.5, 9.5);
+          }
+        });
+        ctx.restore();
+      }
+      for (let i = 0; i < 3; i++) {
+        const W = v.right - v.left + 400, x = v.left - 200 + (1 - ((t / S.T + i / 3 + .5) % 1)) * W;
+        sprite(ctx, SPRITES.cloud, x, v.top + (v.bottom - v.top) * (.25 + i * .06), 9, { X: '#ebe8f4' });
+      }
+    },
+    drawBack(S, ctx, t) {
+      FL = S.flowers;
+      for (const r of S.rings) {
+        const u = (t - r.t0) / 1.4; if (u < 0) continue;
+        ctx.strokeStyle = r.c; ctx.globalAlpha = 1 - u; ctx.lineWidth = 8 * (1 - u) + 1;
+        ctx.beginPath(); ctx.ellipse(KEY.f7, GROUND - 100, 40 + u * 700, 30 + u * 360, 0, Math.PI, Math.PI * 2); ctx.stroke();
+      }
+      ctx.globalAlpha = 1;
+      for (const f of FL) {
+        const b = f.bloomAt !== null ? clamp((t - f.bloomAt) / .5) : 0;
+        const a = f.ang.x + Math.sin(t * 1.6 + f.x) * .06 * b, h = f.h, s = f.s;
+        const hx = f.x + Math.sin(a) * h * .8, hy = GROUND - Math.cos(a) * h * .8 - h * .2;
+        ctx.strokeStyle = mix(PAL.dim, PAL.green, b); ctx.lineWidth = 4 + s;
+        ctx.beginPath(); ctx.moveTo(f.x, GROUND + 2); ctx.quadraticCurveTo(f.x, GROUND - h * .7, hx, hy); ctx.stroke();
+        if (b > .3) {                                                       // a leaf
+          ctx.fillStyle = PAL.green; ctx.beginPath(); ctx.moveTo(f.x, GROUND - h * .3);
+          ctx.quadraticCurveTo(f.x + 14 * s, GROUND - h * .5, f.x + 20 * s, GROUND - h * .36); ctx.quadraticCurveTo(f.x + 10 * s, GROUND - h * .26, f.x, GROUND - h * .3); ctx.fill();
+        }
+        const pk = b > 0 ? outBack(clamp((t - f.bloomAt) / .45)) : 0;
+        if (pk > .05) sprite(ctx, ['..X..', '.XXX.', 'XXCXX', '.XXX.', '..X..'], hx, hy, 5.2 * s * pk, { X: f.color, C: f.color === PAL.yellow ? PAL.orange : PAL.yellow });
+        else { ctx.fillStyle = PAL.dim; ctx.beginPath(); ctx.arc(hx, hy, 6 * s, 0, Math.PI * 2); ctx.fill(); }
+      }
+    },
+    drawFront(S, ctx, t) {
+      FL = S.flowers;
+      // colour sparks arcing from flower to flower, with a pixel trail
+      for (const s of S.sparks) {
+        if (s.done) continue;
+        for (let j = 0; j < 7; j++) {
+          const u = clamp((t - s.t0) / s.dur - j * .04); if (u <= 0) continue;
+          const e = sine(u), x = lerp(s.a.x, s.b.x, e), y = lerp(GROUND - s.a.h, GROUND - s.b.h, e) - Math.sin(Math.PI * e) * 150;
+          sprite(ctx, j ? SPRITES.dot : SPRITES.sparkle, x, y, j ? 4 - j * .4 : 3.4, { X: s.b.color }, 1 - j / 7);
+        }
+      }
+      // the little flower that rides on Bo's hair, then flies ahead to the next field
+      if (S.carry) {
+        const bo = S.bo, T = bo.tuft, u = t - S.carry.t0, f7 = byX(KEY.f7);
+        const toHead = sine(clamp(u / 1.6)), away = sine(seg(t, 27, 28.6));
+        let x = lerp(f7.x, T.x, toHead), y = lerp(GROUND - f7.h, T.y - 6, toHead) - Math.sin(Math.PI * toHead) * 120;
+        x += away * 760; y -= away * 260 + Math.sin(Math.PI * away) * 80;
+        if (away < 1) sprite(ctx, ['..X..', '.XXX.', 'XXCXX', '.XXX.', '..X..'], x, y, 4.4, { X: PAL.violet, C: PAL.yellow });
+      }
+      // butterflies leave the bloomed field
+      for (let i = 0; i < 4; i++) {
+        const u = seg(t, 20.2 + i * .5, 26 + i * .4); if (u <= 0 || u >= 1) continue;
+        const x0 = 1300 + i * 230, x = x0 + Math.sin(u * 8 + i) * 50 + u * 220, y = GROUND - 60 - u * 620 + Math.sin(u * 19) * 14;
+        sprite(ctx, Math.floor(t * 12 + i) % 2 ? SPRITES.flyA : SPRITES.flyB, x, y, 4.2, { X: COLS[(i * 3) % COLS.length], B: '#111' });
+      }
+    },
+  });
+})();

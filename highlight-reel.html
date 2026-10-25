@@ -1,0 +1,131 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Highlight Reel</title>
+</head>
+<body>
+<script src="sfx.js?v=4"></script>
+<script src="engine2.js?v=4"></script>
+<script>
+// Friends hold up big pictures of their perfect moments, hearts pouring out of them. Bo sags a
+// little more at each one. The biggest picture slips, and behind it is a friend having a rainy day.
+const { PAL, SPRITES, sprite, lerp, seg, sine, outBack, clamp, hash, spring, mix, GROUND } = Shorts;
+const V = 130, REVEAL = 20.6;
+const C = { S: '#9ad7ff', Y: PAL.yellow, G: PAL.green, N: PAL.brown, B: PAL.blue, W: '#fff', P: PAL.peach, V: PAL.violet, R: PAL.red, O: PAL.orange };
+const PICS = {
+  beach: ['SGGGSSSSSYYS', 'GGGGGSSSYYYY', 'SSNSSSSSSYYS', 'SSNSSSSSSSSS', 'BBNBBBBBBBBB', 'BWNBBBBBWBBB', 'BBNBBBBBBBBB', 'PPNPPPPPPPPP', 'PPPPPPPPPPPP'],
+  crown: ['VWVVVVVVVVWV', 'VVVVVVVVVVVV', 'VVVYVVYVVYVV', 'VVVYYYYYYYVV', 'VVVYRYYRYYVV', 'VVVYYYYYYYVV', 'VVVVVVVVVVVV', 'VWVVVVVVVWVV', 'VVVVVVVVVVVV'],
+  summit: ['SRRRRRRRRRRS', 'ROOOOOOOOOOR', 'OYYYYYYYYYYO', 'YSSSSSSSSSSY', 'SSSSSWSSSSSS', 'SSSSWGWSSSSS', 'SSSWGGGWSWSS', 'SSGGGGGGGGWG', 'GGGGGGGGGGGG'],
+};
+// [friend, x, picture, cell size, likes per second]
+const FRAMES = [[0, 900, 'beach', 15, 1.4], [1, 1250, 'crown', 17.5, 2.6], [2, 1600, 'summit', 21.5, 5]];
+
+Shorts.play({
+  title: 'Highlight Reel',
+  accent: PAL.pink,
+  loopAfter: 38.2,
+  captions: [
+    [6.4, 8.4, 'wow. *perfect.*'],
+    [12.4, 14.2, 'everyone has it *figured out.*'],
+    [18.4, 20.0, '...except me.'],
+    [21.2, 22.6, 'oh.'],
+    [24.6, 26.4, 'everyone has rainy days.'],
+    [28.2, 33.4, "don't compare your *every day* to their *best day.*"],
+  ],
+  init(S) {
+    const look = [{ hair: 'curl', blush: PAL.pink, fill: '#ffe9f2' }, { hair: 'antenna', hairColor: PAL.blue, fill: '#e6f0ff' }, { hairColor: PAL.orange, blush: '#ffb08a', fill: '#fff4d6' }];
+    S.friends = FRAMES.map(([, x], i) => S.addChar({ x, face: -1, gain: .5, ...look[i] }));
+    S.friends.forEach(f => f.hidden = true);   // drawn by hand, behind their pictures (Bo walks in front)
+    S.bo = S.addChar({ x: 0, walk: V }); S.focus = S.bo;
+    S.like = [0, 0, 0]; S.likeN = 0; S.rain = 0; S.drops = [];
+  },
+  update(S, t, dt) {
+    const bo = S.bo, zu = S.friends[2];
+    S.plan(bo, t, [
+      [0, { x: 720, speed: V, accel: 450 }],
+      [5.2, { lookX: .6, lookY: -.6, eye: 'wide' }], [6.0, { eye: 'open' }],
+      [7.4, { eye: 'sad', crouch: .06 }],
+      [8.6, { x: 1070, speed: 105, lookX: 0, lookY: 0 }],
+      [11.6, { lookX: .6, lookY: -.6, eye: 'wide' }],
+      [12.8, { eye: 'sad', crouch: .14, tilt: .1 }],
+      [14.2, { x: 1395, speed: 100, lookX: 0, lookY: 0 }],
+      [17.6, { lookX: .6, lookY: -.7, eye: 'wide' }],
+      [18.3, { eye: 'sad', crouch: .2, sit: .8, tilt: .15, lookY: -.3 }],    // ...small
+      [21.0, { eye: 'wide', sit: 0, crouch: 0, tilt: 0, lookX: 1, lookY: 0 }],
+      [22.4, { x: 1460, speed: 60, accel: 300, eye: 'open' }],
+      [23.0, { sit: .8, lookX: .9 }],
+      [24.2, { eye: 'happy', lookY: -.4 }],
+      [26.4, { sit: 0 }], [26.8, { crouch: .2 }], [27.05, { crouch: 0 }], [27.05, () => bo.jump(0, -460)],
+      [27.8, { x: 1e6, speed: V, accel: 450, eye: 'open', lookX: 0, lookY: 0, tilt: 0 }],
+      // sound
+      ...[[5.2, 0], [11.6, 1], [17.6, 2]].map(([a, i]) => [a, () => S.sfx('twinkle', { pitch: 1760 + i * 300 }, FRAMES[i][1])]),
+      ...[7.4, 12.8, 18.3].map(a => [a, () => S.sfx('drain', {}, bo.x)]),
+      [REVEAL, () => S.sfx('whoosh', { d: .5 }, FRAMES[2][1])], [REVEAL + .45, () => { S.sfx('tock', { f: 420 }, FRAMES[2][1]); S.shake(2); }],
+      [23.8, () => S.sfx('swell', { root: 440 })], [24.3, () => S.sfx('twinkle', { pitch: 2093 }, FRAMES[2][1])],
+    ]);
+    S.plan(zu, t, [
+      [REVEAL + .4, { eye: 'sad', tilt: .1, lookY: .3 }],                 // the real day
+      [23.2, { lookX: .8, lookY: 0, eye: 'open', tilt: 0 }],
+      [24.2, { eye: 'happy' }],
+      [26.8, { crouch: .2 }], [27.1, { crouch: 0 }], [27.1, () => zu.jump(0, -420)],
+    ]);
+    // likes pour out of each picture, more for the bigger ones, until the reveal
+    FRAMES.forEach(([, x, , , rate], i) => {
+      if (t < 3 || t > REVEAL) return;
+      S.like[i] += dt * rate;
+      if (S.like[i] >= 1) {
+        S.like[i] -= 1; const k = S.likeN++;
+        S.burst(x + 40 + i * 20, GROUND - 200 - i * 40, 1, [[PAL.pink, PAL.red][k % 2]], { shape: 'heart', gravity: -260, speed: 150, spread: 1.4, life: 1.5, size: 16 + i * 4, drag: 2 });
+        if (Math.abs(x - bo.x) < 700) S.sfx('pop', { pitch: 900 + hash(k) * 500, g: .04 + .015 * i }, x);
+      }
+    });
+    // Zu's little rain cloud, until it clears
+    const raining = t > REVEAL + .3 && t < 23.8;
+    if (raining) { S.rain += dt; while (S.rain >= .05) { S.rain -= .05; const k = S.likeN++; S.drops.push({ x: FRAMES[2][1] + (hash(k) - .5) * 90, y: GROUND - 320 }); S.sfx('rain', { v: .7 }, FRAMES[2][1]); } }
+    S.drops = S.drops.filter(d => { d.y += 800 * dt; return d.y < GROUND - 40; });
+    if (t > 5 && t < 27.8) { S.camGoal.x = bo.x + 150; S.camGoal.z = .9; S.camGoal.kx = 1.6; }
+  },
+  drawSky(S, ctx, t, v) {
+    for (let i = 0; i < 3; i++) {
+      const W = v.right - v.left + 400, x = v.left - 200 + (1 - ((t / S.T + i / 3 + .1) % 1)) * W;
+      sprite(ctx, SPRITES.cloud, x, v.top + (v.bottom - v.top) * (.25 + i * .06), 9, { X: '#ebe8f4' });
+    }
+  },
+  drawBack(S, ctx, t) {
+    for (const f of S.friends) S.drawChar(ctx, f);
+    S.ink(ctx);
+    // the pictures, held up in front of their owners (only their feet show)
+    FRAMES.forEach(([who, x, pic, cell], i) => {
+      const rows = PICS[pic], w = rows[0].length * cell, h = rows.length * cell;
+      let dx = 0, dy = 0, rot = 0;
+      if (i === 2 && t > REVEAL) { const u = outBack(clamp((t - REVEAL) / .5)); dx = 150 * u; dy = 70 * u; rot = .42 * u; }
+      const shine = i === 2 ? .5 + .5 * Math.sin(t * 5) : 0;
+      ctx.save(); ctx.translate(x + dx, GROUND - 58 - h / 2 + dy - (i === 2 ? 30 : 0)); ctx.rotate(rot);
+      ctx.fillStyle = '#fff'; ctx.lineWidth = 7; ctx.beginPath(); ctx.rect(-w / 2 - 10, -h / 2 - 10, w + 20, h + 20); ctx.fill(); ctx.stroke();
+      rows.forEach((row, r) => [...row].forEach((ch, c) => { ctx.fillStyle = C[ch]; ctx.fillRect(-w / 2 + c * cell, -h / 2 + r * cell, cell + .4, cell + .4); }));
+      if (i === 2 && t < REVEAL) for (let k = 0; k < 4; k++) sprite(ctx, SPRITES.sparkle, -w / 2 + hash(k) * w, -h / 2 - 30 + hash(k + .5) * 20, 3, { X: PAL.yellow }, Math.max(0, Math.sin(t * 4 + k * 1.6)));
+      ctx.restore();
+    });
+  },
+  drawFront(S, ctx, t) {
+    // Zu's cloud and the sun after it
+    const cl = sine(seg(t, REVEAL + .2, REVEAL + .8)) * (1 - sine(seg(t, 23.6, 24.4))), zx = FRAMES[2][1];
+    if (cl > 0) {
+      ctx.fillStyle = PAL.grey; ctx.globalAlpha = cl;
+      for (const [ox, oy, r] of [[-40, 6, 26], [-10, -10, 34], [26, -2, 30], [48, 10, 20], [6, 12, 26]]) { ctx.beginPath(); ctx.arc(zx + ox, GROUND - 330 + oy, r * (.6 + .4 * cl), 0, Math.PI * 2); ctx.fill(); }
+      ctx.globalAlpha = 1;
+    }
+    ctx.strokeStyle = '#7f94b0'; ctx.lineWidth = 3;
+    for (const d of S.drops) { ctx.beginPath(); ctx.moveTo(d.x, d.y - 14); ctx.lineTo(d.x, d.y); ctx.stroke(); }
+    const sun = outBack(seg(t, 24.0, 24.6)) * (1 - seg(t, 31, 32));
+    if (sun > 0) {
+      ctx.fillStyle = PAL.yellow;
+      for (let y = -36; y < 36; y += 8) { const w = Math.sqrt(Math.max(0, 36 * 36 - (y + 4) ** 2)) * sun; ctx.fillRect(zx + 10 - w, GROUND - 380 + y * sun, w * 2, 8.5 * sun); }
+    }
+  },
+});
+</script>
+</body>
+</html>

@@ -1,0 +1,380 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Pip and the Balloon</title>
+<style>
+  :root { --paper:#fbfbf8; --ink:#111; --muted:#8a8a84; --line:#e3e3dd; }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--paper); color: var(--ink);
+    font: 14px/1.4 system-ui, -apple-system, "Segoe UI", sans-serif;
+    display: flex; flex-direction: column; align-items: center; min-height: 100vh;
+  }
+  .stage {
+    width: min(calc(100vw - 32px), 1200px); aspect-ratio: 2 / 1;
+    margin: 24px 16px 0; background: #fff; border: 1px solid var(--line);
+  }
+  canvas { width: 100%; height: 100%; display: block; }
+  .bar {
+    width: min(calc(100vw - 32px), 1200px); padding: 14px 0;
+    display: flex; flex-wrap: wrap; align-items: center; gap: 10px 16px;
+  }
+  button {
+    font: inherit; border: 2px solid var(--ink); background: #fff; color: var(--ink);
+    border-radius: 999px; padding: 6px 14px; cursor: pointer;
+  }
+  button:hover { background: var(--ink); color: #fff; }
+  button:disabled { opacity: .4; cursor: default; background: #fff; color: var(--ink); }
+  input[type=range] { flex: 1; min-width: 160px; accent-color: var(--ink); }
+  label { display: flex; gap: 6px; align-items: center; color: #444; }
+  select { font: inherit; }
+  .time { font-variant-numeric: tabular-nums; color: var(--muted); min-width: 92px; }
+</style>
+</head>
+<body>
+<div class="stage"><canvas id="c"></canvas></div>
+<div class="bar">
+  <button id="play">Pause</button>
+  <button id="restart">Restart</button>
+  <input id="scrub" type="range" min="0" max="1000" value="0" aria-label="Timeline">
+  <span class="time" id="time">0.0 / 0.0s</span>
+  <label>Speed
+    <select id="speed"><option value="0.25">0.25×</option><option value="0.5">0.5×</option><option value="1" selected>1×</option></select>
+  </label>
+  <label><input id="boil" type="checkbox" checked> Line boil</label>
+  <button id="rec">Record video</button>
+</div>
+
+<script>
+// ---------- stage constants (logical 1600 x 800) ----------
+const W = 1600, H = 800;
+const GROUND = 620, LEG = 72, HIP = 50, BODY_H = 62;
+const STAND_Y = GROUND - LEG - HIP;           // body centre when standing
+const STEP = 60, PERIOD = 0.8, SPEED = STEP / (PERIOD / 2);
+const STR = 120, FLOAT_END_Y = 300, HANG_Y = 292, HALF_G = 1200;
+const LAND = 11.4 + Math.sqrt((STAND_Y - HANG_Y) / HALF_G);
+const T = 14.4 + (1770 - 900) / SPEED;        // full loop length
+const RED = '#e9473a', INK = '#111';
+
+// ---------- helpers ----------
+const clamp = (v, a = 0, b = 1) => Math.min(b, Math.max(a, v));
+const lerp = (a, b, k) => a + (b - a) * k;
+const seg = (t, a, b) => clamp((t - a) / (b - a));
+const inOut = k => k < .5 ? 2 * k * k : 1 - Math.pow(-2 * k + 2, 2) / 2;
+const outCubic = k => 1 - Math.pow(1 - k, 3);
+const hash = n => { const s = Math.sin(n * 127.1) * 43758.5453; return s - Math.floor(s); };
+
+function toWorld(P, lx, ly) {
+  const x = lx * P.sx, y = ly * P.sy, c = Math.cos(P.rot), s = Math.sin(P.rot);
+  return { x: P.bx + x * c - y * s, y: P.by + x * s + y * c };
+}
+const hipPos = (P, i) => toWorld(P, i ? 8 : -8, 46);
+
+// ---------- feet poses ----------
+function walkFeet(bx, phase) {
+  return [0, .5].map((off, i) => {
+    const p = ((phase + off) % 1 + 1) % 1, hx = bx + (i ? 8 : -8);
+    if (p < .5) return { x: hx + STEP / 2 - (p / .5) * STEP, y: GROUND, rot: 0 };
+    const s = (p - .5) / .5;
+    return { x: hx - STEP / 2 + inOut(s) * STEP, y: GROUND - Math.sin(Math.PI * s) * 28, rot: -Math.sin(Math.PI * s) * .5 };
+  });
+}
+const standFeet = (bx, a = 22, b = 18) => [{ x: bx - a, y: GROUND, rot: 0 }, { x: bx + b, y: GROUND, rot: 0 }];
+function dangleFeet(P, t, spread, len, wob, baseRot = .35) {
+  return [0, 1].map(i => {
+    const h = hipPos(P, i), w = t * 2.2 + i * 1.7;
+    return { x: h.x + (i ? spread : -spread) + Math.sin(w) * wob, y: Math.min(GROUND, h.y + len + 10), rot: baseRot + Math.sin(w + .6) * .25 };
+  });
+}
+function walk(P, tt, x0, lean) {
+  const ph = tt / PERIOD;
+  P.bx = x0 + SPEED * tt;
+  P.by = STAND_Y - 2 + 4 * Math.cos(ph * 4 * Math.PI);
+  P.rot = lean + .03 * Math.sin(ph * 4 * Math.PI);
+  P.feet = walkFeet(P.bx, ph);
+}
+// keeps the bottom of the body on the ground while squashing
+const squashY = sy => STAND_Y + BODY_H * (1 - sy);
+
+// ---------- the story, as a pose for any time t ----------
+function rawPose(t) {
+  const P = { bx: 600, by: STAND_Y, sx: 1, sy: 1, rot: 0, feet: null, eye: 'open', look: 0 };
+  if (t < 4.8) { walk(P, t, -120, .04); return P; }                       // walk in
+  if (t < 6.0) {                                                           // notice, look up
+    const k = inOut(seg(t, 5.0, 5.6));
+    P.rot = -.18 * k; P.look = k; P.feet = standFeet(P.bx); return P;
+  }
+  if (t < 6.45) {                                                          // anticipation squash
+    const k = inOut(seg(t, 6.0, 6.45));
+    P.sy = lerp(1, .8, k); P.sx = lerp(1, 1.14, k); P.by = squashY(P.sy);
+    P.rot = lerp(-.18, -.06, k); P.look = 1; P.feet = standFeet(P.bx); return P;
+  }
+  if (t < 6.85) {                                                          // jump, stretch
+    const s = outCubic(seg(t, 6.45, 6.85));
+    P.by = lerp(squashY(.8), 400, s); P.sy = lerp(1.2, 1, s); P.sx = lerp(.86, 1, s);
+    P.rot = lerp(-.06, 0, s); P.look = 1; P.feet = dangleFeet(P, t, 4, 62, 3); return P;
+  }
+  if (t < 11.0) {                                                          // float away, blissful
+    const tt = t - 6.85, e = inOut(seg(t, 6.85, 11));
+    P.bx = lerp(600, 900, e); P.by = lerp(400, FLOAT_END_Y, e) + Math.sin(tt * 2) * 4;
+    P.rot = .07 * Math.sin(tt * 1.6); P.sy = 1 + .025 * Math.sin(tt * 3); P.sx = 1 - .015 * Math.sin(tt * 3);
+    P.eye = t > 7.3 ? 'happy' : 'open'; P.look = t > 7.3 ? 0 : 1;
+    P.feet = dangleFeet(P, t, 6, 64, 8); return P;
+  }
+  P.bx = 900;
+  if (t < 11.4) {                                                          // pop! cartoon hang time
+    const s = seg(t, 11, 11.4);
+    P.by = lerp(FLOAT_END_Y, HANG_Y, outCubic(s)); P.sy = 1 + .07 * Math.sin(Math.PI * s); P.sx = 1 / P.sy;
+    P.eye = 'wide'; P.feet = dangleFeet(P, t, 18, 56, 1.5, -.15); return P;
+  }
+  if (t < LAND) {                                                          // fall
+    const dt = t - 11.4;
+    P.by = HANG_Y + HALF_G * dt * dt; P.sy = 1 + Math.min(.12, 2 * HALF_G * dt / 6000); P.sx = 1 / P.sy;
+    P.eye = 'wide'; P.feet = dangleFeet(P, t * 4, 16, 58, 6, 0); return P;
+  }
+  if (t < LAND + .17) {                                                    // impact squash
+    const k = outCubic(seg(t, LAND, LAND + .17));
+    P.sy = lerp(1, .62, k); P.sx = lerp(1, 1.32, k); P.by = squashY(P.sy);
+    P.eye = 'wide'; P.feet = standFeet(P.bx, 40, 36); return P;
+  }
+  if (t < LAND + .57) {                                                    // little rebound hop
+    const s = seg(t, LAND + .17, LAND + .57);
+    P.sy = s < .3 ? lerp(.62, 1.1, s / .3) : lerp(1.1, 1, (s - .3) / .7); P.sx = 1 + (1 - P.sy) * .8;
+    const hop = Math.sin(Math.PI * s) * 38, lift = Math.max(0, hop - 8);
+    P.by = squashY(P.sy) - hop; P.eye = 'dizzy';
+    P.feet = [{ x: P.bx - 28, y: GROUND - lift, rot: .15 * lift / 30 }, { x: P.bx + 24, y: GROUND - lift, rot: .15 * lift / 30 }];
+    return P;
+  }
+  if (t < LAND + .82) {                                                    // settle
+    const s = seg(t, LAND + .57, LAND + .82);
+    P.sy = 1 - .08 * Math.sin(Math.PI * s); P.sx = 1 + .05 * Math.sin(Math.PI * s); P.by = squashY(P.sy);
+    P.eye = 'dizzy'; P.feet = standFeet(P.bx); return P;
+  }
+  if (t < 14.4) {                                                          // dazed, then a sigh
+    const k = Math.sin(Math.PI * seg(t, 13.9, 14.35));
+    P.sy = 1 - .07 * k; P.sx = 1 + .04 * k; P.by = squashY(P.sy); P.rot = .06 * k;
+    P.eye = t < 13.6 ? 'dizzy' : 'open'; P.feet = standFeet(P.bx); return P;
+  }
+  walk(P, t - 14.4, 900, .06); return P;                                   // walk off
+}
+
+// smooth over the joins between story beats: [cut time, blend seconds]
+const CUTS = [[4.8, .3], [6.45, .08], [11.0, .1], [11.4, .06], [LAND, .05], [LAND + .17, .04], [LAND + .57, .06], [14.4, .3]];
+function pose(t) {
+  const P = rawPose(t);
+  for (const [c, d] of CUTS) {
+    if (t >= c && t < c + d) {
+      const Q = rawPose(c - 1e-4), w = 1 - inOut((t - c) / d);
+      for (const k of ['bx', 'by', 'sx', 'sy', 'rot', 'look']) P[k] = lerp(P[k], Q[k], w);
+      P.feet = P.feet.map((f, i) => ({ x: lerp(f.x, Q.feet[i].x, w), y: lerp(f.y, Q.feet[i].y, w), rot: lerp(f.rot, Q.feet[i].rot, w) }));
+    }
+  }
+  return P;
+}
+
+function balloon(t, P) {
+  if (t < 4.4 || t >= 11) return null;
+  const top = toWorld(P, 0, -BODY_H);
+  let ex = 650 + Math.sin(t * 1.3) * 8;
+  let ey = lerp(-300, 415, outCubic(seg(t, 4.4, 6.3))) + Math.sin(t * 2.1) * 4;
+  if (t >= 6.5) { const k = inOut(seg(t, 6.5, 6.65)); ex = lerp(ex, top.x, k); ey = lerp(ey, top.y, k); }
+  const nerves = t > 10.4 ? Math.sin((t - 10.4) * 42) * .07 * seg(t, 10.4, 11) : 0;
+  return { ex, ey, cx: ex + Math.sin(t * 1.7) * 16, cy: ey - STR - 56, nerves };
+}
+
+// ---------- antennae: little springs for follow-through ----------
+const ant = [{ base: [-14, -57], ang: -1.85 }, { base: [14, -56], ang: -1.35 }].map(a => ({ ...a, p: null, v: { x: 0, y: 0 } }));
+function antRest(P, a) {
+  const b = toWorld(P, a.base[0], a.base[1]), ang = a.ang + P.rot;
+  return { b, dx: Math.cos(ang), dy: Math.sin(ang) };
+}
+function stepAnt(P, dt) {
+  for (const a of ant) {
+    const { b, dx, dy } = antRest(P, a), tx = b.x + dx * 46, ty = b.y + dy * 46;
+    if (!a.p || dt <= 0) { a.p = { x: tx, y: ty }; a.v = { x: 0, y: 0 }; continue; }
+    const n = Math.ceil(dt / .004), h = dt / n;
+    for (let i = 0; i < n; i++) {
+      a.v.x += (160 * (tx - a.p.x) - 10 * a.v.x) * h;
+      a.v.y += (160 * (ty - a.p.y) - 10 * a.v.y) * h;
+      a.p.x += a.v.x * h; a.p.y += a.v.y * h;
+    }
+    const ox = a.p.x - b.x, oy = a.p.y - b.y, d = Math.hypot(ox, oy) || 1, cd = clamp(d, 30, 54);
+    a.p.x = b.x + ox / d * cd; a.p.y = b.y + oy / d * cd;
+  }
+}
+const resetAnt = () => ant.forEach(a => a.p = null);
+
+// ---------- drawing ----------
+const cv = document.getElementById('c'), ctx = cv.getContext('2d');
+let boilOn = true, boilSeed = 0;
+const J = i => boilOn ? (hash(i * 3.17 + boilSeed * 31.7) - .5) * 2.6 : 0;
+
+function resize() {
+  const r = cv.getBoundingClientRect(), d = Math.min(2, window.devicePixelRatio || 1);
+  cv.width = Math.round(r.width * d); cv.height = Math.round(r.height * d);
+}
+addEventListener('resize', resize); resize();
+
+function smoothClosed(pts) {
+  const n = pts.length, mid = (a, b) => [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2];
+  const m0 = mid(pts[n - 1], pts[0]);
+  ctx.beginPath(); ctx.moveTo(m0[0], m0[1]);
+  for (let i = 0; i < n; i++) { const m = mid(pts[i], pts[(i + 1) % n]); ctx.quadraticCurveTo(pts[i][0], pts[i][1], m[0], m[1]); }
+  ctx.closePath();
+}
+
+function drawGround() {
+  ctx.lineWidth = 6; ctx.beginPath();
+  for (let x = -40, i = 0; x <= W + 40; x += 80, i++) {
+    const y = GROUND + 4 + Math.sin(x * .004) * 1.2 + J(500 + i) * .4;
+    i ? ctx.lineTo(x, y) : ctx.moveTo(x, y);
+  }
+  ctx.stroke();
+}
+
+function drawLeg(h, f, s) {
+  const ax = f.x, ay = f.y - 10, dx = ax - h.x, dy = ay - h.y, d = Math.hypot(dx, dy) || 1;
+  const bend = Math.sqrt(Math.max(0, LEG * LEG - d * d)) * .55 + 5, nx = -dy / d, ny = dx / d;
+  ctx.lineWidth = 6; ctx.beginPath(); ctx.moveTo(h.x, h.y);
+  ctx.quadraticCurveTo((h.x + ax) / 2 + nx * bend + J(s), (h.y + ay) / 2 + ny * bend + J(s + 1), ax, ay);
+  ctx.stroke();
+  ctx.save(); ctx.translate(f.x + J(s + 2) * .4, f.y - 9); ctx.rotate(f.rot);
+  ctx.beginPath(); ctx.ellipse(5, 0, 17, 10.5, 0, 0, Math.PI * 2); ctx.fill(); ctx.restore();
+}
+
+function drawEye(P, t) {
+  const e = toWorld(P, 34, -16);
+  ctx.save(); ctx.translate(e.x + J(300) * .4, e.y + J(301) * .4); ctx.rotate(P.rot); ctx.lineWidth = 4.5;
+  const blink = P.eye === 'open' && ((t + .7) % 3.3) < .12;
+  if (P.eye === 'happy') {
+    ctx.beginPath(); ctx.arc(0, 5, 10, Math.PI * 1.15, Math.PI * 1.85); ctx.stroke();
+  } else if (P.eye === 'dizzy') {
+    ctx.rotate(t * 7); ctx.lineWidth = 3.5; ctx.beginPath();
+    for (let a = 0; a < Math.PI * 4; a += .2) { const r = a * 1.0; a ? ctx.lineTo(Math.cos(a) * r, Math.sin(a) * r) : ctx.moveTo(0, 0); }
+    ctx.stroke();
+  } else if (blink) {
+    ctx.beginPath(); ctx.moveTo(-10, 0); ctx.lineTo(10, 0); ctx.stroke();
+  } else {
+    const wide = P.eye === 'wide', r = wide ? 14 : 11;
+    ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(0, 0, r, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+    ctx.fillStyle = INK; ctx.beginPath(); ctx.arc(2 + P.look, -P.look * 3.5, wide ? 3.5 : 4.5, 0, Math.PI * 2); ctx.fill();
+  }
+  ctx.restore();
+}
+
+function drawBody(P) {
+  const pts = [];
+  for (let i = 0; i < 40; i++) {
+    const th = i / 40 * Math.PI * 2, s = Math.sin(th);
+    const w = toWorld(P, 74 * Math.cos(th) * (1 + .1 * s), BODY_H * s);
+    pts.push([w.x + J(i), w.y + J(i + 40)]);
+  }
+  smoothClosed(pts); ctx.fillStyle = '#fff'; ctx.fill(); ctx.lineWidth = 6; ctx.stroke(); ctx.fillStyle = INK;
+}
+
+function drawAntennae(P) {
+  ctx.lineWidth = 5;
+  ant.forEach((a, i) => {
+    const { b, dx, dy } = antRest(P, a);
+    ctx.beginPath(); ctx.moveTo(b.x, b.y);
+    ctx.quadraticCurveTo(b.x + dx * 24 + J(200 + i), b.y + dy * 24 + J(210 + i), a.p.x, a.p.y); ctx.stroke();
+    ctx.beginPath(); ctx.arc(a.p.x, a.p.y, 7, 0, Math.PI * 2); ctx.fill();
+  });
+}
+
+function drawBalloon(B, t) {
+  const kx = B.cx, ky = B.cy + 58;
+  ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(B.ex, B.ey);
+  ctx.quadraticCurveTo((B.ex + kx) / 2 + Math.sin(t * 3) * 10, (B.ey + ky) / 2, kx, ky + 8); ctx.stroke();
+  ctx.fillStyle = RED;
+  ctx.beginPath(); ctx.moveTo(kx, ky - 2); ctx.lineTo(kx - 8, ky + 9); ctx.lineTo(kx + 8, ky + 9); ctx.closePath(); ctx.fill();
+  ctx.beginPath(); ctx.ellipse(kx + J(400) * .5, B.cy, 50 * (1 + B.nerves), 58 * (1 - B.nerves), 0, 0, Math.PI * 2); ctx.fill();
+  ctx.fillStyle = INK;
+}
+
+function drawPop(t) {
+  if (t < 11 || t > 11.6) return;
+  const c = balloon(10.999, pose(10.999)), u = seg(t, 11, 11.28), v = seg(t, 11, 11.6);
+  if (u < 1) {
+    ctx.lineWidth = 5 * (1 - u) + 1;
+    for (let i = 0; i < 10; i++) {
+      const a = i / 10 * Math.PI * 2 + .2, r1 = 30 + 70 * outCubic(u), r2 = r1 + 26 * (1 - u);
+      ctx.beginPath(); ctx.moveTo(c.cx + Math.cos(a) * r1, c.cy + Math.sin(a) * r1);
+      ctx.lineTo(c.cx + Math.cos(a) * r2, c.cy + Math.sin(a) * r2); ctx.stroke();
+    }
+  }
+  ctx.fillStyle = RED;
+  for (let i = 0; i < 6; i++) {
+    const a = i / 6 * Math.PI * 2 + .5, d = 40 + 130 * outCubic(v);
+    ctx.beginPath(); ctx.arc(c.cx + Math.cos(a) * d, c.cy + Math.sin(a) * d + 220 * v * v, 7 * (1 - v), 0, Math.PI * 2); ctx.fill();
+  }
+  ctx.fillStyle = INK;
+}
+
+function drawDust(t, P) {
+  if (t < LAND || t > LAND + .45) return;
+  const u = seg(t, LAND, LAND + .45), e = outCubic(u);
+  ctx.lineWidth = 4 * (1 - u) + .5;
+  for (const side of [-1, 1]) for (let j = 0; j < 3; j++) {
+    ctx.beginPath();
+    ctx.arc(900 + side * (60 + j * 22 + 70 * e), GROUND - 10 - j * 4 - 12 * u, (6 + j * 2) * (1 - u * .4), 0, Math.PI * 2);
+    ctx.stroke();
+  }
+}
+
+function render(t, dt) {
+  boilSeed = Math.floor(t * 12);
+  const P = pose(t);
+  stepAnt(P, dt);
+  ctx.setTransform(cv.width / W, 0, 0, cv.height / H, 0, 0);
+  ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, W, H);
+  ctx.strokeStyle = INK; ctx.fillStyle = INK; ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+  drawGround();
+  P.feet.forEach((f, i) => drawLeg(hipPos(P, i), f, 100 + i * 10));
+  drawAntennae(P);
+  drawBody(P);
+  drawEye(P, t);
+  const B = balloon(t, P); if (B) drawBalloon(B, t);
+  drawPop(t); drawDust(t, P);
+}
+
+// ---------- playback + controls ----------
+let t = 0, playing = true, speed = 1, last = performance.now(), recording = false;
+const $ = id => document.getElementById(id);
+function frame(now) {
+  const dt = Math.min(.05, (now - last) / 1000) * (playing ? speed : 0); last = now;
+  t += dt;
+  if (t >= T) { if (recording) stopRecording(); t %= T; resetAnt(); }
+  render(t, dt);
+  $('scrub').value = Math.round(t / T * 1000);
+  $('time').textContent = `${t.toFixed(1)} / ${T.toFixed(1)}s`;
+  requestAnimationFrame(frame);
+}
+requestAnimationFrame(frame);
+
+$('play').onclick = () => { playing = !playing; $('play').textContent = playing ? 'Pause' : 'Play'; };
+$('restart').onclick = () => { t = 0; resetAnt(); };
+$('scrub').oninput = e => { t = e.target.value / 1000 * T; resetAnt(); };
+$('speed').onchange = e => speed = +e.target.value;
+$('boil').onchange = e => boilOn = e.target.checked;
+
+let rec, chunks = [];
+$('rec').onclick = () => {
+  const type = ['video/webm;codecs=vp9', 'video/webm'].find(m => MediaRecorder.isTypeSupported(m));
+  rec = new MediaRecorder(cv.captureStream(60), { mimeType: type, videoBitsPerSecond: 8e6 });
+  chunks = []; rec.ondataavailable = e => chunks.push(e.data);
+  rec.onstop = () => {
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(new Blob(chunks, { type: 'video/webm' })); a.download = 'pip-and-the-balloon.webm'; a.click();
+  };
+  t = 0; resetAnt(); playing = true; speed = 1; $('speed').value = '1'; $('play').textContent = 'Pause';
+  recording = true; rec.start(); $('rec').disabled = true; $('rec').textContent = 'Recording…';
+};
+function stopRecording() {
+  recording = false; rec.stop(); $('rec').disabled = false; $('rec').textContent = 'Record video';
+}
+</script>
+</body>
+</html>

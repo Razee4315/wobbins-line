@@ -1,0 +1,152 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Busy</title>
+</head>
+<body>
+<script src="sfx.js?v=4"></script>
+<script src="engine2.js?v=4"></script>
+<script>
+// Bo rushes parcels from the pile to the desk, faster every trip, straight past a friend waving
+// with a birthday cake. The friend waves, then waits, then starts to leave. Bo notices, just in time.
+const { PAL, SPRITES, sprite, lerp, seg, sine, outBack, clamp, hash, spring, mix, GROUND } = Shorts;
+const V = 130, PILE = 760, PICK = 845, DROP = 1290, DESK = 1385, MO = 1070, TRIPS = 4, SPEEDS = [300, 380, 460, 530];
+const CAKE = ['...Y...', '...R...', 'PPPPPPP', 'WPWPWPW', 'WWWWWWW', 'PPPPPPP'];
+const PARCEL = ['XXXXXX', 'XXTTXX', 'XXTTXX', 'XXXXXX'];
+// measured: when Bo drops the last parcel, and when Bo reaches the friend
+const DONE = 19.36, MEET = 21.74;
+
+Shorts.play({
+  title: 'Busy',
+  accent: PAL.pink,
+  loopAfter: MEET + 14.6,
+  captions: [
+    [6.4, 8.2, 'so much to do.'],
+    [10.6, 12.2, 'busy. busy.'],
+    [14.4, 16.2, 'no time. *no time.*'],
+    [DONE + .3, DONE + 1.6, 'done!'],
+    [DONE + 1.8, MEET - .1, '...oh.'],
+    [MEET + .6, MEET + 2.6, 'you *waited.*'],
+    [MEET + 3.4, MEET + 8.6, 'slow down for the ones *who wait.*'],
+  ],
+  init(S) {
+    S.mo = S.addChar({ x: MO, face: -1, hair: 'curl', blush: PAL.pink, fill: '#ffe9f2', gain: .5 });
+    S.bo = S.addChar({ x: 0, walk: V }); S.focus = S.bo;
+    S.trip = 0; S.stage = null; S.t0 = 0; S.carry = false; S.toss = null; S.onDesk = 0; S.passes = 0; S.near = false;
+    S.doneT = null; S.meetT = null; S.bubbles = []; S.tick = 0; S.tickN = 0;
+  },
+  update(S, t, dt) {
+    const bo = S.bo, mo = S.mo, c = bo.cmd;
+    if (S.stage === null) S.plan(bo, t, [
+      [0, { x: PICK, speed: V, accel: 450 }],
+      [5.2, { lookX: -.6, lookY: .3, face: -1 }],
+      [6.2, () => { S.stage = 'pick'; S.t0 = t; }],
+    ]);
+    const sp = SPEEDS[Math.min(S.trip, TRIPS - 1)];
+    if (S.stage === 'pick') {
+      Object.assign(c, { face: -1, x: PICK, speed: sp, accel: 1500, eye: 'squeeze', lookX: 0, lookY: 0 });
+      if (Math.abs(bo.x - PICK) < 6) {
+        if (!S.carry && t - S.t0 > .15) { S.carry = true; S.sfx('pop', { pitch: 620 }, PILE); }
+        c.tilt = .3 * Math.sin(Math.PI * clamp((t - S.t0) / .35));
+        if (t - S.t0 > .35) { S.stage = 'run'; c.tilt = 0; }
+      } else S.t0 = t;
+    } else if (S.stage === 'run') {
+      Object.assign(c, { face: 1, x: DROP, speed: sp });
+      if (Math.abs(bo.x - DROP) < 6 && Math.abs(bo.vx) < 30) { S.stage = 'drop'; S.t0 = t; }
+    } else if (S.stage === 'drop') {
+      if (t - S.t0 < .12) c.crouch = .2; else S.once('hop' + S.trip, () => { c.crouch = 0; bo.jump(0, -380); });
+      if (t - S.t0 > .25) S.once('toss' + S.trip, () => { S.carry = false; S.toss = { t0: t, from: { ...bo.top() } }; S.sfx('whoosh', { d: .3, v: .4 }, bo.x); });
+      if (S.toss && t - S.toss.t0 > .35) {
+        S.toss = null; S.onDesk++; S.trip++; S.sfx('tock', { f: 700 + S.onDesk * 40 }, DESK);
+        if (S.trip >= TRIPS) { S.stage = 'done'; S.doneT = t; S.sfx('chime', { n: 5, g: .1 }, bo.x); }
+        else { S.stage = 'pick'; S.t0 = t; }
+      }
+    } else if (S.stage === 'done') {
+      const d = t - S.doneT;
+      if (d < 1.2) Object.assign(c, { eye: 'happy', crouch: .1 * Math.sin(d * 6), lookX: 0 });
+      else if (S.meetT === null) {
+        Object.assign(c, { face: -1, eye: 'wide', lookX: .6, crouch: 0 });                         // ...where's
+        if (d > 1.8) { Object.assign(c, { x: mo.x + 178, speed: 320, accel: 1400, eye: 'sad' }); S.once('notice', () => S.sfx('heart', { g: .25 }, bo.x)); }
+        if (d > 1.8 && Math.abs(bo.x - (mo.x + 178)) < 8) { S.meetT = t; }
+      }
+    }
+    if (S.meetT !== null) {
+      const d = t - S.meetT;
+      Object.assign(c, { x: S.meetSpot ?? (S.meetSpot = bo.x), face: -1, eye: 'happy', lookX: .3 });
+      if (d > .2) S.once('meet', () => { S.sfx('swell', { root: 440 }); S.sfx('chime', { n: 7, g: .12 }); bo.jump(0, -400); });
+      if (d > 1.0) c.sit = 1;
+      if (d > 5.4) { c.sit = 0; }
+      if (d > 6.0) Object.assign(c, { face: 1, x: 1e6, speed: V, accel: 450, eye: 'open', lookX: 0 });
+    }
+
+    // the friend: waves every time Bo zooms past, sadder each time, then starts to go home
+    const near = Math.abs(bo.x - MO) < 90 && S.stage && S.stage !== 'done';
+    if (near && !S.near) {
+      S.passes++; const k = S.passes;
+      mo.jump(0, -300 - Math.min(5, k) * 30); S.bubbles.push({ t0: t, kind: k % 2 ? 'cake' : 'heart', big: Math.min(1.6, .8 + k * .1) });
+      S.sfx('pop', { pitch: 980 + k * 30, g: .1 }, MO);
+    }
+    S.near = near;
+    const moods = S.passes < 3 ? 'happy' : S.passes < 6 ? 'open' : 'sad';
+    if (S.meetT === null) {
+      Object.assign(mo.cmd, { eye: moods, face: -1, lookX: .4 });
+      if (S.passes >= 7 && S.stage !== 'done') mo.cmd.sit = .8;
+      if (S.stage === 'done') { mo.cmd.sit = 0; Object.assign(mo.cmd, { x: 600, speed: 45, accel: 200, face: -1, eye: 'sad', tilt: .1 }); S.once('moSad', () => S.sfx('drain', {}, mo.x)); }
+    } else {
+      const d = t - S.meetT;
+      Object.assign(mo.cmd, { x: mo.x, face: 1, eye: d > .4 ? 'happy' : 'wide', tilt: 0, lookX: .3 });
+      if (d > .5) S.once('moHop', () => mo.jump(0, -420));
+      if (d > 1.1) mo.cmd.sit = 1;
+      if (d > 5.4) mo.cmd.sit = 0;
+      if (d > 6.2) Object.assign(mo.cmd, { face: -1, x: -1500, speed: 120, accel: 300 });
+      if (d > 6.4) S.once('bye', () => mo.jump(0, -360));
+    }
+    S.bubbles = S.bubbles.filter(b => t - b.t0 < 1);
+    // the busy clock
+    if (S.stage && S.stage !== 'done') { S.tick += dt; if (S.tick >= .3 - S.trip * .04) { S.tick = 0; S.sfx('tick', { tock: S.tickN++ % 2, gain: .6 }); } }
+    if (t > 5.4 && (S.meetT === null || t < S.meetT + 6)) { S.camGoal.x = S.meetT === null ? 1070 : bo.x - 60; S.camGoal.z = .78; S.camGoal.kx = 2.2; }
+  },
+  drawSky(S, ctx, t, v) {
+    for (let i = 0; i < 3; i++) {
+      const W = v.right - v.left + 400, x = v.left - 200 + (1 - ((t / S.T * 2 + i / 3 + .8) % 1)) * W;
+      sprite(ctx, SPRITES.cloud, x, v.top + (v.bottom - v.top) * (.25 + i * .06), 9, { X: '#ebe8f4' });
+    }
+  },
+  drawBack(S, ctx, t) {
+    // the pile (shrinks) and the desk (fills)
+    for (let i = 0; i < TRIPS - S.trip - (S.carry && S.stage !== 'done' ? 1 : 0); i++) sprite(ctx, PARCEL, PILE - 20 + (i % 2) * 40, GROUND - 14 - Math.floor(i / 2) * 30, 7, { X: '#c58b5a', T: '#f5e6c8' });
+    ctx.fillStyle = '#fff'; ctx.lineWidth = 5; ctx.beginPath(); ctx.rect(DESK - 50, GROUND - 70, 100, 14); ctx.fill(); ctx.stroke();
+    for (const x of [DESK - 42, DESK + 42]) { ctx.beginPath(); ctx.moveTo(x, GROUND - 56); ctx.lineTo(x, GROUND + 2); ctx.stroke(); }
+    for (let i = 0; i < S.onDesk; i++) sprite(ctx, PARCEL, DESK - 18 + (i % 2) * 36, GROUND - 86 - Math.floor(i / 2) * 30, 7, { X: '#c58b5a', T: '#f5e6c8' });
+  },
+  drawFront(S, ctx, t) {
+    const bo = S.bo, mo = S.mo, top = bo.top();
+    if (S.carry) sprite(ctx, PARCEL, top.x, top.y - 16, 7, { X: '#c58b5a', T: '#f5e6c8' });
+    if (S.toss) { const u = sine(clamp((t - S.toss.t0) / .35)); sprite(ctx, PARCEL, lerp(S.toss.from.x, DESK, u), lerp(S.toss.from.y - 16, GROUND - 90, u) - Math.sin(Math.PI * u) * 90, 7, { X: '#c58b5a', T: '#f5e6c8' }); }
+    // the cake: on Mo's head, then set down between them when they finally sit together
+    const mt = mo.top(), sat = S.meetT !== null && t > S.meetT + 1.1;
+    const cx = sat ? (mo.x + bo.x) / 2 : mt.x, cy = sat ? GROUND - 20 : mt.y - 20, flame = Math.floor(t * 9) % 2;
+    sprite(ctx, CAKE.map((r, i) => i === 0 && flame ? '...O...' : r), cx, cy, 6, { Y: PAL.yellow, O: PAL.orange, R: PAL.red, P: PAL.pink, W: '#fff' });
+    if (sat && t < S.meetT + 5.4) for (let i = 0; i < 3; i++) sprite(ctx, SPRITES.sparkle, cx - 30 + i * 30, cy - 40 - ((t * 30 + i * 15) % 30), 2.2, { X: PAL.yellow }, Math.max(0, Math.sin(t * 4 + i * 2)));
+    // "hey!!" bubbles
+    for (const b of S.bubbles) {
+      const u = (t - b.t0) / 1, k = outBack(clamp(u / .2)) * (1 - seg(u, .7, 1)) * b.big;
+      ctx.save(); ctx.translate(mt.x + 40, mt.y - 90); ctx.scale(k, k);
+      ctx.fillStyle = '#fff'; ctx.lineWidth = 4; ctx.beginPath(); ctx.roundRect(-26, -22, 52, 42, 10); ctx.fill(); ctx.stroke();
+      if (b.kind === 'heart') sprite(ctx, SPRITES.heart, 0, -1, 3.6, { X: PAL.pink }); else sprite(ctx, CAKE, 0, 0, 3.6, { Y: PAL.yellow, R: PAL.red, P: PAL.pink, W: '#ddd' });
+      ctx.restore();
+    }
+    // speed lines while Bo rushes
+    const sp = clamp((Math.abs(bo.vx) - 260) / 260);
+    if (sp > 0) {
+      ctx.strokeStyle = '#111'; ctx.lineWidth = 4; const dir = Math.sign(bo.vx);
+      for (let i = 0; i < 5; i++) { const ph = (t * 3 + hash(i)) % 1, y = bo.y - 50 + i * 22; ctx.globalAlpha = Math.sin(Math.PI * ph) * sp * .6; const x0 = bo.x - dir * (100 + ph * 120); ctx.beginPath(); ctx.moveTo(x0, y); ctx.lineTo(x0 - dir * 90 * sp, y); ctx.stroke(); }
+      ctx.globalAlpha = 1;
+    }
+  },
+});
+</script>
+</body>
+</html>

@@ -1,0 +1,172 @@
+/* one-more: extracted from ../one-more.html by scripts/sync-shorts.py. Do not edit here. */
+(function () {
+  const Shorts = Object.assign(Object.create(window.Shorts), { play: story => { (window.WL_STORIES ||= {})['one-more'] = story; } });
+  // Bo finds a glowing screen. Every tap gives a heart, each one smaller and greyer,
+  // while a butterfly, a friend and a whole day go by unnoticed. Then the battery dies.
+  const { PAL, SPRITES, sprite, lerp, seg, sine, outBack, outCubic, hash, spring, mix, clamp, GROUND } = Shorts;
+  const PX = 900, V = 130;
+  // taps: [time, hearts, size]
+  const TAPS = [[7.0, 1, 34], [10.2, 2, 24], [10.55, 2, 24]];
+  for (let t = 15.0; t < 21.6; t += .3) TAPS.push([t, 1 + (Math.round(t * 10) % 2), 13]);
+  const DEAD_TAP = 22.9;
+
+  function tapPulse(t) {
+    let p = 0;
+    for (const [at] of TAPS.concat([[DEAD_TAP]])) { const x = (t - at) / .22; if (x > 0 && x < 1) p = Math.max(p, Math.sin(Math.PI * x)); }
+    return p;
+  }
+
+  Shorts.play({
+    title: 'One More',
+    accent: PAL.blue,
+    loopAfter: 33.8,
+    captions: [
+      [7.4, 9.4, 'ding.'],
+      [10.6, 12.6, 'one more.'],
+      [15.6, 18.0, 'one more. one more.'],
+      [18.4, 21.6, 'just *one* more...'],
+      [24.4, 26.8, 'look up.'],
+      [28.0, 32.8, "life doesn't send *notifications.*"],
+    ],
+    init(S) {
+      S.mo = S.addChar({ x: 1500, face: -1, hair: 'curl', blush: PAL.pink, gain: .7 });
+      S.bo = S.addChar({ x: 0, walk: V }); S.focus = S.bo;
+      S.lit = { x: 0, v: 0 }; S.pulse = { x: 0, v: 0 }; S.rings = [];
+    },
+    update(S, t, dt) {
+      const bo = S.bo, mo = S.mo;
+      S.plan(bo, t, [
+        [0, { x: 812, speed: V, accel: 450 }],
+        [5.2, { lookX: .8, lookY: .45 }],                                  // something's glowing
+        [6.3, { eye: 'wide', tilt: .08 }],
+        [6.9, { eye: 'open' }],
+        [7.3, { eye: 'heart' }], [7.55, { crouch: .2 }],
+        [7.8, { crouch: 0 }], [7.8, () => bo.jump(0, -560)],               // the first one is amazing
+        [8.8, { eye: 'open', lookX: .9, lookY: .55, tilt: .1 }],
+        [10.7, { eye: 'heart' }], [10.95, { crouch: .15 }],
+        [11.15, { crouch: 0 }], [11.15, () => bo.jump(0, -380)],           // still good
+        [12.0, { eye: 'open', lookX: .9, lookY: .55 }],
+        [13.0, { sit: 1, tilt: .18 }],                                     // settles in
+        [15.0, { eye: 'flat' }],                                           // ...glazed
+        [23.3, { eye: 'open', tilt: .05 }],
+        [23.9, { lookY: -1, lookX: -.4, tilt: -.16 }],                     // looks up. finally
+        [24.3, { eye: 'wide' }],
+        [25.3, { eye: 'happy' }],
+        [26.6, { sit: 0, tilt: 0 }],
+        [27.4, { x: 1e6, speed: V, accel: 450, eye: 'open', lookX: 0, lookY: 0 }],
+        // sound
+        [5.3, () => S.sfx('twinkle', { pitch: 2093 }, PX)], [6.1, () => S.sfx('twinkle', { pitch: 2349, gain: .8 }, PX)],
+        [21.85, () => S.sfx('beep', { pitch: 660 }, PX)], [22.25, () => S.sfx('beep', { pitch: 494 }, PX)],
+        [22.6, () => S.sfx('powerDown', {}, PX)],
+        [DEAD_TAP + .11, () => S.sfx('tap', { dull: 1 }, PX)],
+        [24.3, () => S.sfx('swell', { root: 392 })],
+        [25.3, () => S.sfx('twinkle', { pitch: 1568, gain: .7 })],
+      ]);
+      S.plan(mo, t, [
+        [11.6, { x: 1050, speed: 150, accel: 500 }],
+        [14.9, { eye: 'happy' }], [15.2, { crouch: .2 }],
+        [15.45, { crouch: 0 }], [15.45, () => mo.jump(0, -420)],           // "hey!"
+        [16.4, { eye: 'open', lookX: .3 }],
+        [17.4, { eye: 'sad', tilt: .1 }],
+        [18.0, { face: 1, tilt: 0 }],
+        [18.4, { x: 3200, speed: 165, accel: 500 }],                      // gives up, walks off
+      ]);
+      // the head-down taps
+      const p = tapPulse(t);
+      if (t > 6.8 && t < 23.3) bo.cmd.tilt = (t < 13 ? .1 : .18) + .3 * p;
+      TAPS.forEach(([at, n, size], i) => {
+        if (t < at + .11) return;
+        S.once('tap' + i, () => {
+          const grey = seg(at, 15, 21.5);
+          S.burst(PX, GROUND - 74, n, [mix(PAL.pink, PAL.grey, grey)], { shape: 'heart', gravity: -240, speed: 200, spread: 1.3, life: 1.7 - grey * .6, size, drag: 2 });
+          S.rings.push({ t0: t, big: size > 20 }); S.pulse.v += 9;
+          if (at > 15) S.shake(.6 + grey);
+          // the reward gets duller every time: bright bell, then softer, then just grey pops
+          S.sfx('tap', { dull: grey * .6 }, PX);
+          if (i === 0) S.sfx('ding', { pitch: 1568, g: .14 }, PX);
+          else if (at < 12) S.sfx('ding', { pitch: 1318, g: .085 }, PX);
+          for (let k = 0; k < n; k++) S.sfx('pop', { pitch: 640 + 260 * hash(i * 3 + k), dull: grey, g: .12 - .05 * grey, gain: at > 15 ? .8 : 1 }, PX);
+        });
+      });
+      spring(S.lit, t > 7.1 && t < 22.6 ? 1 : 0, 60, .5, dt);
+      spring(S.pulse, 0, 260, .35, dt);
+      S.rings = S.rings.filter(r => t - r.t0 < .7);
+
+      // frame Bo and the phone; push in as it gets worse, ease back out when it dies
+      if (t > 6.2 && t < 27.4) {
+        S.camGoal.x = 845; S.camGoal.kx = 3;
+        S.camGoal.z = 1 + .32 * sine(seg(t, 15, 21.6)) * (1 - sine(seg(t, 22.6, 25.5)));
+      }
+    },
+    drawSky(S, ctx, t, v) {
+      // a whole day passes while Bo stares at the screen
+      const u = seg(t, 7.5, 30.5);
+      if (u > 0 && u < 1) {
+        const sx = v.cx + lerp(330, -330, u), sy = GROUND - Math.sin(Math.PI * u) * 300, R = 110, low = 1 - Math.sin(Math.PI * u);
+        ctx.save(); ctx.beginPath(); ctx.rect(v.left, v.top, v.right - v.left, GROUND - v.top); ctx.clip();
+        for (let y = -R; y < R; y += 11) {
+          const k = (y + R) / (2 * R), w = Math.sqrt(Math.max(0, R * R - (y + 5.5) ** 2));
+          if (k > .55 && (Math.floor((y + R) / 11) % 2) && low > .3) continue;  // synthwave gaps near the horizon
+          ctx.fillStyle = mix(mix(PAL.yellow, PAL.orange, k * .6), mix(PAL.orange, PAL.pink, k), low);
+          ctx.fillRect(Math.round(sx - w), sy + y, Math.round(w * 2), 11.5);
+        }
+        ctx.restore();
+      }
+      for (let i = 0; i < 3; i++) {
+        const W = v.right - v.left + 400, x = v.left - 200 + (1 - ((t / S.T + i / 3 + .1) % 1)) * W;
+        sprite(ctx, SPRITES.cloud, x, v.top + (v.bottom - v.top) * (.25 + i * .06), 9, { X: '#ebe8f4' });
+      }
+    },
+    drawBack(S, ctx, t) {
+      const w = 42, h = 66, x = PX - w / 2, y = GROUND - h + 2, dead = t > 22.6;
+      const flick = t > 22.2 && t < 22.6 && Math.floor(t * 20) % 2;
+      // glow rays
+      const L = S.lit.x;
+      if (L > .02) {
+        ctx.strokeStyle = PAL.blue; ctx.lineWidth = 5;
+        for (let i = 0; i < 8; i++) {
+          const a = i / 8 * Math.PI * 2 + t * .4, r1 = 54 + 6 * Math.sin(t * 6 + i), r2 = r1 + 14 * L;
+          ctx.globalAlpha = .5 * L;
+          ctx.beginPath(); ctx.moveTo(PX + Math.cos(a) * r1, y + h / 2 + Math.sin(a) * r1 * .9);
+          ctx.lineTo(PX + Math.cos(a) * r2, y + h / 2 + Math.sin(a) * r2 * .9); ctx.stroke();
+        }
+        ctx.globalAlpha = 1;
+      }
+      for (const r of S.rings) {
+        const u = (t - r.t0) / .7; ctx.strokeStyle = PAL.blue; ctx.globalAlpha = (1 - u) * .8; ctx.lineWidth = 4 * (1 - u) + 1;
+        ctx.beginPath(); ctx.ellipse(PX, y + h / 2, 30 + u * (r.big ? 110 : 70), 30 + u * (r.big ? 90 : 55), 0, 0, Math.PI * 2); ctx.stroke();
+      }
+      ctx.globalAlpha = 1; ctx.strokeStyle = '#111';
+      ctx.beginPath(); ctx.roundRect(x, y, w, h, 9);
+      ctx.fillStyle = dead || flick ? '#26262e' : mix('#1d2b53', PAL.blue, L); ctx.fill(); ctx.lineWidth = 5; ctx.stroke();
+      if (!dead && !flick) {
+        const s = 3 + S.pulse.x * .25 + L * .4;
+        sprite(ctx, SPRITES.heart, PX, y + h / 2, s, { X: L > .3 ? '#fff' : '#5a6890' });
+        if (t < 7.1) sprite(ctx, SPRITES.sparkle, PX + 14, y + 10, 2.4 + Math.sin(t * 5) * .8, { X: '#fff' }, .5 + .5 * Math.sin(t * 5));
+      }
+      if (t > 21.8 && t < 22.6 && Math.floor(t * 5) % 2 === 0) {
+        sprite(ctx, ['XXXXXXX.', 'XRR...XX', 'XRR...XX', 'XXXXXXX.'], PX, y - 30, 5, { X: '#111', R: PAL.red });
+      }
+    },
+    drawFront(S, ctx, t) {
+      const bo = S.bo;
+      // the screen's blue light washing over Bo's face
+      const k = sine(seg(t, 15, 17.5)) * (1 - seg(t, 22.4, 22.7));
+      if (k > .01) {
+        const e = bo.toWorld(30 * bo.fw, -16);
+        ctx.fillStyle = PAL.blue; ctx.globalAlpha = .16 * k;
+        ctx.beginPath(); ctx.moveTo(PX - 16, GROUND - 56); ctx.lineTo(PX - 16, GROUND - 22);
+        ctx.lineTo(e.x - 10, e.y + 46); ctx.lineTo(e.x - 10, e.y - 46); ctx.closePath(); ctx.fill();
+        ctx.globalAlpha = 1;
+      }
+      // butterflies: one ignored, one that tags along at the end
+      const fly = (x, y, col, a = 1) => sprite(ctx, Math.floor(t * 12) % 2 ? SPRITES.flyA : SPRITES.flyB, x, y, 4.2, { X: col, B: '#111' }, a);
+      const p = seg(t, 8.4, 12.8);
+      if (p > 0 && p < 1) fly(lerp(1250, 250, p) + Math.sin(p * 9) * 60, GROUND - 210 - Math.sin(p * Math.PI) * 70 + Math.sin(p * 23) * 12, PAL.yellow);
+      if (t > 27.6 && t < 33.6) {
+        const k2 = t - 27.6, up = Math.max(0, t - 30.6);
+        fly(bo.x + 70 + Math.sin(t * 3) * 40 + up * 260, bo.top().y - 70 + Math.sin(t * 5) * 15 - up * 320, PAL.violet, clamp(k2 * 2) * (1 - seg(t, 33, 33.6)));
+      }
+    },
+  });
+})();

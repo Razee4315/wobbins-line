@@ -1,0 +1,185 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Reset</title>
+</head>
+<body>
+<script src="sfx.js?v=4"></script>
+<script src="engine2.js?v=4"></script>
+<script>
+// One of those days: trip, ice cream on the floor, a rain cloud, an umbrella that blows away,
+// a slip into the mud. Bo falls asleep, and the whole line resets to a fresh morning.
+const { PAL, SPRITES, sprite, zzz, lerp, seg, sine, outBack, clamp, hash, spring, mix, GROUND, GRAV, BODY_H } = Shorts;
+const V = 130, ROCK = 760, UMB = 1400, MUD = 1660;
+// measured from a run (captions and the reset are timed to these)
+const TRIP = 5.55, UMB_T = 13.08, MUD_T = 19.73, RESET = MUD_T + 5.6;
+const PUFFS = [[-50, 8, 26], [-20, -8, 34], [16, -14, 38], [48, 0, 30], [66, 14, 20], [0, 14, 30]];
+
+Shorts.play({
+  title: 'Reset',
+  accent: PAL.violet,
+  loopAfter: RESET + 9.0,
+  paperAt: t => {
+    const gloom = sine(seg(t, TRIP + 3, TRIP + 4)) * (1 - seg(t, RESET, RESET + .9));
+    const nite = sine(seg(t, MUD_T + 2, MUD_T + 4.5)) * (1 - seg(t, RESET + .8, RESET + .9));
+    return mix(mix('#ffffff', '#eceef2', gloom), '#d2cdea', nite * .95);
+  },
+  captions: [
+    [TRIP + .1, TRIP + 1.6, 'oops.'],
+    [TRIP + 4.2, TRIP + 5.6, 'ugh.'],
+    [UMB_T + .4, UMB_T + 1.8, 'finally...'],
+    [UMB_T + 2.2, UMB_T + 3.8, '*seriously?!*'],
+    [MUD_T + .4, MUD_T + 2.0, '...what a day.'],
+    [MUD_T + 3.2, MUD_T + 4.8, 'just... sleep.'],
+    [RESET + 2.6, RESET + 7.6, 'bad days end. *tomorrow is a new line.*'],
+  ],
+  init(S) {
+    S.bo = S.addChar({ x: 0, walk: V });
+    S.stage = 'walk1'; S.t0 = 0; S.cream = 'head'; S.creamFall = null; S.umb = 'ground'; S.umbFly = null; S.muddy = false;
+    S.cloud = { x: { x: 1200, v: 0 }, y: { x: -200, v: 0 } }; S.drops = []; S.dropN = 0; S.dropClock = 0; S.snore = 1.2; S.landed1 = null;
+  },
+  update(S, t, dt) {
+    const bo = S.bo, c = bo.cmd, d = t - S.t0;
+    if (S.stage === 'walk1') {
+      Object.assign(c, { x: 1e6, speed: V, accel: 450 });
+      if (bo.x >= ROCK - 40) {
+        S.stage = 'trip'; S.t0 = t; bo.jump(bo.vx * .6, -480, 10); S.sfx('trip', {}, bo.x);
+        S.cream = 'fall'; S.creamFall = { x: bo.tuft.x, y: bo.tuft.y, vx: -120, vy: -520 };
+      }
+    } else if (S.stage === 'trip') {
+      if (bo.lands >= 1 && !S.landed1) { S.landed1 = t; c.x = bo.x + 25; c.speed = 200; c.accel = 900; }
+      if (S.landed1) {
+        const e = t - S.landed1;
+        if (e > .5) Object.assign(c, { sit: .5, eye: 'sad', lookX: -1, lookY: .6 });
+        if (e > .6) S.once('sad1', () => S.sfx('drain', {}, bo.x));
+        if (e > 1.6) Object.assign(c, { sit: 0, lookX: 0, lookY: 0 });
+        if (e > 1.9) { S.stage = 'walk2'; S.t0 = t; }
+      }
+    } else if (S.stage === 'walk2') {
+      Object.assign(c, { x: UMB - 72, speed: 110, accel: 400, eye: S.cloudOn ? 'squeeze' : 'sad', tilt: .06 });
+      if (Math.abs(bo.x - (UMB - 72)) < 4 && Math.abs(bo.vx) < 20) { S.stage = 'umb'; S.t0 = t; }
+    } else if (S.stage === 'umb') {
+      c.eye = d > .2 ? 'happy' : 'open'; c.tilt = d > .4 && d < .8 ? .34 : 0; c.lookX = .6; c.lookY = d < .8 ? .6 : -.5;
+      if (d > .6) S.once('grab', () => { S.umb = 'head'; S.sfx('pop', { pitch: 640 }, bo.x); S.sfx('boing', { pitch: 300, g: .07 }, bo.x); });
+      if (d > 2.0) S.once('gust', () => { S.umb = 'fly'; S.umbFly = { t0: t, x: bo.tuft.x, y: bo.tuft.y - 70 }; S.sfx('whoosh', { d: 1.1, v: 1.2 }); S.sfx('whistle', { d: 1.2, f: 600, f2: 1400 }); S.shake(3); });
+      if (d > 2.0 && d < 2.9) { const k = Math.floor((d - 2.0) / .15); c.face = k % 2 ? -1 : 1; c.eye = 'wide'; }
+      if (d > 2.9) c.face = 1;
+      if (d > 3.1) { S.stage = 'walk3'; S.t0 = t; }
+    } else if (S.stage === 'walk3') {
+      Object.assign(c, { x: 1e6, speed: 90, accel: 300, eye: 'sad', lookX: 0, lookY: 0, tilt: .08 });
+      if (bo.x >= MUD - 50) { S.stage = 'slip'; S.t0 = t; bo.jump(200, -340, -13); S.sfx('slip', {}, bo.x); }
+    } else if (S.stage === 'slip') {
+      if (bo.mode === 'ground') {
+        S.stage = 'mud'; S.t0 = t; S.muddy = true; c.x = bo.x; c.speed = 250; c.accel = 1200;
+        S.sfx('splash', {}, bo.x); S.burst(bo.x, GROUND - 10, 22, [PAL.brown, '#7a4a2a', PAL.brown], { speed: 420, gravity: 1400, size: 9, life: 1, spread: 2.4 });
+      }
+    } else if (S.stage === 'mud') {
+      Object.assign(c, d < 2.4 ? { sit: 1, eye: 'sad', lookY: .4, tilt: 0 } : { sit: 1.15, tilt: -.25, eye: 'closed', lookY: 0 });
+      if (t > RESET + 1.4) c.eye = 'open';
+      if (t > RESET + 1.8) Object.assign(c, { sit: 0, tilt: 0 });
+      if (t > RESET + 2.2) Object.assign(c, { lookY: -1, eye: 'wide' });
+      if (t > RESET + 2.6) c.eye = 'happy';
+      if (t > RESET + 2.9) S.once('yay', () => bo.jump(0, -480));
+      if (t > RESET + 3.6) { S.stage = 'walk4'; S.t0 = t; }
+    } else if (S.stage === 'walk4') Object.assign(c, { x: 1e6, speed: V, accel: 450, eye: 'open', lookX: 0, lookY: 0, tilt: 0 });
+
+    // the ice cream: off it goes in the trip... and back after the reset
+    const f = S.creamFall;
+    if (S.cream === 'fall') { f.vy += GRAV * .8 * dt; f.x += f.vx * dt; f.y += f.vy * dt; if (f.y > GROUND - 8) { S.cream = 'splat'; f.y = GROUND - 2; S.sfx('splash', {}, f.x); } }
+    if (t > RESET + .5 && S.cream === 'splat') S.once('creamBack', () => { S.cream = 'head'; S.sfx('twinkle', { pitch: 2093 }, bo.x); S.burst(bo.tuft.x, bo.tuft.y - 20, 14, [PAL.pink, PAL.yellow, '#fff'], { speed: 260, gravity: 300, size: 7, life: 1 }); });
+
+    // the rain cloud: follows Bo through the worst part, then drifts off
+    S.cloudOn = t > TRIP + 3 && t < MUD_T + 4;
+    spring(S.cloud.x, S.cloudOn ? bo.x + 10 : bo.x + 900, 4, .6, dt);
+    spring(S.cloud.y, S.cloudOn ? GROUND - 370 + Math.sin(t * 1.4) * 6 : GROUND - 640, 3, .8, dt);
+    if (t > TRIP + 3.6 && t < MUD_T + 3.8) {
+      S.dropClock += dt;
+      while (S.dropClock >= .04) {
+        S.dropClock -= .04; const k = S.dropN++;
+        S.drops.push({ x: S.cloud.x.x + (hash(k) - .5) * 150, y: S.cloud.y.x + 30 });
+        if (k % 3 === 0) S.sfx('rain', { v: 1 }, bo.x);
+      }
+    }
+    const umbTop = S.umb === 'head' ? bo.tuft.y - 72 : null;
+    S.drops = S.drops.filter(dr => {
+      dr.y += 900 * dt;
+      const dx = dr.x - bo.x;
+      if (umbTop !== null && Math.abs(dr.x - bo.tuft.x) < 66 && dr.y > umbTop) return false;
+      if (Math.abs(dx) < 66 && dr.y > bo.y - BODY_H * Math.sqrt(1 - (dx / 66) ** 2)) return false;
+      return dr.y < GROUND;
+    });
+
+    if (S.stage === 'mud') { if (d > 2.6 && t < RESET + 1) { S.snore += dt; if (S.snore >= 1.7) { S.snore = 0; S.sfx('snore', {}, bo.x); } } }
+    if (t > RESET) S.once('reset', () => { S.sfx('arp', { notes: [0, 1, 2, 3, 4, 5, 6, 7, 8] , gap: .06 }); S.sfx('whoosh', { d: .9, v: .8 }); S.sfx('sparkle', { n: 10 }); });
+    if (t > RESET + 1.1) S.once('birds', () => { S.sfx('chirp', { k: 1 }); S.sfx('swell', { root: 523.25 }); });
+    if (t > RESET + 1.6) S.once('birds2', () => S.sfx('chirp', { k: 1.12 }));
+  },
+  drawSky(S, ctx, t, v) {
+    // the reset wipe: behind the band it's already a fresh morning
+    const u = seg(t, RESET, RESET + .9);
+    if (u > 0 && u < 1) { ctx.fillStyle = '#ffffff'; ctx.fillRect(v.left, v.top, (v.right - v.left) * (u * 1.25 - .1), v.bottom - v.top); }
+    const nite = sine(seg(t, MUD_T + 2, MUD_T + 4.5)) * (1 - seg(t, RESET, RESET + .9));
+    if (nite > .35) for (let i = 0; i < 20; i++) sprite(ctx, SPRITES.dot, v.left + hash(i) * (v.right - v.left), v.top + hash(i + .5) * (GROUND - v.top) * .7, 3, { X: '#fff' }, (nite - .35) / .65);
+    for (let i = 0; i < 3; i++) {
+      const W = v.right - v.left + 400, x = v.left - 200 + (1 - ((t / S.T + i / 3 + .15) % 1)) * W;
+      sprite(ctx, SPRITES.cloud, x, v.top + (v.bottom - v.top) * (.25 + i * .06), 9, { X: mix('#ebe8f4', '#c6bfe6', nite) });
+    }
+  },
+  drawBack(S, ctx, t, v) {
+    const u = seg(t, RESET, RESET + .9), wiped = x => t > RESET && (x - v.left) / (v.right - v.left) < u * 1.25 - .1;
+    if (!wiped(ROCK)) { ctx.fillStyle = PAL.grey; ctx.lineWidth = 4; ctx.beginPath(); ctx.ellipse(ROCK, GROUND - 4, 16, 10, 0, Math.PI, 0); ctx.fill(); ctx.stroke(); }
+    if (S.cream === 'splat' && !wiped(S.creamFall.x)) {
+      sprite(ctx, ['.XX..X.', 'XXXXXXX', '.XXXXX.'], S.creamFall.x, GROUND - 4, 6, { X: PAL.pink });
+      sprite(ctx, ['XXXX', '.XX.'], S.creamFall.x + 34, GROUND - 6, 5, { X: PAL.orange });
+    }
+    if (S.umb === 'ground' && !wiped(UMB)) drawUmbrella(ctx, UMB, GROUND - 10, 1.2, false);
+    if (!wiped(MUD)) { ctx.fillStyle = PAL.brown; ctx.beginPath(); ctx.ellipse(MUD + 40, GROUND, 80, 8, 0, 0, Math.PI * 2); ctx.fill(); }
+  },
+  drawFront(S, ctx, t, v) {
+    const bo = S.bo, T = bo.tuft, top = bo.top();
+    const u = seg(t, RESET, RESET + .9), wiped = x => t > RESET && (x - v.left) / (v.right - v.left) < u * 1.25 - .1;
+    // mud on Bo until the reset washes it off
+    if (S.muddy && !wiped(bo.x)) { ctx.fillStyle = PAL.brown; for (const [lx, ly, r] of [[-30, 20, 9], [10, 34, 11], [36, 6, 7], [-12, -10, 6]]) { const p = bo.toWorld(lx * bo.fw, ly); ctx.beginPath(); ctx.arc(p.x, p.y, r, 0, Math.PI * 2); ctx.fill(); } }
+    // ice cream on Bo's head
+    if (S.cream === 'head' && T) { sprite(ctx, ['XXXX', 'XXXX', '.XX.', '.XX.'], T.x, T.y + 2, 5, { X: PAL.orange }); ctx.fillStyle = PAL.pink; ctx.beginPath(); ctx.arc(T.x, T.y - 12, 13, 0, Math.PI * 2); ctx.fill(); ctx.fillStyle = '#fff'; ctx.fillRect(T.x - 7, T.y - 18, 4, 4); }
+    if (S.cream === 'fall') { const f = S.creamFall; ctx.fillStyle = PAL.pink; ctx.beginPath(); ctx.arc(f.x, f.y, 13, 0, Math.PI * 2); ctx.fill(); }
+    // umbrella: on the head, then inside out and gone
+    if (S.umb === 'head' && T) drawUmbrella(ctx, T.x, T.y - 70, 1, false);
+    if (S.umb === 'fly') { const k = t - S.umbFly.t0; if (k < 2.2) drawUmbrella(ctx, S.umbFly.x + k * k * 340, S.umbFly.y - k * 260 + Math.sin(k * 7) * 20, 1, true, k * 8); }
+    // gust streaks
+    const g = seg(t, UMB_T + 2, UMB_T + 3);
+    if (g > 0 && g < 1) { ctx.strokeStyle = '#111'; ctx.lineWidth = 4; for (let i = 0; i < 7; i++) { const x = v.left + ((g * 1.6 + hash(i)) % 1) * (v.right - v.left), y = GROUND - 80 - hash(i + .5) * 360; ctx.globalAlpha = Math.sin(Math.PI * g) * .7; ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x + 120, y); ctx.stroke(); } ctx.globalAlpha = 1; }
+    // rain and its cloud
+    ctx.strokeStyle = '#7f94b0'; ctx.lineWidth = 3;
+    for (const d of S.drops) { ctx.beginPath(); ctx.moveTo(d.x, d.y - 16); ctx.lineTo(d.x, d.y); ctx.stroke(); }
+    ctx.fillStyle = '#a7abb2';
+    for (const [ox, oy, r] of PUFFS) { ctx.beginPath(); ctx.arc(S.cloud.x.x + ox, S.cloud.y.x + oy + Math.sin(t * 2 + ox) * 2, r, 0, Math.PI * 2); ctx.fill(); }
+    if (S.stage === 'mud' && t > S.t0 + 2.6 && t < RESET + 1.2) zzz(ctx, top.x - 10, top.y, t, seg(t, S.t0 + 2.6, S.t0 + 3) * (1 - seg(t, RESET + .8, RESET + 1.2)));
+  },
+  drawOverlay(S, ctx, t, v) {
+    // the 8-bit "level reset" band sweeping across the screen
+    const u = seg(t, RESET, RESET + .9); if (u <= 0 || u >= 1) return;
+    const cw = v.cw, ch = v.ch, bx = (u * 1.25 - .1) * cw, bw = cw * .12, px = Math.max(8, Math.round(cw / 60));
+    const cols = [PAL.red, PAL.orange, PAL.yellow, PAL.lime, PAL.sky, PAL.violet, PAL.pink];
+    for (let x = bx - bw; x < bx; x += px) for (let y = 0; y < ch; y += px) {
+      if (hash(Math.floor(x / px) * 7.1 + Math.floor(y / px) * 3.3) > (x - (bx - bw)) / bw) continue;
+      ctx.fillStyle = cols[Math.floor(hash(Math.floor(y / px) + Math.floor(x / px) * .37) * cols.length)]; ctx.fillRect(x, y, px, px);
+    }
+  },
+});
+
+function drawUmbrella(ctx, x, y, s, inside, spin = 0) {
+  ctx.save(); ctx.translate(x, y); ctx.rotate(spin + (s > 1 ? Math.PI / 2 : 0)); ctx.scale(s, inside ? -s : s);
+  ctx.fillStyle = PAL.violet; ctx.strokeStyle = '#111'; ctx.lineWidth = 5;
+  ctx.beginPath(); ctx.moveTo(-60, 0); ctx.quadraticCurveTo(0, -64, 60, 0);
+  for (let i = 0; i < 4; i++) ctx.quadraticCurveTo(45 - i * 30, -12, 30 - i * 30, 0);
+  ctx.closePath(); ctx.fill(); ctx.stroke();
+  ctx.fillStyle = PAL.pink; ctx.beginPath(); ctx.moveTo(-15, -2); ctx.quadraticCurveTo(0, -60, 15, -2); ctx.fill();
+  ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(0, 66); ctx.quadraticCurveTo(0, 78, -10, 74); ctx.stroke();
+  ctx.restore();
+}
+</script>
+</body>
+</html>

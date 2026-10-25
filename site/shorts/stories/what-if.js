@@ -1,0 +1,162 @@
+/* what-if: extracted from ../what-if.html by scripts/sync-shorts.py. Do not edit here. */
+(function () {
+  const Shorts = Object.assign(Object.create(window.Shorts), { play: story => { (window.WL_STORIES ||= {})['what-if'] = story; } });
+  // A small worry appears over Bo's head. It grows, fills with more worries, and weighs Bo
+  // down until Bo can't walk. Bo stops and breathes, and the tangle unwinds into a bird.
+  const { PAL, SPRITES, sprite, lerp, seg, sine, outBack, clamp, hash, spring, mix, GROUND } = Shorts;
+  const V = 130, BREATH0 = 22.8, BREATH = 2.4, RELEASE = 30.2;
+  const ICON = {
+    q: ['.XXX.', 'X...X', '....X', '...X.', '..X..', '.....', '..X..'],
+    bang: ['XX', 'XX', 'XX', 'XX', '..', 'XX'],
+    clock: ['.XXX.', 'X.X.X', 'X.XXX', 'X...X', '.XXX.'],
+    mail: ['XXXXXXX', 'XX...XX', 'X.X.X.X', 'X..X..X', 'XXXXXXX'],
+    x: ['X...X', '.X.X.', '..X..', '.X.X.', 'X...X'],
+  };
+  // worries: [appears, kind, colour]
+  const WORRIES = [
+    [3.4, 'q', PAL.violet],
+    [9.4, 'bang', PAL.red], [9.8, 'clock', PAL.orange], [10.2, 'q', PAL.blue],
+    [16.2, 'x', PAL.red], [16.5, 'mail', PAL.blue], [16.8, 'bang', PAL.orange], [17.1, 'q', PAL.pink], [17.4, 'clock', PAL.violet], [17.7, 'bang', PAL.red],
+  ];
+  const goneAt = j => BREATH0 + 1 + j * .62;
+  const radius = t => {
+    const grow = 40 * outBack(seg(t, 3, 3.6)) + 40 * sine(seg(t, 9, 10)) + 70 * sine(seg(t, 16, 17.2));
+    return grow * lerp(1, .42, sine(seg(t, BREATH0, RELEASE)));
+  };
+  const anxiety = t => t < 9 ? .2 : t < 16 ? .5 : lerp(1, 0, sine(seg(t, BREATH0, RELEASE)));
+
+  Shorts.play({
+    title: 'What If',
+    accent: PAL.violet,
+    loopAfter: 38.2,
+    captions: [
+      [3.6, 6.4, 'what if...'],
+      [9.6, 12.6, 'but what if...'],
+      [16.4, 19.8, '*WHAT IF—*'],
+      [23.2, 27.6, 'breathe.'],
+      [31.2, 35.4, 'let it *go.*'],
+    ],
+    init(S) {
+      S.bo = S.addChar({ x: 0, walk: V });
+      S.tc = { x: { x: 0, v: 0 }, y: { x: 0, v: 0 }, init: false };
+      S.rings = []; S.scr = 0; S.beat = 0; S.flap = 0;
+    },
+    update(S, t, dt) {
+      const bo = S.bo;
+      S.plan(bo, t, [
+        [0, { x: 1e6, speed: V, accel: 300 }],
+        [3.2, { speed: 95, lookY: -.6, lookX: -.2 }],                     // hm?
+        [4.6, { lookY: 0, lookX: 0, crouch: .05 }],
+        [9.0, { speed: 60, crouch: .12, eye: 'sad', lookY: -.6 }],
+        [12.4, { speed: 0, accel: 200 }],
+        [13.0, { face: -1 }], [13.3, { face: 1 }], [13.6, { face: -1 }], [13.9, { face: 1, lookY: 0 }],   // shake it off. doesn't work
+        [14.6, { speed: 45, accel: 200 }],
+        [16.0, { eye: 'wide', crouch: .2 }],
+        [18.0, { speed: 0, accel: 150, crouch: .26, eye: 'squeeze', sit: .6 }],   // too heavy to walk
+        [22.4, { eye: 'closed', crouch: 0, sit: .8 }],                    // stop. breathe
+        [RELEASE + .2, { eye: 'open' }],
+        [RELEASE + .6, { lookY: -1, lookX: .3, eye: 'happy' }],
+        [32.6, { sit: 0 }], [33.0, { crouch: .18 }],
+        [33.3, { crouch: 0 }], [33.3, () => bo.jump(0, -420)],            // light again
+        [34.0, { x: 1e6, speed: V, accel: 300, eye: 'open', lookX: 0, lookY: 0, tilt: 0 }],
+        // sound
+        [3.0, () => S.sfx('pop', { pitch: 420, g: .1 })],
+        ...[13.0, 13.3, 13.6, 13.9].map(at => [at, () => S.sfx('whoosh', { d: .2, v: .5 })]),
+        ...WORRIES.map(([at], j) => [at, () => S.sfx('pop', { pitch: 360 + hash(j * 5) * 320, g: .1 })]),
+        ...WORRIES.map((w, j) => [goneAt(j) + .1, () => S.sfx('poof', {})]),
+        [RELEASE, () => { S.sfx('chime', { f: 523.25, g: .12 }); S.sfx('swell', { root: 523.25 }); }],
+        ...[[30.6, 1], [31.4, 1.1], [32.3, .95]].map(([at, k]) => [at, () => S.sfx('chirp', { k })]),
+      ]);
+      // the worry scratches faster and louder as it grows; a heartbeat underneath at its worst
+      const anx = anxiety(t), Rr = radius(t);
+      if (t > 3 && t < RELEASE && Rr > 5) {
+        S.scr += dt;
+        if (S.scr >= lerp(.32, .05, anx)) { S.scr = 0; S.sfx('scribble', { v: clamp(Rr / 150) * (.4 + .6 * anx) }); }
+      }
+      if (t > 16 && t < 24.5) {
+        S.beat += dt;
+        if (S.beat >= .62) { S.beat = 0; S.sfx('heart', { g: .24 * seg(t, 16, 17.2) * (1 - seg(t, 22.4, 24.5)) }); }
+      }
+      if (t > BREATH0 && t < RELEASE) {
+        const ph = (t - BREATH0) / BREATH, n = Math.floor(ph);
+        S.once('in' + n, () => S.sfx('breathIn', { d: BREATH * .45 }));
+        if (ph - n > .5) S.once('out' + n, () => S.sfx('breathOut', { d: BREATH * .5 }));
+      }
+      if (t > RELEASE + .4 && t < 32.5) { S.flap += dt; if (S.flap >= .25) { S.flap = 0; S.sfx('flap', {}); } }
+      if (t > 16 && t < 22.4) bo.cmd.tilt = .14 + .035 * Math.sin(t * 38) * seg(t, 16, 18);
+      else if (t > 9 && t < 22.4) bo.cmd.tilt = .08;
+      // slow breaths: inhale stretches tall, exhale settles and sends out a ring
+      if (t > BREATH0 && t < RELEASE) {
+        const ph = (t - BREATH0) / BREATH;
+        bo.cmd.crouch = -.07 * Math.sin(2 * Math.PI * ph);
+        const n = Math.floor(ph + .25);
+        S.once('ring' + n, () => S.rings.push({ t0: t }));
+      }
+      S.rings = S.rings.filter(r => t - r.t0 < 2);
+
+      // the worry floats above Bo's head on a lazy spring
+      const top = bo.top(), R = radius(t);
+      const tx = top.x - 10 * bo.dir, ty = top.y - R - 60;
+      if (!S.tc.init) { S.tc.x.x = tx; S.tc.y.x = ty; S.tc.init = true; }
+      spring(S.tc.x, tx, 16, .45, dt); spring(S.tc.y, ty, 16, .45, dt);
+      if (t > 16 && t < 22.4) S.shake(.5);
+      if (t > 15.5 && t < RELEASE + 1) S.camGoal.y = GROUND - 130 * sine(seg(t, 15.5, 17.5)) * (1 - sine(seg(t, RELEASE - 1, RELEASE + 1)));
+      if (t > 16 && t < RELEASE) S.camGoal.z = 1 + .12 * sine(seg(t, 16, 19)) * (1 - sine(seg(t, BREATH0, RELEASE)));
+    },
+    drawFront(S, ctx, t) {
+      const bo = S.bo, cx = S.tc.x.x, cy = S.tc.y.x, R = radius(t), anx = anxiety(t);
+      // breath rings
+      for (const r of S.rings) {
+        const u = (t - r.t0) / 2, rr = 80 + u * 420, a = (1 - u) * .8;
+        ctx.fillStyle = PAL.sky;
+        for (let k = 0; k < 64; k++) {
+          const ang = k / 64 * Math.PI * 2, x = bo.x + Math.cos(ang) * rr, y = bo.y + Math.sin(ang) * rr * .7;
+          if (y > GROUND) continue;
+          ctx.globalAlpha = a; ctx.fillRect(Math.round(x / 8) * 8, Math.round(y / 8) * 8, 8, 8);
+        }
+        ctx.globalAlpha = 1;
+      }
+      if (t < 3) return;
+      const calm = sine(seg(t, BREATH0, RELEASE)), toBird = seg(t, RELEASE, RELEASE + .6);
+      if (t < RELEASE + .6) {
+        // thought dots between head and worry
+        const top = bo.top();
+        ctx.fillStyle = '#fff'; ctx.lineWidth = 4;
+        for (const [k, r] of [[.3, 6], [.6, 9]]) {
+          ctx.beginPath(); ctx.arc(lerp(top.x, cx, k), lerp(top.y - 10, cy + R * .8, k), r * (1 - toBird), 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+        }
+        // the scribble: a fast-boiling tangle that unwinds into a calm circle
+        const frame = Math.floor(t * (6 + 18 * anx)), M = 110, s = 1 - outBack(toBird) * .9;
+        ctx.strokeStyle = mix('#111', PAL.blue, calm); ctx.lineWidth = 4 + calm;
+        ctx.beginPath();
+        for (let i = 0; i <= M; i++) {
+          const u = i / M, turns = lerp(6, 1, calm), a = u * Math.PI * 2 * turns + hash(i) * 1.4 * (1 - calm);
+          const rn = R * (.3 + .7 * hash(i * 3.1 + frame * 7.7)), r = lerp(rn, R * .8, calm) * s;
+          const x = cx + Math.cos(a) * r * 1.2, y = cy + Math.sin(a * (1 + .04 * (1 - calm))) * r * .85;
+          i ? ctx.lineTo(x, y) : ctx.moveTo(x, y);
+        }
+        ctx.stroke();
+        // worries orbiting inside
+        WORRIES.forEach(([at, kind, col], j) => {
+          const k = outBack(seg(t, at, at + .4)) * (1 - seg(t, goneAt(j), goneAt(j) + .3));
+          if (k <= 0) return;
+          const ph = t * (.5 + anx * 2.2) + j * 2.4, jit = anx * 3;
+          const x = cx + Math.cos(ph) * R * .55 + (hash(j + frame) - .5) * jit, y = cy + Math.sin(ph * 1.3) * R * .4 + (hash(j + frame + .5) - .5) * jit;
+          sprite(ctx, ICON[kind], x, y, 4.6 * k, { X: col });
+        });
+      }
+      // ...and the circle becomes a bird and flies off
+      if (t > RELEASE + .3 && t < 36.5) {
+        const u = t - (RELEASE + .3), k = outBack(clamp(u / .4));
+        const x = cx + Math.pow(u, 1.6) * 170, y = cy - Math.pow(u, 1.4) * 150 + Math.sin(u * 5) * 14;
+        sprite(ctx, Math.floor(t * 8) % 2 ? SPRITES.birdA : SPRITES.birdB, x, y, 8 * k, { X: PAL.blue });
+      }
+    },
+    drawSky(S, ctx, t, v) {
+      for (let i = 0; i < 3; i++) {
+        const W = v.right - v.left + 400, x = v.left - 200 + (1 - ((t / S.T + i / 3 + .4) % 1)) * W;
+        sprite(ctx, SPRITES.cloud, x, v.top + (v.bottom - v.top) * (.25 + i * .06), 9, { X: '#ebe8f4' });
+      }
+    },
+  });
+})();

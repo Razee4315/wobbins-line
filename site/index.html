@@ -1,0 +1,175 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Wobbin's Line: a tiny show drawn on one line</title>
+<meta name="description" content="Wobbin's Line is a tiny animated show. Wobbin walks onto one line, runs into something we all do, and walks off a little wiser. 23 looping episodes, drawn live in your browser.">
+<meta name="theme-color" content="#FBF8F2">
+<meta property="og:title" content="Wobbin's Line">
+<meta property="og:description" content="A tiny show, drawn on one line. 23 looping episodes.">
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://api.fontshare.com">
+<link rel="preconnect" href="https://cdn.fontshare.com" crossorigin>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://api.fontshare.com/v2/css?f[]=clash-display@500,600,700&f[]=satoshi@400,500,700&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Silkscreen&display=swap">
+<link rel="stylesheet" href="css/tokens.css?v=9">
+<link rel="stylesheet" href="css/site.css?v=9">
+</head>
+<body>
+<!-- ink: three wobble seeds (outlines "boil" by stepping between them), and the hand-drawn icon set -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
+  <defs>
+    <filter id="w1"><feTurbulence type="fractalNoise" baseFrequency=".035" numOctaves="2" seed="2"/><feDisplacementMap in="SourceGraphic" scale="3.2"/></filter>
+    <filter id="w2"><feTurbulence type="fractalNoise" baseFrequency=".035" numOctaves="2" seed="7"/><feDisplacementMap in="SourceGraphic" scale="3.2"/></filter>
+    <filter id="w3"><feTurbulence type="fractalNoise" baseFrequency=".035" numOctaves="2" seed="13"/><feDisplacementMap in="SourceGraphic" scale="3.2"/></filter>
+  </defs>
+  <symbol id="i-play" viewBox="0 0 24 24"><path d="M7.2 4.6c-.3 4.9-.2 9.9.1 14.8 4.1-2.2 8.2-4.6 11.9-7.3-3.8-2.7-7.9-5.1-12-7.5z"/></symbol>
+  <symbol id="i-pause" viewBox="0 0 24 24"><path d="M8.1 5.2c-.2 4.6-.1 9.2.2 13.7M15.8 5c.1 4.7.2 9.3 0 14"/></symbol>
+  <symbol id="i-sound" viewBox="0 0 24 24"><path d="M4.3 9.6c1.3-.1 2.6 0 3.9-.1l4.6-4c.2 4.4.2 8.8 0 13.1l-4.7-4c-1.3 0-2.5.1-3.8 0-.2-1.6-.1-3.4 0-5zM16.2 8.6c1.3 1.9 1.3 4.9-.1 6.8M18.9 6.2c2.6 3.3 2.6 8.3-.1 11.6"/></symbol>
+  <symbol id="i-mute" viewBox="0 0 24 24"><path d="M4.3 9.6c1.3-.1 2.6 0 3.9-.1l4.6-4c.2 4.4.2 8.8 0 13.1l-4.7-4c-1.3 0-2.5.1-3.8 0-.2-1.6-.1-3.4 0-5zM16.4 9.4c1.5 1.8 3 3.4 4.4 5.2M20.7 9.3c-1.5 1.8-2.9 3.5-4.4 5.3"/></symbol>
+  <symbol id="i-download" viewBox="0 0 24 24"><path d="M12.1 3.8c-.1 4.6 0 9.1.1 13.6M7.4 12.9c1.6 1.6 3.2 3.2 4.8 4.6 1.5-1.5 3.1-3.1 4.6-4.7M4.6 20.1c4.9.2 9.9.1 14.8-.1"/></symbol>
+  <symbol id="i-left" viewBox="0 0 24 24"><path d="M19.4 12.2c-4.6-.2-9.3-.1-13.9.1M10.6 6.4c-1.9 2-3.6 3.9-5.4 5.9 1.8 1.9 3.6 3.8 5.5 5.6"/></symbol>
+  <symbol id="i-right" viewBox="0 0 24 24"><path d="M4.6 11.8c4.6.2 9.3.1 13.9-.1M13.4 6.1c1.9 2 3.6 3.9 5.4 5.9-1.8 1.9-3.6 3.8-5.5 5.6"/></symbol>
+  <symbol id="i-close" viewBox="0 0 24 24"><path d="M5.6 5.4c4.3 4.5 8.6 8.9 13 13.2M18.4 5.6c-4.4 4.3-8.7 8.6-12.9 13"/></symbol>
+  <symbol id="i-aspect" viewBox="0 0 24 24"><path d="M8.2 3.9c-.2 5.4-.1 10.8.1 16.2 2.4.1 4.8 0 7.3-.1.2-5.4.1-10.8-.1-16.1-2.4-.1-4.8 0-7.3 0z"/></symbol>
+  <symbol id="i-wide" viewBox="0 0 24 24"><path d="M3.9 8.1c5.4-.2 10.8-.1 16.2.1.1 2.4 0 4.8-.1 7.3-5.4.2-10.8.1-16.1-.1-.1-2.4 0-4.8 0-7.3z"/></symbol>
+</svg>
+
+<div class="preloader" aria-hidden="true">
+  <svg class="preloader__line" viewBox="0 0 1000 20" preserveAspectRatio="none"><path d="M0 10 C 160 8, 330 12, 500 10 S 840 8, 1000 10"/></svg>
+  <span class="preloader__pct">0%</span>
+</div>
+<div class="cursor" aria-hidden="true"><span class="cursor__dot"></span></div>
+
+<a class="skip" href="#episodes">Skip to episodes</a>
+
+<header class="nav">
+  <a class="nav__brand" href="#top" aria-label="Wobbin's Line, back to top">Wobbin's Line</a>
+  <nav class="nav__links" aria-label="Sections">
+    <a class="ul" href="#episodes">Episodes</a>
+    <a class="ul" href="#meet">Meet Wobbin</a>
+    <a class="ul" href="#cast">The cast</a>
+  </nav>
+  <a class="btn btn--primary btn--sm" href="#ep/the-cloud" data-play="the-cloud"><svg class="ico"><use href="#i-play"/></svg><span>Play episode 1</span></a>
+</header>
+
+<main>
+  <section class="hero" id="top">
+    <!-- the wordmark is drawn block by block on this canvas; it stands on the same line as Wobbin -->
+    <canvas class="hero__mark" aria-hidden="true"></canvas>
+    <div class="hero__props" aria-hidden="true"></div>
+    <div class="hero__inner">
+      <div class="hero__copy">
+        <p class="kicker hero__kicker">A tiny show, drawn on one line</p>
+        <h1 class="hero__title">Wobbin's Line</h1>
+        <div class="hero__slot" aria-hidden="true"></div>
+        <p class="hero__pill">Tiny stories about <span class="pill" data-rotor><span class="pill__word">putting it off</span></span></p>
+      </div>
+      <div class="hero__ctas">
+        <a class="btn btn--primary" href="#ep/the-cloud" data-play="the-cloud"><svg class="ico"><use href="#i-play"/></svg><span>Play episode 1</span></a>
+        <a class="btn btn--ghost" href="#episodes"><span>See all 23</span><svg class="ico ico--down"><use href="#i-right"/></svg></a>
+      </div>
+    </div>
+    <p class="hero__hint kicker" aria-hidden="true">poke the letters</p>
+  </section>
+
+  <section class="meet" id="meet">
+    <div class="wrap meet__grid">
+      <div class="meet__text">
+        <p class="kicker">The main character</p>
+        <h2 class="h2 split">Meet Wobbin.</h2>
+        <p class="lead reveal">Wobbin is small, round and drawn in one line of ink, with three hairs and very honest feet. In every episode Wobbin walks onto the line, runs into something we all do, and walks off a little wiser. Every episode loops forever. So do we, a bit.</p>
+        <ol class="facts">
+          <li class="reveal"><span class="facts__n">23</span> episodes</li>
+          <li class="reveal"><span class="facts__n">5</span> seasons</li>
+          <li class="reveal"><span class="facts__n">0</span> video files: every frame is drawn live</li>
+          <li class="reveal"><span class="facts__n">∞</span> every one loops seamlessly</li>
+        </ol>
+      </div>
+      <figure class="meet__stage frame">
+        <canvas class="meet__canvas" role="img" aria-label="Wobbin standing on the line, blinking and looking around. Click to make Wobbin hop."></canvas>
+        <figcaption class="kicker meet__hint">click me</figcaption>
+      </figure>
+    </div>
+  </section>
+
+  <section class="episodes" id="episodes">
+    <div class="wrap">
+      <p class="kicker">23 episodes · newest first</p>
+      <h2 class="h2 split">Every episode.</h2>
+    </div>
+    <div class="seasons"></div>
+  </section>
+
+  <section class="cast" id="cast">
+    <div class="wrap">
+      <p class="kicker">Who you'll meet</p>
+      <h2 class="h2 split">The cast.</h2>
+      <ul class="cast__list"></ul>
+    </div>
+  </section>
+</main>
+
+<footer class="foot">
+  <div class="wrap">
+    <p class="kicker">Thanks for watching</p>
+    <h2 class="h2 split foot__title">That's the end of the line. It loops, so it never really ends.</h2>
+    <div class="foot__mark"><canvas aria-hidden="true"></canvas><p class="foot__wordmark">Wobbin's Line</p></div>
+    <div class="foot__row">
+      <a class="btn btn--primary" href="#ep/the-cloud" data-play="the-cloud"><svg class="ico"><use href="#i-play"/></svg><span>Start from episode 1</span></a>
+      <!-- PLACEHOLDER socials: swap in the real handles before launch -->
+      <ul class="foot__social">
+        <li><a class="ul" href="https://www.youtube.com/@wobbinsline" rel="noopener">YouTube</a></li>
+        <li><a class="ul" href="https://www.instagram.com/wobbinsline" rel="noopener">Instagram</a></li>
+        <li><a class="ul" href="https://www.tiktok.com/@wobbinsline" rel="noopener">TikTok</a></li>
+      </ul>
+    </div>
+    <p class="foot__credit">Every frame is simulated in your browser. Nothing here is a video.</p>
+  </div>
+</footer>
+
+<canvas class="band" role="img" aria-label="Wobbin, a small round ink character, walking along the line at the bottom of the page"></canvas>
+
+<div class="player" role="dialog" aria-modal="true" aria-labelledby="player-title" hidden>
+  <div class="player__stage">
+    <div class="player__frame frame">
+      <canvas class="player__canvas" aria-label="Episode playing"></canvas>
+      <iframe class="player__iframe" title="Season 1 episode" hidden></iframe>
+      <div class="player__busy" hidden><b class="kicker">Rendering MP4</b><span class="meter"><i></i></span><span class="player__pct kicker">0%</span></div>
+    </div>
+  </div>
+  <div class="player__info">
+    <button class="icon-btn player__close" type="button" aria-label="Close player (Esc)"><svg class="ico"><use href="#i-close"/></svg></button>
+    <p class="player__chip chip"></p>
+    <h2 class="player__title" id="player-title"></h2>
+    <p class="player__theme kicker"></p>
+    <blockquote class="player__quote"></blockquote>
+    <div class="player__scrub"><input type="range" min="0" max="1000" value="0" aria-label="Episode timeline"><span class="player__time kicker">0:00</span></div>
+    <div class="player__controls">
+      <button class="icon-btn" type="button" data-act="play" aria-label="Pause"><svg class="ico"><use href="#i-pause"/></svg></button>
+      <button class="icon-btn" type="button" data-act="sound" aria-label="Turn sound on"><svg class="ico"><use href="#i-mute"/></svg></button>
+      <button class="icon-btn" type="button" data-act="aspect" aria-label="Switch to 16:9"><svg class="ico"><use href="#i-wide"/></svg></button>
+      <div class="dl">
+        <button class="btn btn--ghost btn--sm" type="button" data-act="dl" aria-haspopup="menu" aria-expanded="false"><svg class="ico"><use href="#i-download"/></svg><span>Download MP4</span></button>
+        <div class="dl__menu" role="menu" hidden>
+          <button role="menuitem" type="button" data-size="1080x1920">1080 × 1920 <small>vertical HD</small></button>
+          <button role="menuitem" type="button" data-size="2160x3840">2160 × 3840 <small>vertical 4K</small></button>
+          <button role="menuitem" type="button" data-size="3840x2160">3840 × 2160 <small>wide 4K</small></button>
+        </div>
+      </div>
+    </div>
+    <div class="player__nav">
+      <button class="btn btn--ghost btn--sm" type="button" data-act="prev"><svg class="ico"><use href="#i-left"/></svg><span>Previous</span></button>
+      <button class="btn btn--ghost btn--sm" type="button" data-act="next"><span>Next</span><svg class="ico"><use href="#i-right"/></svg></button>
+    </div>
+    <p class="player__note kicker"></p>
+  </div>
+</div>
+
+<script src="js/episodes.js?v=9"></script>
+<script src="js/main.js?v=9"></script>
+</body>
+</html>

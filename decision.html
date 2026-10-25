@@ -1,0 +1,125 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Decision</title>
+</head>
+<body>
+<script src="sfx.js?v=4"></script>
+<script src="engine2.js?v=4"></script>
+<script>
+// A fork in the line. Then the paths split again, and again: 2, 4, 8, 16, each to somewhere
+// different, while the sun goes down. Bo dithers... then just walks, and the choices melt away.
+const { PAL, SPRITES, sprite, lerp, seg, sine, outBack, clamp, hash, spring, mix, GROUND } = Shorts;
+const V = 130, FORK = 900, SPOT = 740, SPLIT = [4.0, 8.0, 12.0, 16.0], SPREAD = [.4, .32, .22, .15], GO = 21.2;
+const COLS = [PAL.red, PAL.orange, PAL.yellow, PAL.lime, PAL.sky, PAL.blue, PAL.violet, PAL.pink];
+const ICONS = [
+  ['..X..', '.XXX.', 'XXXXX', '.X.X.', '.XXX.'], ['..X..', 'XXXXX', '.XXX.', '.X.X.', 'X...X'], SPRITES.heart, SPRITES.note,
+  ['..X..', '.XXX.', 'XXXXX', '.XXX.', '..X..'], ['.XXX.', 'X...X', '...X.', '..X..', '..X..'], SPRITES.check, ['XXXXX', 'X...X', 'X.X.X', 'X...X', 'XXXXX'],
+];
+const sky = t => ({ eve: sine(seg(t, 9, 16)) * (1 - sine(seg(t, 22, 24.5))), nite: sine(seg(t, 16, 19.5)) * (1 - sine(seg(t, 21.8, 24.5))) });
+const grow = (t, d) => outBack(seg(t, SPLIT[d], SPLIT[d] + .6)) * (1 - sine(seg(t, GO, GO + 1.2)));
+
+function branches(t) {
+  const out = [];
+  const rec = (x, y, ang, len, d, k) => {
+    const g = grow(t, d); if (g <= .001) return;
+    const a = ang + Math.sin(t * 1.4 + k * 1.7) * .025 * d, x1 = x + Math.cos(a) * len * g, y1 = y + Math.sin(a) * len * g;
+    const leaf = d + 1 >= SPLIT.length || grow(t, d + 1) <= .001;
+    out.push({ x0: x, y0: y, x1, y1, d, k, g, leaf });
+    if (!leaf) { rec(x1, y1, a - SPREAD[d + 1], len * .72, d + 1, k * 2); rec(x1, y1, a + SPREAD[d + 1], len * .72, d + 1, k * 2 + 1); }
+  };
+  rec(FORK, GROUND, -.62, 200, 0, 0); rec(FORK, GROUND, -1.32, 200, 0, 1);
+  return out;
+}
+
+Shorts.play({
+  title: 'Decision',
+  accent: PAL.sky,
+  loopAfter: 29.6,
+  paperAt: t => { const s = sky(t); return mix(mix('#ffffff', '#ffe2c8', s.eve), '#d6d0f0', s.nite * .95); },
+  captions: [
+    [4.6, 6.2, 'which way?'],
+    [8.4, 10.2, 'what if I pick *wrong*?'],
+    [12.4, 14.2, 'too many choices...'],
+    [16.4, 18.2, 'and the day is *ending.*'],
+    [20.6, 22.2, 'just... pick one.'],
+    [24.0, 29.0, 'pick one. *you can always turn.*'],
+  ],
+  init(S) { S.bo = S.addChar({ x: 0, walk: V }); S.beat = 0; S.dart = -1; },
+  update(S, t, dt) {
+    const bo = S.bo, c = bo.cmd;
+    S.plan(bo, t, [
+      [0, { x: SPOT, speed: V, accel: 450 }],
+      [4.2, { lookX: 1, lookY: -.3, eye: 'open' }],
+      [19.0, { sit: 1, eye: 'squeeze', tilt: .15, lookX: 0, lookY: 0 }],        // overwhelmed
+      [20.4, { sit: 0, tilt: 0, eye: 'closed' }],
+      [GO, { x: 1e6, speed: 70, accel: 200 }],                                  // just... go
+      [22.8, { eye: 'happy' }],
+      [23.4, { speed: V, accel: 300 }],
+      [24.4, { eye: 'open' }],
+    ]);
+    // every new split: a startled look, then eyes darting between the options
+    if (t > 4.2 && t < 19) {
+      const k = Math.floor(t / .42);
+      if (k !== S.dart) { S.dart = k; c.lookX = (hash(k) - .3) * 2; c.lookY = -hash(k + .5) * 1.1; }
+      if (SPLIT.some(a => t > a && t < a + .6)) c.eye = 'wide'; else if (t > 8) c.eye = t > 16 ? 'squeeze' : 'sad';
+    }
+    // dithering: a step this way, a step that way, faster and faster
+    const dith = [[9.0, 11.5, .7], [13.0, 15.5, .45], [16.5, 18.8, .3]].find(([a, b]) => t > a && t < b);
+    if (dith) { const k = Math.floor((t - dith[0]) / dith[2]); c.x = SPOT + (k % 2 ? -36 : 36); c.speed = 160 + (.7 - dith[2]) * 400; c.accel = 900; }
+    else if (t < GO) { c.x = SPOT; }
+    if (t > 16.5 && t < 18.8) { const k = Math.floor((t - 16.5) / .3); c.face = k % 3 === 2 ? -1 : 1; } else if (t < GO) c.face = 1;
+
+    // sound: each split pops open, a heartbeat at the end, then breath and the choices melting
+    SPLIT.forEach((a, d) => { if (t > a) S.once('split' + d, () => { S.sfx('whoosh', { d: .4, v: .6 }, FORK); for (let i = 0; i < 2 ** (d + 1); i++) S.sfx('pop', { pitch: 500 + hash(i + d * 7) * 700, g: .05 }, FORK + 100); }); });
+    if (t > 16 && t < 20.4) { S.beat += dt; if (S.beat >= .55) { S.beat = 0; S.sfx('heart', { g: .22 }, bo.x); } }
+    if (t > 20.5) S.once('in', () => S.sfx('breathIn', { d: 1 }, bo.x));
+    if (t > GO) S.once('go', () => { S.sfx('breathOut', { d: 1 }, bo.x); S.sfx('erase', {}, FORK); });
+    if (t > 22.6) S.once('dawn', () => { S.sfx('swell', { root: 440 }); S.sfx('chirp', { k: 1 }); });
+    if (t > 3.6 && t < GO + 1) { S.camGoal.x = 930; S.camGoal.y = GROUND - 150; S.camGoal.z = .72; S.camGoal.kx = 2; }
+  },
+  drawSky(S, ctx, t, v) {
+    const s = sky(t);
+    if (s.nite > .35) for (let i = 0; i < 24; i++) sprite(ctx, i % 4 ? SPRITES.dot : SPRITES.sparkle, v.left + hash(i) * (v.right - v.left), v.top + hash(i + .5) * (GROUND - v.top) * .7, i % 4 ? 3 : 2.2, { X: '#fff' }, (s.nite - .35) / .65);
+    // the sun slides down while Bo can't decide
+    const a = seg(t, 3, 4) * (1 - seg(t, 19, 19.6)), sy = lerp(GROUND - 420, GROUND + 10, sine(seg(t, 4, 19)));
+    if (a > 0) {
+      ctx.save(); ctx.beginPath(); ctx.rect(v.left, v.top, v.right - v.left, GROUND - v.top); ctx.clip(); ctx.globalAlpha = a;
+      ctx.fillStyle = mix(PAL.yellow, PAL.orange, seg(t, 8, 16)); const sx = v.cx + 140, R = 46;
+      for (let y = -R; y < R; y += 8) { const w = Math.sqrt(Math.max(0, R * R - (y + 4) ** 2)); ctx.fillRect(sx - w, sy + y, w * 2, 8.5); }
+      ctx.restore();
+    }
+    for (let i = 0; i < 3; i++) {
+      const W = v.right - v.left + 400, x = v.left - 200 + (1 - ((t / S.T + i / 3 + .65) % 1)) * W;
+      sprite(ctx, SPRITES.cloud, x, v.top + (v.bottom - v.top) * (.25 + i * .06), 9, { X: mix('#ebe8f4', '#c6bfe6', s.nite) });
+    }
+  },
+  drawBack(S, ctx, t) {
+    // the signpost grows more arrows with every split
+    ctx.lineWidth = 6; ctx.beginPath(); ctx.moveTo(FORK - 70, GROUND + 2); ctx.lineTo(FORK - 70, GROUND - 150); ctx.stroke();
+    const arrows = SPLIT.filter(a => t > a).length * 2 * (1 - seg(t, GO, GO + 1));
+    for (let i = 0; i < Math.ceil(arrows); i++) {
+      const ang = -1.2 + i * .35 + Math.sin(t * 2 + i) * .12, s = outBack(clamp(arrows - i));
+      ctx.save(); ctx.translate(FORK - 70, GROUND - 140 + (i % 4) * 8); ctx.rotate(ang); ctx.scale(s, s);
+      ctx.fillStyle = COLS[i % COLS.length]; ctx.fillRect(0, -6, 44, 12);
+      ctx.beginPath(); ctx.moveTo(44, -12); ctx.lineTo(58, 0); ctx.lineTo(44, 12); ctx.fill();
+      ctx.restore();
+    }
+    // the paths: dashed lines fanning up and away, each ending in a little someplace
+    ctx.lineWidth = 4; ctx.setLineDash([12, 10]);
+    for (const b of branches(t)) {
+      ctx.strokeStyle = mix('#111', COLS[b.k % COLS.length], .55); ctx.lineDashOffset = -t * 20;
+      ctx.beginPath(); ctx.moveTo(b.x0, b.y0); ctx.lineTo(b.x1, b.y1); ctx.stroke();
+    }
+    ctx.setLineDash([]);
+    for (const b of branches(t)) if (b.leaf && b.g > .3) {
+      const ic = ICONS[(b.k * 3 + b.d) % ICONS.length];
+      sprite(ctx, ic, b.x1, b.y1 - 10, (5.2 - b.d * .6) * clamp(b.g), { X: COLS[(b.k + b.d) % COLS.length] });
+    }
+  },
+});
+</script>
+</body>
+</html>

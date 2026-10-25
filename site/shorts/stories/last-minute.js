@@ -1,0 +1,214 @@
+/* last-minute: extracted from ../last-minute.html by scripts/sync-shorts.py. Do not edit here. */
+(function () {
+  const Shorts = Object.assign(Object.create(window.Shorts), { play: story => { (window.WL_STORIES ||= {})['last-minute'] = story; } });
+  // A pile of blocks, a tower to build, and a sign counting down the days. Bo naps, plays and
+  // watches clouds while the days fly by, until the sign says 1. Then the whole tower goes up in one night.
+  const { PAL, SPRITES, sprite, zzz, lerp, seg, sine, outBack, clamp, hash, spring, mix, GROUND } = Shorts;
+  const V = 130, PILE = 880, PICK = 1030, DROP = 1222, SITE = 1330, SIGN = 1410, TREE = 1490, BS = 32;
+  const D = [6.0, 10.0, 13.4, 16.2, 18.6, 20.4, 21.6];        // each day starts (7 days left … 1 day left)
+  const DONE = 36.13;                                      // when the last block lands (measured)
+  const TRIPS = [1, 2, 3, 4], SPEEDS = [340, 400, 460, 520];
+  const COLS = [PAL.red, PAL.orange, PAL.yellow, PAL.lime, PAL.sky, PAL.violet, PAL.pink, PAL.blue];
+  const ROWS = [5, 4, 4, 2, 1];
+  const pilePos = i => {
+    let r = 0, k = i; while (k >= ROWS[r]) { k -= ROWS[r]; r++; }
+    return { x: PILE + (k - (ROWS[r] - 1) / 2) * BS + (r % 2 ? 4 : -4), y: GROUND - BS / 2 - r * BS + 1 };
+  };
+  const towerPos = n => ({ x: SITE + (n % 2 - .5) * BS, y: GROUND - BS / 2 - Math.floor(n / 2) * BS + 1 });
+  const daysLeft = t => { let k = 0; while (k + 1 < D.length && t >= D[k + 1]) k++; return 7 - k; };
+  const night = t => {
+    let n = 0; for (let k = 1; k < D.length; k++) n = Math.max(n, 1 - Math.abs(t - D[k]) / .55);
+    return clamp(Math.max(n, sine(seg(t, 28.5, DONE)) * (1 - sine(seg(t, DONE + 3, DONE + 5.5)))));
+  };
+
+  function headPos(S, j) {
+    const top = S.bo.top(), sw = S.sway.x * (j + 1) * .6;
+    return { x: top.x + sw, y: top.y - 14 - j * BS, rot: S.sway.x * .005 * (j + 1) };
+  }
+  function fly(S, b, to, dur, arc, onLand) { Object.assign(b, { state: 'fly', from: { x: b.x, y: b.y }, to, t0: S.t, dur, arc, onLand }); }
+  function grab(S, j) {
+    const b = S.blocks.filter(b => b.state === 'pile').pop(); if (!b) return;
+    S.sfx('pop', { pitch: 520 + j * 120, g: .11 }, b.x);
+    fly(S, b, () => headPos(S, j), .3, 70, () => { b.state = 'head'; b.j = j; });
+  }
+  function toTower(S, b, dur, arc) {
+    const slot = S.nextSlot++; S.sfx('whoosh', { d: .3, v: .4 }, b.x);
+    fly(S, b, () => towerPos(slot), dur, arc, () => {
+      b.state = 'tower'; b.slot = slot; b.landedAt = S.t; S.placed++;
+      S.sfx('tock', { f: 600 + slot * 25 }, b.x); S.sfx('chime', { n: Math.min(10, Math.round(slot * 10 / 15)), g: .08 }, b.x);
+      if (S.placed === 16) S.once('done', () => { S.doneT = S.t; S.burst(SITE, GROUND - 8 * BS, 40, COLS, { speed: 520, gravity: 700, size: 10, life: 1.8 }); S.sfx('arp', { notes: [0, 2, 4, 5, 7, 9] }); S.sfx('sparkle', { n: 8 }); S.sfx('swell', { root: 392 }); });
+    });
+  }
+
+  // the frantic last night: carry stacks on the head, bigger every trip, then a final rush
+  function panic(S, t) {
+    const bo = S.bo, P = S.pan, c = bo.cmd;
+    if (P.stage === 'toPile') {
+      Object.assign(c, { x: PICK, speed: SPEEDS[P.trip], accel: 1500, face: -1, eye: 'squeeze', tilt: 0, crouch: 0 });
+      if (Math.abs(bo.x - PICK) < 5 && Math.abs(bo.vx) < 25) { P.stage = 'pick'; P.t0 = t; }
+    } else if (P.stage === 'pick') {
+      const n = TRIPS[P.trip]; c.crouch = .12;
+      for (let j = 0; j < n; j++) if (t >= P.t0 + .05 + j * .11) S.once(`pk${P.trip}-${j}`, () => grab(S, j));
+      if (t >= P.t0 + .11 * n + .34) { P.stage = 'toSite'; c.crouch = 0; }
+    } else if (P.stage === 'toSite') {
+      Object.assign(c, { x: DROP, face: 1 });
+      if (Math.abs(bo.x - DROP) < 5 && Math.abs(bo.vx) < 25) { P.stage = 'drop'; P.t0 = t; }
+    } else if (P.stage === 'drop') {
+      const n = TRIPS[P.trip];
+      if (t < P.t0 + .12) c.crouch = .2; else S.once(`hop${P.trip}`, () => { c.crouch = 0; bo.jump(0, -430); });
+      for (let k = 0; k < n; k++) if (t >= P.t0 + .28 + k * .1) S.once(`th${P.trip}-${k}`, () => {
+        const top = S.blocks.filter(b => b.state === 'head').sort((a, b) => b.j - a.j)[0];
+        if (top) toTower(S, top, .42, 120);
+      });
+      if (t >= P.t0 + .28 + n * .1 + .3) { P.trip++; P.stage = P.trip < TRIPS.length ? 'toPile' : 'burst'; P.t0 = t; }
+    } else if (P.stage === 'burst') {
+      // in the zone: everything left flies straight from the pile onto the tower
+      Object.assign(c, { face: -1, eye: 'squeeze' });
+      S.once('spin', () => bo.jump(0, -640, -11));
+      S.blocks.filter(b => b.state === 'pile').reverse().forEach((b, k) => {
+        if (t >= P.t0 + .25 + k * .16) S.once('bu' + S.blocks.indexOf(b), () => toTower(S, b, .55, 230));
+      });
+    }
+  }
+
+  Shorts.play({
+    title: 'Last Minute',
+    accent: PAL.red,
+    loopAfter: DONE + 14.9,
+    paperAt: t => {
+      const dusk = sine(seg(t, 25, 29)) * (1 - sine(seg(t, DONE + 3.5, DONE + 5.5)));
+      return mix(mix('#ffffff', '#ffe4cc', dusk), '#d8d2f1', night(t) * .95);
+    },
+    captions: [
+      [6.0, 8.0, 'one whole *week.*'],
+      [8.4, 10.0, 'plenty of time.'],
+      [13.6, 15.6, 'still time.'],
+      [16.6, 18.2, '...later.'],
+      [20.0, 21.5, 'tomorrow.'],
+      [22.4, 24.8, 'wait— *TODAY?!*'],
+      [27.4, 29.4, 'go. go. *go.*'],
+      [DONE + .4, DONE + 2.3, '*done.*'],
+      [DONE + 2.7, DONE + 7.9, 'why is the last night always the *most productive?*'],
+    ],
+    init(S) {
+      S.bo = S.addChar({ x: 0, walk: V });
+      S.blocks = Array.from({ length: 16 }, (_, i) => ({ i, c: COLS[i % COLS.length], state: 'pile', ...pilePos(i), rot: 0 }));
+      S.sway = { x: 0, v: 0 }; S.pan = null; S.nextSlot = 0; S.placed = 0; S.doneT = null; S.tick = 0; S.tickN = 0; S.snore = 0;
+    },
+    update(S, t, dt) {
+      const bo = S.bo;
+      if (!S.pan) S.plan(bo, t, [
+        [0, { x: 700, speed: V, accel: 450 }],
+        [5.4, { lookX: .7, lookY: .1 }],
+        [6.6, { eye: 'happy' }],                                            // a week? easy.
+        [7.4, { sit: 1, eye: 'open', lookX: 0, lookY: 0 }],
+        [8.0, { eye: 'closed', crouch: .05 }],                              // nap
+        [10.1, { eye: 'open', crouch: 0, sit: 0 }],
+        [10.5, { face: -1, x: 480, speed: 230, accel: 700, eye: 'happy', lookY: -.5 }],   // a butterfly!
+        [12.0, { face: 1, x: 700, speed: 210 }],
+        [13.0, { lookY: 0, eye: 'open' }],
+        [13.6, { crouch: .2 }], [13.85, { crouch: 0 }], [13.85, () => bo.jump(0, -480)],
+        [14.6, { crouch: .2 }], [14.85, { crouch: 0 }], [14.85, () => bo.jump(0, -540)],
+        [16.3, { lookX: .8, lookY: .2, eye: 'sad' }],                       // ...the pile
+        [17.2, { face: -1, eye: 'open', lookX: 0, lookY: 0 }],
+        [17.9, { face: 1 }],
+        [18.6, { sit: 1.15, tilt: -.12, lookY: -1 }],                       // cloud watching
+        [20.5, { eye: 'closed' }],
+        [21.7, { eye: 'wide', sit: 0, tilt: 0, lookY: 0, lookX: .8 }],      // !!!
+        [22.1, { crouch: .25 }], [22.4, { crouch: 0 }], [22.4, () => bo.jump(0, -700)],
+        [23.2, () => S.pan = { stage: 'toPile', trip: 0 }],
+      ]);
+      if (S.pan && S.doneT === null) panic(S, t);
+      if (S.doneT !== null) {
+        const d = t - S.doneT, c = bo.cmd;
+        if (d > .3) Object.assign(c, { face: 1, lookX: .5, lookY: -.8, eye: 'wide' });
+        if (d > .9) c.eye = 'happy';
+        if (d > 1.1) S.once('yay', () => bo.jump(0, -500));
+        if (d > 2.0) Object.assign(c, { sit: 1.15, crouch: .12, eye: 'closed', tilt: .1, lookX: 0, lookY: 0 });   // out cold
+        if (d > 5.4) c.eye = 'open';
+        if (d > 5.8) Object.assign(c, { sit: 0, crouch: 0, tilt: 0 });
+        if (d > 6.4) Object.assign(c, { x: 1e6, speed: V, accel: 450, eye: 'open' });
+      }
+
+      // blocks in flight
+      for (const b of S.blocks) if (b.state === 'fly') {
+        const u = clamp((t - b.t0) / b.dur), e = sine(u), to = b.to();
+        b.x = lerp(b.from.x, to.x, e); b.y = lerp(b.from.y, to.y, e) - Math.sin(Math.PI * u) * b.arc; b.rot = u * Math.PI * (b.arc > 150 ? 2 : 1);
+        if (u >= 1) { b.rot = 0; b.onLand(); }
+      }
+      spring(S.sway, clamp(-bo.vx * .05 - bo.axs * .004, -26, 26), 60, .35, dt);
+      for (const b of S.blocks) if (b.state === 'head') { const p = headPos(S, b.j); b.x = p.x; b.y = p.y; b.rot = p.rot; }
+
+      // sound: a new day, morning birds, the alarm, the clock in the panic, snoring
+      for (let k = 1; k < D.length; k++) if (t >= D[k]) S.once('day' + k, () => { S.sfx('flip', {}, SIGN); S.sfx('whoosh', { d: .6, v: .5 }); });
+      for (let k = 1; k < 6; k++) if (t >= D[k] + .35) S.once('bird' + k, () => S.sfx('chirp', { k: .9 + k * .04, gain: .7 }));
+      [21.65, 21.85, 22.05, 22.25].forEach((a, i) => { if (t >= a) S.once('ring' + i, () => S.sfx('ring', {}, SIGN)); });
+      if (t > 23 && S.doneT === null) { S.tick += dt; if (S.tick >= .25) { S.tick = 0; S.sfx('tick', { tock: S.tickN++ % 2 }, SIGN); } }
+      const asleep = (t > 8.2 && t < 10) || (S.doneT !== null && t > S.doneT + 2.3 && t < S.doneT + 5.2);
+      if (asleep) { S.snore += dt; if (S.snore >= 1.7) { S.snore = 0; S.sfx('snore', {}, bo.x); } } else S.snore = 1.2;
+
+      // keep the countdown sign in the shot while Bo wastes the days (but follow the butterfly chase)
+      if (t > 5.4 && t < 21.6 && !(t > 10.3 && t < 12.9)) { S.camGoal.x = 1030; S.camGoal.z = .8; S.camGoal.kx = 2.5; S.camGoal.kz = 2; }
+      if (t > 21.6 && (S.doneT === null || t < S.doneT + 6.4)) { S.camGoal.x = 1115; S.camGoal.z = .95; S.camGoal.kx = 3; }
+    },
+    drawSky(S, ctx, t, v) {
+      const nt = night(t);
+      // stars come out at night
+      if (nt > .35) for (let i = 0; i < 26; i++) {
+        const x = v.left + hash(i) * (v.right - v.left), y = v.top + hash(i + .5) * (GROUND - v.top) * .75;
+        sprite(ctx, i % 4 ? SPRITES.dot : SPRITES.sparkle, x, y, i % 4 ? 3 : 2.2, { X: '#fff' }, (nt - .35) / .65 * (.6 + .4 * Math.sin(t * 3 + i)));
+      }
+      // a little pixel sun racing across the sky, one arc per day
+      const days = D.map((a, k) => [a, k + 1 < D.length ? D[k + 1] : DONE + .5]);
+      for (const [a, b] of days) {
+        const u = seg(t, a, b); if (u <= 0 || u >= 1) continue;
+        const sx = v.cx + lerp(-310, 310, u), sy = GROUND - Math.sin(Math.PI * u) * 250 - 10, R = 40, low = 1 - Math.sin(Math.PI * u);
+        ctx.save(); ctx.beginPath(); ctx.rect(v.left, v.top, v.right - v.left, GROUND - v.top); ctx.clip();
+        ctx.fillStyle = mix(PAL.yellow, PAL.orange, low);
+        for (let y = -R; y < R; y += 8) { const w = Math.sqrt(Math.max(0, R * R - (y + 4) ** 2)); ctx.fillRect(Math.round(sx - w), sy + y, Math.round(w * 2), 8.5); }
+        ctx.restore();
+      }
+      for (let i = 0; i < 3; i++) {
+        const W = v.right - v.left + 400, x = v.left - 200 + (1 - ((t / S.T * 3 + i / 3 + .2) % 1)) * W;
+        sprite(ctx, SPRITES.cloud, x, v.top + (v.bottom - v.top) * (.25 + i * .06), 9, { X: mix('#ebe8f4', '#c6bfe6', nt) });
+      }
+    },
+    drawBack(S, ctx, t) {
+      // a tree for shade
+      ctx.lineWidth = 6; ctx.beginPath(); ctx.moveTo(TREE, GROUND + 2); ctx.lineTo(TREE, GROUND - 100); ctx.stroke();
+      sprite(ctx, ['..XXXX..', '.XXXXXX.', 'XXXXXXXX', 'XXXXXXXX', '.XXXXXX.', '..XXXX..'], TREE + Math.sin(t) * 2, GROUND - 132, 12, { X: PAL.green });
+      // the countdown sign: the number flips each morning
+      ctx.lineWidth = 5; ctx.beginPath(); ctx.moveTo(SIGN, GROUND + 2); ctx.lineTo(SIGN, GROUND - 64); ctx.stroke();
+      ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.roundRect(SIGN - 26, GROUND - 120, 52, 58, 6); ctx.fill(); ctx.stroke();
+      const done = S.doneT !== null && t >= S.doneT, dl = daysLeft(t);
+      const last = D.filter(a => a <= t).pop() ?? 0, flipK = Math.abs(Math.cos(Math.PI * seg(t, last, last + .3)));
+      ctx.save(); ctx.translate(SIGN, GROUND - 91); ctx.scale(1, t < last + .3 && last > D[0] ? flipK : 1);
+      if (done) sprite(ctx, SPRITES.check, 0, 0, 7, { X: PAL.green });
+      else if (t >= D[0] - 1.5) sprite(ctx, SPRITES['d' + dl], 0, 0, 7, { X: dl === 1 ? PAL.red : '#111' }, dl === 1 && Math.floor(t * 3) % 2 ? .35 : 1);
+      ctx.restore();
+      // the tower's footprint
+      ctx.strokeStyle = PAL.dim; ctx.lineWidth = 3; ctx.setLineDash([8, 8]);
+      ctx.strokeRect(SITE - BS, GROUND - 8 * BS, BS * 2, 8 * BS); ctx.setLineDash([]);
+      for (const b of S.blocks) if (b.state === 'pile' || b.state === 'tower') drawBlock(ctx, b, t);
+    },
+    drawFront(S, ctx, t) {
+      for (const b of S.blocks) if (b.state === 'head' || b.state === 'fly') drawBlock(ctx, b, t);
+      // the butterfly Bo chases
+      const p = seg(t, 10.2, 13.2);
+      if (p > 0 && p < 1) sprite(ctx, Math.floor(t * 12) % 2 ? SPRITES.flyA : SPRITES.flyB,
+        lerp(760, 360, p) + Math.sin(p * 10) * 40, GROUND - 170 - Math.sin(p * Math.PI) * 60 - Math.max(0, p - .6) * 900, 4.2, { X: PAL.yellow, B: '#111' });
+      const bo = S.bo, top = bo.top();
+      if (t > 8.2 && t < 10) zzz(ctx, top.x, top.y, t, seg(t, 8.2, 8.6));
+      if (S.doneT !== null && t > S.doneT + 2.3 && t < S.doneT + 5.3) zzz(ctx, top.x, top.y, t, 1 - seg(t, S.doneT + 5, S.doneT + 5.3));
+    },
+  });
+
+  function drawBlock(ctx, b, t) {
+    const squash = b.state === 'tower' ? 1 - .25 * Math.max(0, 1 - (t - b.landedAt) / .25) * Math.sin(Math.PI * Math.min(1, (t - b.landedAt) / .25)) : 1;
+    ctx.save(); ctx.translate(b.x, b.y + BS / 2); ctx.rotate(b.rot); ctx.scale(2 - squash, squash);
+    ctx.fillStyle = b.c; ctx.strokeStyle = '#111'; ctx.lineWidth = 4;
+    ctx.beginPath(); ctx.roundRect(-BS / 2 + 1, -BS + 1, BS - 2, BS - 2, 4); ctx.fill(); ctx.stroke();
+    ctx.fillStyle = '#fff'; ctx.globalAlpha = .7; ctx.fillRect(-BS / 2 + 6, -BS + 6, 6, 6); ctx.globalAlpha = 1;
+    ctx.restore();
+  }
+})();

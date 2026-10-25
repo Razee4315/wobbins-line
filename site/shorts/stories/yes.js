@@ -1,0 +1,169 @@
+/* yes: extracted from ../yes.html by scripts/sync-shorts.py. Do not edit here. */
+(function () {
+  const Shorts = Object.assign(Object.create(window.Shorts), { play: story => { (window.WL_STORIES ||= {})['yes'] = story; } });
+  // Bo walks with a little flower on its head. Friends keep asking; Bo keeps saying yes; the
+  // boxes pile up until the flower is buried and the stack crashes. Then Bo says no, and it's fine.
+  const { PAL, SPRITES, sprite, lerp, seg, sine, outBack, clamp, hash, spring, GROUND, GRAV } = Shorts;
+  const V = 130, BX = 30;
+  const BOXC = [PAL.sky, PAL.orange, PAL.violet, PAL.lime, PAL.red, PAL.yellow, PAL.blue, PAL.pink];
+  const FLOWER = ['..X..', '.XXX.', 'XXCXX', '.XXX.', '..X..'];
+  // who asks, when they set off, when they hand over, how many boxes
+  const ASKS = [
+    { who: 0, enter: 2.4, give: 5.0, n: 1 },
+    { who: 1, enter: 6.4, give: 9.0, n: 2 },
+    { who: 2, enter: 10.2, give: 12.6, n: 2 },
+    { who: 0, enter: 13.6, give: 15.8, n: 2 },
+    { who: 1, enter: 16.8, give: 19.0, n: 2 },
+    { who: 2, enter: 16.9, give: 19.4, n: 2, off: 300 },
+    { who: 0, enter: 20.8, give: 23.0, n: 1 },
+    { who: 2, enter: 24.8, give: null, n: 1 },                   // the one Bo turns down
+  ];
+  const COLLAPSE = 23.5, NO = 27.2;   // the last tiny box lands at ~23.35: that's the one that breaks it
+
+  function teleport(c, x) {
+    const dx = x - c.x; c.x += dx; c.hx += dx; c.vx = 0; c.cmd.x = x;
+    if (c.tuft) c.tuft.x += dx;
+    for (const F of c.feet) { F.x += dx; F.fromX += dx; F.toX += dx; }
+  }
+  function stackPos(S, j) {
+    const top = S.bo.top(), n = S.stack.length, shake = n > 6 ? Math.sin(S.t * 9 + j) * (n - 6) * .7 : 0;
+    return { x: top.x + S.sway.x * (j + 1) * .5 + shake, y: top.y - 12 - j * BX, rot: S.sway.x * .004 * (j + 1) + shake * .004 };
+  }
+
+  Shorts.play({
+    title: 'Yes',
+    accent: PAL.pink,
+    loopAfter: 40.0,
+    captions: [
+      [5.2, 7.0, 'sure!'],
+      [9.2, 11.0, 'of course!'],
+      [12.8, 14.6, 'no problem!'],
+      [16.0, 17.8, 'yes...'],
+      [19.6, 21.8, 'yes. yes. *yes.*'],
+      [23.6, 25.2, '...'],
+      [27.3, 29.0, '*no.*'],
+      [31.9, 37.0, "you can say no. *they'll be okay.*"],
+    ],
+    init(S) {
+      S.friends = [
+        S.addChar({ x: 3000, face: -1, hair: 'curl', blush: PAL.pink, fill: '#ffe9f2', gain: .6 }),
+        S.addChar({ x: 3300, face: -1, hair: 'antenna', hairColor: PAL.blue, fill: '#e6f0ff', gain: .6 }),
+        S.addChar({ x: 3600, face: -1, hairColor: PAL.orange, blush: '#ffb08a', fill: '#fff4d6', gain: .6 }),
+      ];
+      S.bo = S.addChar({ x: 0, walk: V }); S.focus = S.bo;
+      S.boxes = []; S.stack = []; S.sway = { x: 0, v: 0 };
+      S.flower = { state: 'head', x: 0, y: 0, vx: 0, vy: 0, t0: 0 }; S.lastK = -1;
+    },
+    update(S, t, dt) {
+      const bo = S.bo, c = bo.cmd, n = S.stack.length;
+      // the friends: walk up, hand boxes over, hop, leave
+      ASKS.forEach((a, i) => {
+        const f = S.friends[a.who];
+        const nextEnter = ASKS.slice(i + 1).find(b => b.who === a.who)?.enter ?? Infinity;
+        if (t < a.enter || t >= nextEnter) return;
+        S.once('enter' + i, () => {
+          teleport(f, bo.x + 780 + (a.off ?? 0) * .5); f.face.x = -1;
+          for (let k = 0; k < a.n; k++) S.boxes.push({ c: BOXC[(S.boxes.length) % BOXC.length], state: 'asker', owner: f, j: k, x: f.x, y: f.y, rot: 0 });
+          S.sfx('pop', { pitch: 700 + a.who * 90, g: .08 }, f.x);
+        });
+        const give = a.give ?? Infinity, refused = a.give === null;
+        if (t < give - .05 && !(refused && t > NO + 1.8)) {
+          Object.assign(f.cmd, { x: bo.x + (a.off ?? 165), speed: 230, accel: 700, face: -1, eye: refused && t > NO + .4 ? (t > NO + 1.1 ? 'happy' : 'wide') : 'happy' });
+          if (refused && t > NO + 1.3) S.once('okay', () => { f.jump(0, -420); S.sfx('twinkle', { pitch: 1760 }, f.x); });
+        }
+        if (t >= give) {
+          S.once('give' + i, () => {
+            f.jump(0, -380);
+            S.boxes.filter(b => b.state === 'asker' && b.owner === f).sort((p, q) => q.j - p.j).forEach((b, k) => {
+              const slot = S.stack.length + (a.n - 1 - k);
+              Object.assign(b, { state: 'fly', from: { x: b.x, y: b.y }, t0: t + k * .12, dur: .32, slot });
+            });
+          });
+        }
+        if (t >= give + .9 || (refused && t > NO + 1.8)) Object.assign(f.cmd, { face: 1, x: bo.x + 3000, speed: 240, accel: 600, eye: 'open' });
+      });
+
+      // Bo: stops for every ask, nods, and walks on a little slower and lower each time
+      const busy = ASKS.some(a => a.give !== null && t > a.give - 1.5 && t < a.give + .7);
+      if (t < COLLAPSE) {
+        Object.assign(c, { x: 1e6, speed: busy ? 0 : Math.max(35, V - 9 * n), accel: 320, crouch: Math.min(.3, .026 * n),
+          eye: n >= 9 ? 'squeeze' : n >= 6 ? 'sad' : busy ? 'happy' : 'open', lookX: busy ? .8 : 0, lookY: 0 });
+        let nod = 0;
+        for (const a of ASKS) if (a.give) { const x = (t - (a.give - .35)) / .45; if (x > 0 && x < 1) nod = Math.max(nod, Math.sin(Math.PI * x * 2) ** 2); }
+        c.tilt = .12 * nod + (n > 8 ? .04 * Math.sin(t * 30) : 0);
+      }
+      if (t >= COLLAPSE) S.once('crash', () => {
+        S.sfx('crash', {}, bo.x); S.shake(5); bo.q.v += 6;
+        S.stack.forEach((b, j) => Object.assign(b, { state: 'fall', vx: (hash(j * 3) - .5) * 520 + S.sway.x * 8, vy: -260 - hash(j + .4) * 380, spin: (hash(j + .7) - .5) * 14 }));
+        S.stack = [];
+        Object.assign(S.flower, { state: 'fall', x: bo.tuft.x, y: bo.tuft.y, vx: 160, vy: -560 });
+      });
+      if (t >= COLLAPSE) {
+        const d = t - COLLAPSE;
+        if (d < 1.3) Object.assign(c, { speed: 0, crouch: .42, eye: 'dizzy', tilt: 0, lookX: 0 });
+        else if (t < NO) Object.assign(c, { crouch: 0, eye: 'open', lookX: d < 2.6 ? -.4 : .8, lookY: d < 2.6 ? .6 : 0 });
+        if (t >= NO && t < NO + .9) { const k = Math.floor((t - NO) / .2); c.face = k % 2 ? 1 : -1; if (k !== S.lastK) { S.lastK = k; S.sfx('whoosh', { d: .18, v: .5 }, bo.x); } }
+        if (t >= NO + .9) c.face = 1;
+        if (t >= NO + 1.4) c.eye = 'happy';
+        if (t >= NO + 2.1 && S.flower.state === 'ground') Object.assign(c, { x: S.flower.x - 108, speed: 120, accel: 400, eye: 'open', lookX: .7, lookY: .6 });
+        if (t >= NO + 3.2 && S.flower.state === 'ground') { c.tilt = .34; S.once('pick', () => Object.assign(S.flower, { state: 'back', t0: t + .2, from: { x: S.flower.x, y: S.flower.y } })); }
+        if (t >= NO + 3.7) Object.assign(c, { tilt: 0, eye: 'happy', lookX: 0, lookY: 0 });
+        if (t >= NO + 3.9) S.once('yay', () => bo.jump(0, -470));
+        if (t >= NO + 4.4) Object.assign(c, { x: 1e6, speed: V, accel: 400, eye: 'open' });
+      }
+
+      // boxes
+      spring(S.sway, clamp(-bo.vx * .06 - bo.axs * .005, -24, 24), 50, .3, dt);
+      for (const b of S.boxes) {
+        if (b.state === 'asker') { const top = b.owner.top(); b.x = top.x; b.y = top.y - 12 - b.j * BX; b.rot = 0; }
+        else if (b.state === 'fly') {
+          const u = clamp((t - b.t0) / b.dur); if (u <= 0) continue;
+          const to = stackPos(S, b.slot), e = sine(u);
+          b.x = lerp(b.from.x, to.x, e); b.y = lerp(b.from.y, to.y, e) - Math.sin(Math.PI * u) * 90; b.rot = u * Math.PI * .5;
+          if (u >= 1) { b.state = 'bo'; S.stack.push(b); S.stack.sort((p, q) => p.slot - q.slot); S.sfx('tock', { f: 640 + b.slot * 30 }, b.x); bo.q.v += 1.2; }
+        } else if (b.state === 'bo') { const p = stackPos(S, S.stack.indexOf(b)); b.x = p.x; b.y = p.y; b.rot = p.rot; }
+        else if (b.state === 'fall') {
+          b.vy += GRAV * .85 * dt; b.x += b.vx * dt; b.y += b.vy * dt; b.rot += b.spin * dt;
+          if (b.y > GROUND - BX / 2 && b.vy > 0) {
+            b.y = GROUND - BX / 2; b.vx *= .55; b.spin *= .4; b.vy *= -.32;
+            if (Math.abs(b.vy) < 70) { b.state = 'ground'; b.rot = Math.round(b.rot / (Math.PI / 2)) * Math.PI / 2 + (hash(b.x) - .5) * .3; }
+          }
+        }
+      }
+      // the flower: falls off in the crash, waits on the ground, hops back home
+      const fl = S.flower;
+      if (fl.state === 'head') { fl.x = bo.tuft.x; fl.y = bo.tuft.y - 4; }
+      else if (fl.state === 'fall') {
+        fl.vy += GRAV * .8 * dt; fl.x += fl.vx * dt; fl.y += fl.vy * dt;
+        if (fl.y > GROUND - 10 && fl.vy > 0) { fl.y = GROUND - 10; fl.state = 'ground'; S.sfx('pop', { pitch: 500, g: .06 }, fl.x); }
+      } else if (fl.state === 'back') {
+        const u = clamp((t - fl.t0) / .45), e = sine(u);
+        fl.x = lerp(fl.from.x, bo.tuft.x, e); fl.y = lerp(fl.from.y, bo.tuft.y - 4, e) - Math.sin(Math.PI * u) * 90;
+        if (u >= 1) { fl.state = 'head'; S.sfx('chime', { n: 7, g: .12 }, bo.x); S.sfx('swell', { root: 440 }); S.burst(bo.tuft.x, bo.tuft.y, 12, [PAL.pink, PAL.yellow, '#fff'], { speed: 240, gravity: 400, size: 7, life: .9 }); }
+      }
+      if (n > 8 && t < COLLAPSE) S.shake(.4);
+    },
+    drawSky(S, ctx, t, v) {
+      for (let i = 0; i < 3; i++) {
+        const W = v.right - v.left + 400, x = v.left - 200 + (1 - ((t / S.T + i / 3 + .6) % 1)) * W;
+        sprite(ctx, SPRITES.cloud, x, v.top + (v.bottom - v.top) * (.25 + i * .06), 9, { X: '#ebe8f4' });
+      }
+    },
+    drawBack(S, ctx) { for (const b of S.boxes) if (b.state === 'ground') drawBox(ctx, b); },
+    drawFront(S, ctx) {
+      const fl = S.flower, T = S.bo.tuft;
+      const fx = fl.state === 'head' && T ? T.x : fl.x, fy = fl.state === 'head' && T ? T.y - 4 : fl.y;
+      sprite(ctx, FLOWER, fx, fy, 4.6, { X: PAL.pink, C: PAL.yellow });
+      for (const b of S.boxes) if (b.state !== 'ground' && !(b.state === 'fly' && S.t < b.t0)) drawBox(ctx, b);
+      for (const b of S.boxes) if (b.state === 'fly' && S.t < b.t0) drawBox(ctx, b);
+    },
+  });
+
+  function drawBox(ctx, b) {
+    ctx.save(); ctx.translate(b.x, b.y); ctx.rotate(b.rot);
+    ctx.fillStyle = b.c; ctx.strokeStyle = '#111'; ctx.lineWidth = 4;
+    ctx.beginPath(); ctx.roundRect(-BX / 2, -BX / 2, BX, BX, 3); ctx.fill(); ctx.stroke();
+    ctx.fillStyle = '#fff'; ctx.fillRect(-3, -BX / 2 + 2, 6, BX - 4); ctx.fillRect(-BX / 2 + 2, -3, BX - 4, 6);   // ribbon
+    ctx.restore();
+  }
+})();

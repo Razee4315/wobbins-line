@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>The Gap</title>
+</head>
+<body>
+<script src="engine.js"></script>
+<script>
+// Bo wants to cross a gap but keeps stopping at the edge. Then the line
+// behind starts disappearing, and staying put is no longer an option.
+const L = LineShort, { lerp, seg, sine, hash, spring, GROUND, H } = L;
+const BLUE = '#3b7dd8', FLOWER_X = 1330;
+// how far the line behind Bo has been erased, over time
+const ERASE_PEAK = -60 + 20 * Math.pow(8.4, 1.7);
+const eraseAt = t => t < 12 ? -60 : t < 20.4 ? -60 + 20 * Math.pow(t - 12, 1.7) : lerp(ERASE_PEAK, -60, sine(seg(t, 21, 24)));
+
+L.play({
+  title: 'The Gap',
+  T: 28.5,
+  init(S) {
+    S.bo = S.addChar({ x: -100 });
+    S.bits = []; S.bitClock = 0; S.bitN = 0; S.flower = { x: 0, v: 0 };
+  },
+  update(S, t, dt) {
+    const bo = S.bo;
+    S.plan(bo, t, [
+      [0, { x: 790, speed: 170, accel: 650 }],
+      [5.6, { lookX: .6, lookY: .9, tilt: .14, eye: 'wide' }],          // peers down
+      [6.8, { lookX: 1, lookY: -.1, tilt: 0, eye: 'open' }],           // looks across at the flower
+      [7.8, { x: 560, speed: 150, lookX: 0, lookY: 0 }],               // backs up for a run
+      [9.5, { crouch: .2, tilt: .05 }],
+      [9.9, { crouch: 0, tilt: 0, x: 800, speed: 400, accel: 1500 }],   // runs... and brakes
+      [11.3, { tilt: -.14, eye: 'wide', lookY: .6, lookX: .6 }],
+      [12.1, { tilt: 0, x: 540, speed: 200, eye: 'open', lookX: 0, lookY: 0 }],
+      [13.6, { crouch: .22 }],
+      [14.0, { crouch: 0, x: 805, speed: 440, accel: 1600 }],           // again. brakes again
+      [15.2, { eye: 'squeeze', tilt: -.1 }],
+      [15.8, { face: -1 }], [16.05, { face: 1 }], [16.3, { face: -1 }], [16.55, { face: 1, eye: 'sad', tilt: 0 }],
+      [17.3, { face: -1, eye: 'wide', lookY: .3 }],                     // ...the line behind is going
+      [18.0, { face: 1, lookY: 0 }],
+      [18.2, { x: 690, speed: 170, eye: 'open' }],
+      [18.9, { crouch: .24 }],
+      [19.25, { crouch: 0, x: 1180, speed: 460, accel: 1700 }],         // go
+      [20.6, { face: -1, eye: 'wide' }],
+      [22.0, { eye: 'happy' }],
+      [23.6, { face: 1, eye: 'open' }],
+      [24.0, { x: 1222, speed: 100 }],
+      [25.2, { tilt: .22, lookX: 1, lookY: .6, eye: 'happy' }],
+      [25.5, () => S.flower.v += 3],
+      [26.6, { tilt: 0, lookY: 0, lookX: 0 }],
+    ]);
+    if (t > 19.25 && bo.mode === 'ground' && bo.x >= 836) S.once('leap', () => bo.jump(bo.vx, -760));
+
+    const e = eraseAt(t), close = sine(seg(t, 20.6, 22.2));
+    S.ground = close >= 1 ? [[e, 1660]] : [[e, 880 + 80 * close], [1040 - 80 * close, 1660]];
+
+    // crumbs fall off the erasing edge
+    if (t > 12 && t < 20.4) {
+      S.bitClock += dt;
+      while (S.bitClock >= .06) {
+        S.bitClock -= .06; const n = S.bitN++;
+        S.bits.push({ x: e + hash(n) * 8, y: GROUND + 4, vx: (hash(n + .3) - .5) * 60, vy: -hash(n + .7) * 160, r: hash(n + .9) * 6, a: hash(n + .2) * 6 });
+      }
+    }
+    S.bits = S.bits.filter(b => {
+      b.vy += 1800 * dt; b.x += b.vx * dt; b.y += b.vy * dt; b.a += b.r * dt;
+      return b.y < H + 20;
+    });
+    spring(S.flower, 0, 60, .2, dt);
+  },
+  drawMid(S, ctx, t) {
+    const a = S.flower.x + Math.sin(t * 1.3) * .04;
+    const tx = FLOWER_X + Math.sin(a) * 70, ty = GROUND - Math.cos(a) * 70;
+    ctx.lineWidth = 5;
+    ctx.beginPath(); ctx.moveTo(FLOWER_X, GROUND + 2); ctx.quadraticCurveTo(FLOWER_X - 4, GROUND - 35, tx, ty); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(FLOWER_X - 1, GROUND - 22); ctx.quadraticCurveTo(FLOWER_X + 14, GROUND - 36, FLOWER_X + 24, GROUND - 30); ctx.stroke();
+    ctx.fillStyle = BLUE;
+    for (let i = 0; i < 5; i++) {
+      const pa = i / 5 * Math.PI * 2 + a;
+      ctx.beginPath(); ctx.arc(tx + Math.cos(pa) * 14, ty + Math.sin(pa) * 14, 10, 0, Math.PI * 2); ctx.fill();
+    }
+    ctx.fillStyle = '#fff'; ctx.lineWidth = 3;
+    ctx.beginPath(); ctx.arc(tx, ty, 7, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+  },
+  drawFront(S, ctx) {
+    ctx.lineWidth = 5;
+    for (const b of S.bits) {
+      const c = Math.cos(b.a) * 5, s = Math.sin(b.a) * 5;
+      ctx.beginPath(); ctx.moveTo(b.x - c, b.y - s); ctx.lineTo(b.x + c, b.y + s); ctx.stroke();
+    }
+  },
+});
+</script>
+</body>
+</html>

@@ -1,0 +1,144 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Tomorrow</title>
+</head>
+<body>
+<script src="sfx.js?v=4"></script>
+<script src="engine2.js?v=4"></script>
+<script>
+// Every morning Bo stretches, eyes the flag, gets ready... and sits back down. Tomorrow.
+// Each night the flag runs a little further and the grass grows round Bo's feet. Then one step.
+const { PAL, SPRITES, sprite, zzz, lerp, seg, sine, outBack, clamp, hash, spring, mix, GROUND } = Shorts;
+const V = 130, SPOT = 750, START = 805, ARRIVE = 1270;
+const NIGHTS = [[9.2, 11.0], [14.0, 15.2], [17.4, 18.8]];
+const night = t => Math.max(0, ...NIGHTS.map(([a, b]) => sine(seg(t, a, a + .6)) * (1 - sine(seg(t, b - .5, b)))));
+const days = t => NIGHTS.filter(([a]) => t > a + .3).length;
+// the flag runs away at night, then (once Bo starts) turns out to be close after all
+const flagX = t => 1250 + 250 * sine(seg(t, 9.8, 10.8)) + 250 * sine(seg(t, 14.4, 15.2)) + 300 * sine(seg(t, 17.8, 18.8)) - 700 * sine(seg(t, 24.0, 26.6));
+const flagRun = t => [[9.8, 10.8], [14.4, 15.2], [17.8, 18.8], [24.0, 26.6]].some(([a, b]) => t > a && t < b);
+const GRASS = Array.from({ length: 9 }, (_, i) => 690 + i * 22 + hash(i) * 8);
+const ARRIVED = 28.22;  // measured: when Bo reaches the flag
+
+Shorts.play({
+  title: 'Tomorrow',
+  accent: PAL.orange,
+  loopAfter: ARRIVED + 8.6,
+  paperAt: t => {
+    const dawn = Math.max(0, ...NIGHTS.map(([, b]) => Math.max(0, 1 - Math.abs(t - b) / .7)));
+    return mix(mix('#ffffff', '#ffe4cc', dawn * .8), '#d8d2f1', night(t) * .95);
+  },
+  captions: [
+    [1.2, 3.4, 'big plans.'],
+    [7.8, 9.4, 'tomorrow.'],
+    [13.4, 14.8, 'tomorrow.'],
+    [16.7, 18.0, '...tomorrow.'],
+    [19.9, 21.6, "it's further every day."],
+    [22.4, 24.0, 'just *one step.*'],
+    [ARRIVED + .4, ARRIVED + 5.4, "you don't have to be ready. *just start.*"],
+  ],
+  init(S) { S.bo = S.addChar({ x: 0, walk: V }); S.snore = 1.2; S.steps0 = null; S.stepSeen = 0; S.pt = 0; S.arrived = null; },
+  update(S, t, dt) {
+    const bo = S.bo;
+    if (S.arrived === null) S.plan(bo, t, [
+      [0, { x: SPOT, speed: V, accel: 450 }],
+      [5.4, { lookX: 1, lookY: -.2 }], [6.4, { eye: 'happy' }],
+      // day 1
+      [6.9, { crouch: .2, tilt: .26, eye: 'squeeze', lookX: .6 }],     // ready...
+      [7.7, { crouch: 0, tilt: 0, eye: 'sad', lookX: .3 }],           // ...nah
+      [8.1, { sit: 1 }], [8.8, { eye: 'closed', crouch: .04 }],
+      // day 2
+      [11.2, { eye: 'open' }], [11.6, { sit: 0, crouch: -.1, eye: 'closed' }],
+      [12.1, { crouch: 0, eye: 'open', lookX: 1, lookY: -.2 }],
+      [12.6, { crouch: .2, tilt: .26, eye: 'squeeze' }], [13.3, { crouch: 0, tilt: 0, eye: 'sad' }],
+      [13.6, { sit: 1 }], [14.1, { eye: 'closed', crouch: .04 }],
+      // day 3, quicker every time
+      [15.3, { eye: 'open' }], [15.6, { sit: 0, crouch: -.1, eye: 'closed' }],
+      [15.95, { crouch: 0, eye: 'open', lookX: 1 }], [16.2, { crouch: .2, tilt: .26, eye: 'squeeze' }],
+      [16.6, { crouch: 0, tilt: 0, eye: 'sad' }], [16.8, { sit: 1 }], [17.4, { eye: 'closed', crouch: .04 }],
+      // day 4
+      [19.0, { eye: 'open' }], [19.4, { sit: 0, crouch: 0 }],
+      [19.7, { lookX: 1, lookY: -.1, eye: 'wide' }], [20.4, { eye: 'sad' }],
+      [21.4, { lookX: .4, lookY: .9, eye: 'open' }],                    // ...my feet
+      [22.2, { x: SPOT + 40, speed: 30, accel: 200 }],                   // one step
+      [23.2, { x: SPOT + 80, lookX: .8, lookY: -.1 }],                  // another
+      [24.0, { x: ARRIVE, speed: 90, accel: 120, eye: 'happy', lookX: 0, lookY: 0 }],
+      [25.2, { speed: 145 }],
+    ]);
+    if (S.arrived === null && t > 24 && Math.abs(bo.x - ARRIVE) < 4) {
+      S.arrived = t;
+      S.sfx('arp', { notes: [0, 2, 4, 5, 7, 9] }); S.sfx('sparkle', { n: 8 }, flagX(t)); S.sfx('swell', { root: 392 });
+      S.burst(flagX(t) + 20, GROUND - 120, 40, [PAL.red, PAL.orange, PAL.yellow, PAL.lime, PAL.sky, PAL.violet], { speed: 520, gravity: 700, size: 10, life: 1.8 });
+    }
+    if (S.arrived !== null) {
+      const d = t - S.arrived, c = bo.cmd;
+      if (d > .1 && d < .3) c.crouch = .2;
+      if (d > .3) { c.crouch = 0; S.once('hop', () => bo.jump(0, -540)); c.eye = 'happy'; c.lookY = -.6; c.lookX = .5; }
+      if (d > 1.3) Object.assign(c, { x: 1e6, speed: V, accel: 450, eye: 'open', lookX: 0, lookY: 0 });
+    }
+
+    // sound: morning birds, yawns, the "nah", snoring, the flag running off, and each step ringing higher
+    NIGHTS.forEach(([, b], k) => { if (t > b) S.once('bird' + k, () => S.sfx('chirp', { k: 1 + k * .05 })); });
+    [11.6, 15.6].forEach((a, k) => { if (t > a) S.once('yawn' + k, () => S.sfx('yawn', {}, bo.x)); });
+    [7.7, 13.3, 16.6].forEach((a, k) => { if (t > a) S.once('nah' + k, () => S.sfx('drain', {}, bo.x)); });
+    [6.9, 12.6, 16.2].forEach((a, k) => { if (t > a) S.once('ready' + k, () => S.sfx('heart', { g: .2 }, bo.x)); });
+    const asleep = [[8.8, 11.1], [14.1, 15.2], [17.4, 18.9]].some(([a, b]) => t > a && t < b);
+    if (asleep) { S.snore += dt; if (S.snore >= 1.7) { S.snore = 0; S.sfx('snore', {}, bo.x); } } else S.snore = 1.2;
+    [9.8, 14.4, 17.8].forEach((a, k) => { if (t > a) S.once('run' + k, () => S.sfx('whoosh', { d: .8, v: .6 }, flagX(t))); });
+    if (t > 22.1 && t < 27.5) {
+      if (S.steps0 === null) S.steps0 = bo.stepN;
+      const n = bo.stepN - S.steps0;
+      if (n > (S.stepSeen ?? 0)) { S.stepSeen = n; S.sfx('chime', { n: Math.min(10, n - 1), g: .1 }, bo.x); }
+    }
+    if (flagRun(t)) { S.pt = (S.pt || 0) + dt; if (S.pt > .12) { S.pt = 0; S.puff(flagX(t), t > 24 ? -1 : 1, .5); } }
+
+    // frame Bo and the flag while it keeps getting further away
+    if (t > 5 && t < 24) {
+      const fx = flagX(t);
+      S.camGoal.x = (SPOT - 110 + fx + 90) / 2; S.camGoal.z = clamp(600 / (fx - SPOT + 360), .34, 1); S.camGoal.kx = 2; S.camGoal.kz = 1.6;
+    }
+  },
+  drawSky(S, ctx, t, v) {
+    const nt = night(t);
+    if (nt > .35) for (let i = 0; i < 24; i++) {
+      const x = v.left + hash(i) * (v.right - v.left), y = v.top + hash(i + .5) * (GROUND - v.top) * .7;
+      sprite(ctx, i % 4 ? SPRITES.dot : SPRITES.sparkle, x, y, i % 4 ? 3 : 2.2, { X: '#fff' }, (nt - .35) / .65);
+    }
+    for (let i = 0; i < 3; i++) {
+      const W = v.right - v.left + 400, x = v.left - 200 + (1 - ((t / S.T * 2 + i / 3 + .4) % 1)) * W;
+      sprite(ctx, SPRITES.cloud, x, v.top + (v.bottom - v.top) * (.25 + i * .06), 9, { X: mix('#ebe8f4', '#c6bfe6', nt) });
+    }
+  },
+  drawBack(S, ctx, t) {
+    // start line: a little checkered banner
+    ctx.lineWidth = 5; ctx.beginPath(); ctx.moveTo(START, GROUND + 2); ctx.lineTo(START, GROUND - 92); ctx.stroke();
+    for (let r = 0; r < 4; r++) for (let c = 0; c < 6; c++) { ctx.fillStyle = (r + c) % 2 ? '#111' : '#fff'; ctx.fillRect(START + 2 + c * 7, GROUND - 92 + r * 7 + Math.sin(t * 3 - c * .6) * 1.5 * (c / 5), 7.4, 7.4); }
+    // the flag, running away on its pole
+    const fx = flagX(t), run = flagRun(t), lean = run ? (t > 24 ? -.16 : .16) : 0, bob = run ? Math.abs(Math.sin(t * 14)) * 5 : 0;
+    ctx.save(); ctx.translate(fx, GROUND + 2 - bob); ctx.rotate(lean);
+    ctx.lineWidth = 6; ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(0, -124); ctx.stroke();
+    ctx.fillStyle = PAL.orange;
+    for (let c = 0; c < 7; c++) for (let r = 0; r < 4; r++) ctx.fillRect(2 + c * 8, -122 + r * 8 + Math.sin(t * 6 - c * .8) * 3 * (c / 6), 8.4, 8.4);
+    if (run) { ctx.lineWidth = 5; for (const s of [-1, 1]) { ctx.beginPath(); ctx.moveTo(0, -4); ctx.lineTo(s * 12 + Math.sin(t * 28) * 8 * s, 0); ctx.stroke(); } }   // little legs
+    ctx.restore();
+  },
+  drawFront(S, ctx, t) {
+    const bo = S.bo, top = bo.top();
+    // grass at the start line grows taller every day Bo waits, and wraps round Bo's feet
+    const h = 8 + 10 * days(t) + 4 * sine(seg(t, 17.6, 18.6));
+    ctx.strokeStyle = PAL.green; ctx.lineWidth = 4;
+    GRASS.forEach((gx, i) => {
+      for (let k = -1; k <= 1; k++) {
+        const a = k * .35 + Math.sin(t * 1.6 + i) * .1, len = h * (k === 0 ? 1.15 : .85);
+        ctx.beginPath(); ctx.moveTo(gx + k * 4, GROUND + 2); ctx.quadraticCurveTo(gx + k * 4, GROUND - len * .6, gx + k * 4 + Math.sin(a) * len, GROUND - Math.cos(a) * len); ctx.stroke();
+      }
+    });
+    const asleep = [[8.8, 11.1], [14.1, 15.2], [17.4, 18.9]].find(([a, b]) => t > a && t < b);
+    if (asleep) zzz(ctx, top.x, top.y, t, Math.min(seg(t, asleep[0], asleep[0] + .4), 1 - seg(t, asleep[1] - .3, asleep[1])));
+  },
+});
+</script>
+</body>
+</html>

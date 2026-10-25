@@ -1,0 +1,42 @@
+/* Wobbin's Line — design tokens. See docs/03-design-tokens.md. */
+:root {
+  --paper: #FBF8F2;
+  --ink: #141210;
+  --ink-60: rgb(20 18 16 / .6);
+  --ink-12: rgb(20 18 16 / .12);
+  --blue: #3B7DD8;
+  --on-blue: #FBF8F2;
+
+  --font-display: "Clash Display", "Arial Black", sans-serif;
+  --font-text: Satoshi, system-ui, sans-serif;
+  --font-pixel: Silkscreen, "Courier New", monospace;
+
+  --s-display: clamp(3.5rem, 10vw, 9rem);
+  --s-h2: clamp(2.25rem, 4.6vw, 4.25rem);
+  --s-h3: clamp(1.25rem, 1.6vw, 1.5rem);
+  --s-lead: clamp(1.0625rem, 1.3vw, 1.3125rem);
+  --s-body: 1.0625rem;
+  --s-label: .75rem;
+
+  --sp-1: 4px; --sp-2: 8px; --sp-3: 16px; --sp-4: 24px; --sp-5: 40px; --sp-6: 64px; --sp-7: 104px; --sp-8: 168px;
+  --section-pad: clamp(4.5rem, 11vh, 8.5rem);
+  --gutter: 24px;
+  --side: max(5vw, 16px);
+  --max: 1320px;
+
+  --r-pill: 999px;
+  --stroke: 2.5px;
+  --band-h: 112px;
+
+  --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-in-out-quart: cubic-bezier(0.77, 0, 0.175, 1);
+  --ease-in-quart: cubic-bezier(0.5, 0, 0.75, 0);
+
+  --d-micro: 180ms;
+  --d-ui: 280ms;
+  --d-enter: 900ms;
+  --d-exit: 660ms;
+
+  --grain: .04;
+}
+@media (max-width: 700px) { :root { --band-h: 84px; } }

@@ -1,0 +1,162 @@
+/* snooze: extracted from ../snooze.html by scripts/sync-shorts.py. Do not edit here. */
+(function () {
+  const Shorts = Object.assign(Object.create(window.Shorts), { play: story => { (window.WL_STORIES ||= {})['snooze'] = story; } });
+  // "Just a quick nap." An alarm bird keeps coming back (one, two, four of them); Bo keeps
+  // swatting. The sun crosses the sky, friends fly a kite and go home. Bo wakes up to stars.
+  const { PAL, SPRITES, sprite, zzz, lerp, seg, sine, outBack, clamp, hash, spring, mix, GROUND } = Shorts;
+  const V = 130, BED = 900, BL = 815, BR = 985, BED_H = 44;
+  const HEAD = [BL - 3, GROUND - 124], FOOT = [BR + 3, GROUND - 90], QUILT = [935, GROUND - 104];
+  // alarm visits: when they land, when they're shooed, where they perch
+  const VISITS = [
+    { at: 8.9, off: 10.1, perches: [HEAD] },
+    { at: 14.3, off: 15.5, perches: [HEAD, FOOT] },
+    { at: 18.6, off: 20.0, perches: [HEAD, FOOT, 'bo', QUILT] },
+  ];
+  const DAWN_BIRD = 29.6;
+  const BIRD_A = ['..XX...', '.XXXXO.', 'XXXXX..', '.XXXX..', '..K.K..'], BIRD_B = ['X....X.', 'XXXXXO.', '.XXXX..', '..XX...', '..K.K..'];
+  const sky = t => {
+    const eve = sine(seg(t, 19, 23)) * (1 - sine(seg(t, 23, 25))), nite = sine(seg(t, 22.5, 25)) * (1 - sine(seg(t, 28.2, 30.2)));
+    const dawn = Math.max(0, 1 - Math.abs(t - 29.2) / 1.2);
+    return { eve: Math.max(eve, dawn * .8), nite };
+  };
+
+  Shorts.play({
+    title: 'Snooze',
+    accent: PAL.red,
+    loopAfter: 37.2,
+    ground: x => x > BL + 3 && x < BR - 3 ? GROUND - BED_H : GROUND,
+    lineAt: () => GROUND,
+    paperAt: t => { const s = sky(t); return mix(mix('#ffffff', '#ffe2c8', s.eve), '#d6d0f0', s.nite * .95); },
+    captions: [
+      [6.8, 8.4, 'just a quick nap.'],
+      [9.8, 11.4, 'five more minutes.'],
+      [15.2, 16.8, 'five... more...'],
+      [19.8, 21.2, '*FIVE. MORE.*'],
+      [26.4, 28.2, 'wait... where did the day go?'],
+      [30.4, 35.2, "the day doesn't wait. *get up for it.*"],
+    ],
+    init(S) {
+      S.friends = [
+        S.addChar({ x: -3000, face: 1, hair: 'curl', blush: PAL.pink, fill: '#ffe9f2', gain: .45 }),
+        S.addChar({ x: -3100, face: 1, hair: 'antenna', hairColor: PAL.blue, fill: '#e6f0ff', gain: .45 }),
+      ];
+      S.friends.forEach(f => f.hidden = true);
+      S.bo = S.addChar({ x: 0, walk: V }); S.focus = S.bo;
+      S.ring = 0; S.ringN = 0; S.snore = 1.2; S.swat = { x: 0, v: 0 };
+    },
+    update(S, t, dt) {
+      const bo = S.bo, [mo, ky] = S.friends;
+      S.plan(bo, t, [
+        [0, { x: 770, speed: V, accel: 450 }],
+        [5.6, { lookX: .6, lookY: .2 }],
+        [6.0, { crouch: -.12, eye: 'closed' }], [6.0, () => S.sfx('yawn', {}, bo.x)],
+        [6.6, { crouch: .2, eye: 'open' }], [6.85, { crouch: 0, x: 895 }], [6.85, () => bo.jump(310, -620)],
+        [7.4, { sit: 1.15, tilt: -.28, eye: 'closed', lookX: 0, lookY: 0 }],              // tucked in
+        [25.0, { eye: 'open' }],
+        [25.4, { sit: 0, tilt: 0, crouch: -.12, eye: 'closed' }], [25.4, () => S.sfx('yawn', {}, bo.x)],
+        [26.0, { crouch: 0, eye: 'happy' }],                                               // good morn—
+        [26.6, { eye: 'wide', lookX: -.5, lookY: -.6 }],                                   // ...it's night
+        [27.4, { eye: 'sad', sit: .8, lookY: 0 }], [27.4, () => S.sfx('drain', {}, bo.x)],
+        [DAWN_BIRD + .2, { eye: 'wide', sit: 0, lookX: -.6, lookY: -.4 }],                 // the bird! up!
+        [30.0, { crouch: .2 }], [30.25, { crouch: 0 }], [30.25, () => bo.jump(0, -520)],
+        [30.3, () => S.sfx('swell', { root: 523.25 })],
+        [30.9, { eye: 'happy', lookX: 0, lookY: 0 }],
+        [31.3, { x: 1060 }], [31.3, () => bo.jump(300, -560)],
+        [31.9, { x: 1e6, speed: V, accel: 450, eye: 'open' }],
+      ]);
+      // swatting at the alarm: a twitch, bigger every time; the last time the blanket goes over the head
+      VISITS.forEach((v, i) => { if (t > v.off - .1) S.once('swat' + i, () => { S.swat.v += 5 + i * 3; bo.q.v += 2 + i; S.sfx('whoosh', { d: .25, v: .7 }, bo.x); }); });
+      spring(S.swat, 0, 120, .3, dt);
+      if (t > 7.4 && t < 25.4) bo.cmd.tilt = -.28 + S.swat.x * .08;
+
+      // friends go out to fly a kite... and come home at dusk
+      S.plan(mo, t, [[11.0, () => teleport(mo, S.bo.x - 760)], [11.0, { x: 1900, speed: 150, accel: 400, eye: 'happy' }], [21.4, () => teleport(mo, 1700)], [21.5, { face: -1, x: -300, speed: 160, eye: 'open' }], [26.7, () => mo.jump(0, -360)]]);
+      S.plan(ky, t, [[11.6, () => teleport(ky, S.bo.x - 780)], [11.6, { x: 1800, speed: 150, accel: 400, eye: 'happy' }], [21.6, () => teleport(ky, 1640)], [21.7, { face: -1, x: -400, speed: 160, eye: 'open' }], [26.9, () => ky.jump(0, -340)]]);
+
+      // the alarm rings while birds are perched; snoring otherwise
+      const ringing = VISITS.some(v => t > v.at && t < v.off) || (t > DAWN_BIRD && t < DAWN_BIRD + .3);
+      if (ringing) { S.ring += dt; if (S.ring >= .3) { S.ring = 0; S.sfx(S.ringN++ % 2 ? 'chirp' : 'ring', { k: 1.1 }, HEAD[0]); } } else { S.ring = .3; S.ringN = 0; }
+      VISITS.forEach((v, i) => { [v.at - .4, v.off + .1].forEach((a, k) => { if (t > a) S.once(`flap${i}-${k}`, () => S.sfx('flap', {}, HEAD[0])); }); });
+      const asleep = t > 7.6 && t < 25 && !ringing;
+      if (asleep) { S.snore += dt; if (S.snore >= 1.7) { S.snore = 0; S.sfx('snore', {}, bo.x); } } else S.snore = 1.2;
+      if (t > DAWN_BIRD - .2) S.once('dawnBird', () => S.sfx('chirp', { k: 1.2 }, HEAD[0]));
+
+      if (t > 5 && t < 31.6) { S.camGoal.x = BED + 20; S.camGoal.z = .95; S.camGoal.kx = 2; }
+    },
+    drawSky(S, ctx, t, v) {
+      const s = sky(t);
+      if (s.nite > .35) for (let i = 0; i < 26; i++) {
+        const x = v.left + hash(i) * (v.right - v.left), y = v.top + hash(i + .5) * (GROUND - v.top) * .7;
+        sprite(ctx, i % 4 ? SPRITES.dot : SPRITES.sparkle, x, y, i % 4 ? 3 : 2.2, { X: '#fff' }, (s.nite - .35) / .65);
+      }
+      // the sun crosses the whole sky while Bo sleeps
+      const u = seg(t, 0, 24);
+      if (u > 0 && u < 1) {
+        const sx = v.cx + lerp(-380, 380, u), sy = GROUND - Math.sin(Math.PI * u) * 330, R = 44, low = 1 - Math.sin(Math.PI * u);
+        ctx.save(); ctx.beginPath(); ctx.rect(v.left, v.top, v.right - v.left, GROUND - v.top); ctx.clip();
+        ctx.fillStyle = mix(PAL.yellow, PAL.orange, low);
+        for (let y = -R; y < R; y += 8) { const w = Math.sqrt(Math.max(0, R * R - (y + 4) ** 2)); ctx.fillRect(Math.round(sx - w), sy + y, Math.round(w * 2), 8.5); }
+        ctx.restore();
+      }
+      for (let i = 0; i < 3; i++) {
+        const W = v.right - v.left + 400, x = v.left - 200 + (1 - ((t / S.T * 2 + i / 3 + .45) % 1)) * W;
+        sprite(ctx, SPRITES.cloud, x, v.top + (v.bottom - v.top) * (.25 + i * .06), 9, { X: mix('#ebe8f4', '#c6bfe6', s.nite) });
+      }
+    },
+    drawBack(S, ctx, t) {
+      // friends (behind the bed), Mo with a kite
+      for (const f of S.friends) S.drawChar(ctx, f);
+      S.ink(ctx);
+      const mo = S.friends[0], kiteOn = t > 11 && t < 21.4, top = mo.top();
+      if (kiteOn) {
+        const kx = top.x - 150 + Math.sin(t * 1.3) * 30, ky = top.y - 230 + Math.sin(t * 1.9) * 20;
+        ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(top.x, top.y + 10); ctx.quadraticCurveTo((top.x + kx) / 2, ky + 90, kx, ky); ctx.stroke();
+        ctx.save(); ctx.translate(kx, ky); ctx.rotate(Math.sin(t * 2) * .15);
+        sprite(ctx, ['...X...', '..XYX..', '.XYYYX.', 'XPPYPPX', '.XPPPX.', '..XPX..', '...X...'], 0, 0, 6, { X: '#111', Y: PAL.yellow, P: PAL.pink });
+        ctx.restore();
+        for (let i = 1; i <= 4; i++) sprite(ctx, ['XX', 'XX'], kx + Math.sin(t * 3 + i) * 8 + i * 6, ky + 26 + i * 16, 3.5, { X: [PAL.red, PAL.sky][i % 2] });
+      }
+      // the bed
+      ctx.lineWidth = 6; ctx.strokeStyle = '#111';
+      ctx.beginPath(); ctx.moveTo(BL, GROUND + 2); ctx.lineTo(BL, GROUND - 112); ctx.moveTo(BR, GROUND + 2); ctx.lineTo(BR, GROUND - 78); ctx.stroke();
+      ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.roundRect(BL, GROUND - BED_H - 4, BR - BL, BED_H - 8, 6); ctx.fill(); ctx.stroke();
+      ctx.lineWidth = 5; for (const x of [BL + 18, BR - 18]) { ctx.beginPath(); ctx.moveTo(x, GROUND - 12); ctx.lineTo(x, GROUND + 2); ctx.stroke(); }
+      ctx.fillStyle = '#fff'; ctx.lineWidth = 4; ctx.beginPath(); ctx.roundRect(BL + 8, GROUND - BED_H - 22, 58, 22, 9); ctx.fill(); ctx.stroke();   // pillow
+    },
+    drawFront(S, ctx, t) {
+      const bo = S.bo, top = bo.top(), inBed = t > 7.1 && t < 25.4, over = t > 19.8 && t < 22 ? 1 : 0;
+      // the quilt, pulled right up over Bo's head when the four birds come
+      if (inBed) {
+        const qt = GROUND - BED_H - 50 - 34 * sine(seg(t, 19.7, 20.1)) * (1 - sine(seg(t, 21.5, 22.2)));
+        const cells = 8, cw = (BR - BL - 50) / cells;
+        for (let r = 0; (qt + r * cw) < GROUND - 10; r++) for (let c = 0; c < cells; c++) {
+          ctx.fillStyle = (r + c) % 2 ? PAL.violet : PAL.pink; ctx.fillRect(BL + 50 + c * cw, qt + r * cw, cw + .5, Math.min(cw, GROUND - 10 - qt - r * cw) + .5);
+        }
+        ctx.lineWidth = 5; ctx.strokeRect(BL + 50, qt, BR - BL - 50, GROUND - 10 - qt);
+      }
+      if (t > 7.8 && t < 25 && !(t > 19.7 && t < 22)) zzz(ctx, top.x - 20, top.y, t, seg(t, 7.8, 8.2) * (1 - seg(t, 24.6, 25)));
+      // alarm birds: swoop in, ring, get shooed off
+      const fly = (x, y, flap) => sprite(ctx, flap ? BIRD_B : BIRD_A, x, y - 6, 7, { X: PAL.red, O: PAL.orange, K: '#111' });
+      VISITS.forEach(v => v.perches.forEach((p, k) => {
+        if (t < v.at - .6 || t > v.off + .8) return;
+        const [px, py] = p === 'bo' ? [top.x, top.y - 16] : p;
+        if (t < v.at) { const u = sine(seg(t, v.at - .6, v.at)); fly(lerp(px + 380 + k * 80, px, u), lerp(py - 360, py, u) - Math.sin(Math.PI * u) * 40, Math.floor(t * 14) % 2); }
+        else if (t < v.off) fly(px, py - Math.abs(Math.sin((t - v.at) * 18 + k)) * 6, 0);
+        else { const u = seg(t, v.off, v.off + .8); fly(px - u * 420 - k * 60, py - u * 380, Math.floor(t * 14) % 2); }
+      }));
+      if (t > DAWN_BIRD - .6 && t < 35) {
+        let x, y;
+        if (t < DAWN_BIRD) { const u = sine(seg(t, DAWN_BIRD - .6, DAWN_BIRD)); x = lerp(HEAD[0] + 400, HEAD[0], u); y = lerp(HEAD[1] - 360, HEAD[1], u); }
+        else if (t < 31.3) { x = HEAD[0]; y = HEAD[1] - Math.abs(Math.sin(t * 10)) * 5; }
+        else { const away = Math.max(0, t - 33); x = top.x + 70 + Math.sin(t * 4) * 30 + away * 300; y = top.y - 80 + Math.sin(t * 6) * 10 - away * 280; }
+        fly(x, y, t > 31.3 || t < DAWN_BIRD ? Math.floor(t * 12) % 2 : 0);
+      }
+    },
+  });
+
+  function teleport(c, x) {
+    const dx = x - c.x; c.x += dx; c.hx += dx; c.vx = 0; c.cmd.x = x;
+    if (c.tuft) c.tuft.x += dx;
+    for (const F of c.feet) { F.x += dx; F.fromX += dx; F.toX += dx; }
+  }
+})();
