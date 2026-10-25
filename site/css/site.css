@@ -200,7 +200,7 @@ section { position: relative; }
 .player__stage { display: grid; place-items: center; min-height: 0; }
 .player__frame { position: relative; height: calc(100dvh - 64px); aspect-ratio: 9 / 16; max-width: 100%; }
 .player.is-wide .player__frame { height: auto; width: 100%; aspect-ratio: 16 / 9; max-height: calc(100dvh - 64px); }
-.player__canvas, .player__iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; }
+.player__canvas { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; }
 .player__busy { position: absolute; inset: 0; z-index: 3; background: rgb(251 248 242 / .94); display: grid; place-content: center; justify-items: center; gap: var(--sp-3); }
 .player__busy[hidden] { display: none; }
 .meter { width: 220px; height: 14px; box-shadow: inset 0 0 0 var(--stroke) var(--ink); border-radius: var(--r-pill); overflow: hidden; }

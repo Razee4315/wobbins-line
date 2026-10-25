@@ -361,40 +361,9 @@
   };
 
   // ---------- episode previews ----------
-  // Season 1 runs on the older engine, so its cards get a little engine2 still life instead.
-  const S1_POSTERS = {
-    'the-cloud': (S, ctx, t) => {
-      const b = S.bo; ctx.fillStyle = '#a7abb2';
-      for (const [ox, oy, r] of [[-50, 8, 26], [-20, -8, 34], [16, -14, 38], [48, 0, 30], [0, 14, 30]]) { ctx.beginPath(); ctx.arc(b.x + ox, GROUND - 380 + oy, r, 0, Math.PI * 2); ctx.fill(); }
-      ctx.strokeStyle = '#7f94b0'; ctx.lineWidth = 3;
-      for (let i = 0; i < 12; i++) { const x = b.x - 60 + hash(i) * 120, y = GROUND - 340 + ((t * 300 + hash(i + .5) * 200) % 200); ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x, y + 16); ctx.stroke(); }
-      ctx.strokeStyle = '#3aa655'; ctx.fillStyle = '#3aa655'; ctx.lineWidth = 5; const sx = b.x + 120;
-      ctx.beginPath(); ctx.moveTo(sx, GROUND + 1); ctx.quadraticCurveTo(sx - 6, GROUND - 40, sx, GROUND - 72); ctx.stroke();
-      for (const s of [-1, 1]) { ctx.beginPath(); ctx.moveTo(sx, GROUND - 72); ctx.quadraticCurveTo(sx + s * 12, GROUND - 94, sx + s * 32, GROUND - 88); ctx.quadraticCurveTo(sx + s * 18, GROUND - 68, sx, GROUND - 72); ctx.fill(); }
-    },
-    'the-seed': (S, ctx) => {
-      const b = S.bo, x = b.x + 150; ctx.lineWidth = 6; ctx.fillStyle = '#fff';
-      ctx.beginPath(); ctx.moveTo(x - 12, GROUND + 4); ctx.lineTo(x - 6, GROUND - 240); ctx.lineTo(x + 6, GROUND - 240); ctx.lineTo(x + 12, GROUND + 4); ctx.fill(); ctx.stroke();
-      ctx.beginPath(); ctx.ellipse(x, GROUND - 300, 120, 90, 0, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
-      ctx.fillStyle = '#f08a24'; for (const [fx, fy] of [[-50, 20], [30, -40], [60, 30]]) { ctx.beginPath(); ctx.arc(x + fx, GROUND - 300 + fy, 13, 0, Math.PI * 2); ctx.fill(); }
-    },
-    'the-gap': (S, ctx) => {
-      const b = S.bo; ctx.fillStyle = PAPER; ctx.fillRect(b.x + 110, GROUND - 4, 170, 20);
-      ctx.strokeStyle = '#111'; ctx.lineWidth = 5; const fx = b.x + 400;
-      ctx.beginPath(); ctx.moveTo(fx, GROUND + 2); ctx.lineTo(fx, GROUND - 70); ctx.stroke();
-      ctx.fillStyle = '#3b7dd8'; for (let i = 0; i < 5; i++) { const a = i / 5 * Math.PI * 2; ctx.beginPath(); ctx.arc(fx + Math.cos(a) * 14, GROUND - 70 + Math.sin(a) * 14, 10, 0, Math.PI * 2); ctx.fill(); }
-    },
-  };
   WL.previewScene = (canvas, ep) => {
-    let story;
-    if (ep.s1) story = {
-      paper: PAPER, warmup: 0, T: 1e9,
-      init(S) { S.bo = S.addChar({ x: 0 }); }, update(S) { S.camGoal.x = 140; S.bo.cmd.lookX = .6; S.bo.cmd.lookY = ep.id === 'the-cloud' ? -.8 : .2; S.bo.cmd.eye = ep.id === 'the-cloud' ? 'sad' : 'open'; },
-      drawFront: (S, ctx, t) => S1_POSTERS[ep.id](S, ctx, t),
-    };
-    else story = window.WL_STORIES[ep.id];
-    const stage = new Stage(canvas, story, { fps: 60 });
-    stage.poster = () => { stage.show.seek(ep.s1 ? 1.5 : ep.poster); stage.draw(); stage.posted = true; };
+    const stage = new Stage(canvas, window.WL_STORIES[ep.id], { fps: 60 });
+    stage.poster = () => { stage.show.seek(ep.poster); stage.draw(); stage.posted = true; };
     return stage;
   };
 

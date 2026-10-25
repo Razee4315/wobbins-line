@@ -2,86 +2,125 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>The Gap</title>
 </head>
 <body>
-<script src="engine.js"></script>
+<script src="sfx.js?v=4"></script>
+<script src="engine2.js?v=4"></script>
 <script>
-// Bo wants to cross a gap but keeps stopping at the edge. Then the line
-// behind starts disappearing, and staying put is no longer an option.
-const L = LineShort, { lerp, seg, sine, hash, spring, GROUND, H } = L;
-const BLUE = '#3b7dd8', FLOWER_X = 1330;
-// how far the line behind Bo has been erased, over time
-const ERASE_PEAK = -60 + 20 * Math.pow(8.4, 1.7);
-const eraseAt = t => t < 12 ? -60 : t < 20.4 ? -60 + 20 * Math.pow(t - 12, 1.7) : lerp(ERASE_PEAK, -60, sine(seg(t, 21, 24)));
+// Bo wants to cross a gap but keeps stopping at the edge. Then the line behind starts
+// disappearing, and staying put is no longer an option. (Season 1, rebuilt on engine 2;
+// the original is in legacy/.)
+const { PAL, sprite, lerp, seg, sine, hash, spring, GROUND, PAPER } = Shorts;
+const V = 150, FLOWER_X = 1430, GAP_A = 980, GAP_B = 1140;
+const LEAVE = 27.0;
+// how far the line behind Bo has been erased: nothing until 12 s, then it chases Bo,
+// and once Bo is across it draws itself back in
+const ERASE_PEAK = 40 + 20 * Math.pow(8.4, 1.7);
+const eraseAt = t => t < 12 ? -1e5 : t < 20.4 ? 40 + 20 * Math.pow(t - 12, 1.7) : t < 24 ? lerp(ERASE_PEAK, 40, sine(seg(t, 21, 24))) : -1e5;
+const closeAt = t => sine(seg(t, 20.6, 22.2));
 
-L.play({
+Shorts.play({
   title: 'The Gap',
-  T: 28.5,
+  accent: PAL.blue,
+  loopAfter: LEAVE + 7.6,
+  captions: [
+    [5.8, 7.2, 'whoa. *a gap.*'],
+    [8.0, 9.4, 'okay. i can do this.'],
+    [11.3, 12.5, '*nope.*'],
+    [15.2, 16.6, 'nope nope nope.'],
+    [17.4, 18.6, 'wait...'],
+    [19.3, 20.4, '*go!*'],
+    [24.4, 31.0, 'jump before *the ground decides for you.*'],
+  ],
   init(S) {
-    S.bo = S.addChar({ x: -100 });
-    S.bits = []; S.bitClock = 0; S.bitN = 0; S.flower = { x: 0, v: 0 };
+    S.bo = S.addChar({ x: 0, walk: V });
+    S.bits = []; S.bitClock = 0; S.bitN = 0; S.flower = { x: 0, v: 0 }; S.eraseClock = 0;
   },
   update(S, t, dt) {
     const bo = S.bo;
     S.plan(bo, t, [
-      [0, { x: 790, speed: 170, accel: 650 }],
-      [5.6, { lookX: .6, lookY: .9, tilt: .14, eye: 'wide' }],          // peers down
-      [6.8, { lookX: 1, lookY: -.1, tilt: 0, eye: 'open' }],           // looks across at the flower
-      [7.8, { x: 560, speed: 150, lookX: 0, lookY: 0 }],               // backs up for a run
-      [9.5, { crouch: .2, tilt: .05 }],
-      [9.9, { crouch: 0, tilt: 0, x: 800, speed: 400, accel: 1500 }],   // runs... and brakes
+      [0, { x: 890, speed: V, accel: 520 }],
+      [5.6, { lookX: .6, lookY: .9, tilt: .14, eye: 'wide' }], [5.6, () => S.sfx('slip', {}, bo.x)],   // peers down
+      [6.8, { lookX: 1, lookY: -.1, tilt: 0, eye: 'open' }], [6.8, () => S.sfx('twinkle', { pitch: 2093 }, FLOWER_X)],   // looks across at the flower
+      [7.8, { x: 660, speed: 150, lookX: 0, lookY: 0 }],               // backs up for a run
+      [9.5, { crouch: .2, tilt: .05 }], [9.5, () => S.sfx('charge', {}, bo.x)],
+      [9.9, { crouch: 0, tilt: 0, x: 900, speed: 400, accel: 1500 }],   // runs... and brakes
       [11.3, { tilt: -.14, eye: 'wide', lookY: .6, lookX: .6 }],
-      [12.1, { tilt: 0, x: 540, speed: 200, eye: 'open', lookX: 0, lookY: 0 }],
-      [13.6, { crouch: .22 }],
-      [14.0, { crouch: 0, x: 805, speed: 440, accel: 1600 }],           // again. brakes again
+      [12.1, { tilt: 0, x: 640, speed: 200, eye: 'open', lookX: 0, lookY: 0 }],
+      [13.6, { crouch: .22 }], [13.6, () => S.sfx('charge', {}, bo.x)],
+      [14.0, { crouch: 0, x: 905, speed: 440, accel: 1600 }],           // again. brakes again
       [15.2, { eye: 'squeeze', tilt: -.1 }],
       [15.8, { face: -1 }], [16.05, { face: 1 }], [16.3, { face: -1 }], [16.55, { face: 1, eye: 'sad', tilt: 0 }],
-      [17.3, { face: -1, eye: 'wide', lookY: .3 }],                     // ...the line behind is going
+      [16.55, () => S.sfx('drain', {}, bo.x)],
+      [17.3, { face: -1, eye: 'wide', lookY: .3 }], [17.3, () => S.sfx('slip', {}, bo.x)],   // ...the line behind is going
       [18.0, { face: 1, lookY: 0 }],
-      [18.2, { x: 690, speed: 170, eye: 'open' }],
-      [18.9, { crouch: .24 }],
-      [19.25, { crouch: 0, x: 1180, speed: 460, accel: 1700 }],         // go
+      [18.2, { x: 790, speed: 170, eye: 'open' }],
+      [18.9, { crouch: .24 }], [18.9, () => S.sfx('charge', {}, bo.x)],
+      [19.25, { crouch: 0, x: 1280, speed: 460, accel: 1700 }],         // go
       [20.6, { face: -1, eye: 'wide' }],
-      [22.0, { eye: 'happy' }],
+      [20.7, () => { S.sfx('swell', { root: 392 }); S.sfx('scribble', { v: 1 }, (GAP_A + GAP_B) / 2); }],
+      [22.0, { eye: 'happy' }], [22.0, () => S.sfx('arp', { notes: [0, 2, 4, 7] })],
       [23.6, { face: 1, eye: 'open' }],
-      [24.0, { x: 1222, speed: 100 }],
+      [24.0, { x: 1322, speed: 100 }],
       [25.2, { tilt: .22, lookX: 1, lookY: .6, eye: 'happy' }],
-      [25.5, () => S.flower.v += 3],
+      [25.5, () => { S.flower.v += 3; S.sfx('sparkle', { n: 7 }, FLOWER_X); }],
       [26.6, { tilt: 0, lookY: 0, lookX: 0 }],
+      [LEAVE, { x: 1e6, speed: V, accel: 450, eye: 'open' }],
     ]);
-    if (t > 19.25 && bo.mode === 'ground' && bo.x >= 836) S.once('leap', () => bo.jump(bo.vx, -760));
+    if (t > 19.25 && bo.mode === 'ground' && bo.x >= 936) S.once('leap', () => { bo.jump(bo.vx, -760); S.sfx('whoosh', { d: .6 }, bo.x); });
+    // the second brake is right at the edge: a little skid of pebbles over it
+    if (t > 15.0) S.once('pebbles', () => { S.sfx('trip', {}, bo.x); for (let i = 0; i < 4; i++) S.bits.push({ x: GAP_A - 4 - i * 6, y: GROUND, vx: 60 + i * 30, vy: -120 - i * 30, r: 4 + i, a: i }); });
 
-    const e = eraseAt(t), close = sine(seg(t, 20.6, 22.2));
-    S.ground = close >= 1 ? [[e, 1660]] : [[e, 880 + 80 * close], [1040 - 80 * close, 1660]];
-
-    // crumbs fall off the erasing edge
+    // crumbs fall off the erasing edge, with a scratchy rubbing-out sound that speeds up
+    const e = eraseAt(t);
     if (t > 12 && t < 20.4) {
       S.bitClock += dt;
       while (S.bitClock >= .06) {
         S.bitClock -= .06; const n = S.bitN++;
         S.bits.push({ x: e + hash(n) * 8, y: GROUND + 4, vx: (hash(n + .3) - .5) * 60, vy: -hash(n + .7) * 160, r: hash(n + .9) * 6, a: hash(n + .2) * 6 });
       }
+      S.eraseClock += dt;
+      if (S.eraseClock > lerp(.7, .32, seg(t, 12, 20))) { S.eraseClock = 0; S.sfx('erase', {}, e); }
     }
+    if (t > 21) S.once('redraw', () => S.sfx('whistle', { d: 2.6, f: 600, f2: 1400 }));
     S.bits = S.bits.filter(b => {
       b.vy += 1800 * dt; b.x += b.vx * dt; b.y += b.vy * dt; b.a += b.r * dt;
-      return b.y < H + 20;
+      return b.y < GROUND + 900;
     });
     spring(S.flower, 0, 60, .2, dt);
+
+    // frame Bo and the far side; when Bo looks back, swing round to show the edge coming
+    if (t > 5 && t < 19.3) { S.camGoal.x = lerp(bo.x, GAP_B, .3); S.camGoal.kx = 3; }
+    if (t > 16.8 && t < 19.3) S.camGoal.x = (bo.x + Math.max(e, bo.x - 520)) / 2 + 80;
   },
-  drawMid(S, ctx, t) {
+  drawBack(S, ctx, t, v) {
+    // engine 2 draws one unbroken line, so the gap and the erased part are painted out with paper
+    const paper = S.story.paper || PAPER, e = eraseAt(t), c = closeAt(t);
+    ctx.fillStyle = paper;
+    if (e > v.left - 40) ctx.fillRect(v.left - 40, GROUND - 4, e - v.left + 40, 18);
+    if (c < 1) {
+      const a = GAP_A + 80 * c, b = GAP_B - 80 * c;
+      ctx.fillRect(a, GROUND - 4, b - a, 18);
+      // ink caps so the cut ends look drawn, not clipped
+      ctx.lineWidth = 6; ctx.lineCap = 'round';
+      for (const x of [a, b]) { ctx.beginPath(); ctx.moveTo(x, GROUND + 4); ctx.lineTo(x, GROUND + 4); ctx.stroke(); }
+    }
+    if (e > v.left - 40) { ctx.lineWidth = 6; ctx.beginPath(); ctx.moveTo(e, GROUND + 4); ctx.lineTo(e, GROUND + 4); ctx.stroke(); }
+
+    // the flower on the far side
     const a = S.flower.x + Math.sin(t * 1.3) * .04;
     const tx = FLOWER_X + Math.sin(a) * 70, ty = GROUND - Math.cos(a) * 70;
-    ctx.lineWidth = 5;
+    ctx.strokeStyle = PAL.green; ctx.lineWidth = 5;
     ctx.beginPath(); ctx.moveTo(FLOWER_X, GROUND + 2); ctx.quadraticCurveTo(FLOWER_X - 4, GROUND - 35, tx, ty); ctx.stroke();
     ctx.beginPath(); ctx.moveTo(FLOWER_X - 1, GROUND - 22); ctx.quadraticCurveTo(FLOWER_X + 14, GROUND - 36, FLOWER_X + 24, GROUND - 30); ctx.stroke();
-    ctx.fillStyle = BLUE;
+    ctx.fillStyle = PAL.blue;
     for (let i = 0; i < 5; i++) {
       const pa = i / 5 * Math.PI * 2 + a;
       ctx.beginPath(); ctx.arc(tx + Math.cos(pa) * 14, ty + Math.sin(pa) * 14, 10, 0, Math.PI * 2); ctx.fill();
     }
-    ctx.fillStyle = '#fff'; ctx.lineWidth = 3;
+    ctx.fillStyle = PAL.yellow; ctx.strokeStyle = '#111'; ctx.lineWidth = 3;
     ctx.beginPath(); ctx.arc(tx, ty, 7, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
   },
   drawFront(S, ctx) {

@@ -4,7 +4,8 @@ A tiny animated show drawn on one line. Wobbin walks onto the line, runs into so
 
 ## What's here
 
-- `*.html` (root): the episodes. Each one opens on its own and can export an MP4. Season 1 (`the-cloud`, `the-seed`, `the-gap`) runs on `engine.js`; Seasons 2–5 run on `engine2.js`. Sound comes from `sfx.js`.
+- `*.html` (root): the episodes. Each one opens on its own and can export an MP4. All of them run on `engine2.js`, and sound comes from `sfx.js`.
+- `legacy/season1/`: the original Season 1 pages on the first engine (`engine.js`), kept for reference.
 - `ideas.md`: the episode backlog and notes.
 - `site/`: the website, which is static with no build step. See `site/CLAUDE.md` for its rules and `site/docs/` for the design docs.
 

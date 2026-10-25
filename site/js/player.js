@@ -1,8 +1,8 @@
 /* The episode player: a full-screen sheet addressed by #ep/<id>. Seasons 2–5 render on the site's
-   engine (seamless loop, sound, MP4 export incl. 4K); Season 1 plays its original page in an iframe. */
+   engine: seamless loop, sound, MP4 export incl. 4K. */
 (function () {
   const WL = window.WL, P = document.querySelector('.player'), $ = s => P.querySelector(s);
-  const cv = $('.player__canvas'), ctx = cv.getContext('2d'), ifr = $('.player__iframe');
+  const cv = $('.player__canvas'), ctx = cv.getContext('2d');
   const scrub = $('.player__scrub input'), timeEl = $('.player__time'), note = $('.player__note');
   const btn = a => $(`[data-act="${a}"]`), menu = $('.dl__menu');
   const loops = {};                      // computed seamless-loop data per episode, reused
@@ -20,7 +20,6 @@
 
   function setPlaying(on) {
     playing = on; setIcon(btn('play'), on ? 'i-pause' : 'i-play'); btn('play').setAttribute('aria-label', on ? 'Pause' : 'Play');
-    if (ep && ep.s1) { const b = ifr.contentDocument && ifr.contentDocument.querySelector('[data-k="play"]'); if (b && (b.textContent === 'Pause') !== on) b.click(); }
   }
   function setSound(on) {
     if (on && !actx) actx = new AudioContext({ latencyHint: 'interactive' });
@@ -48,10 +47,6 @@
     $('.player__chip').textContent = `EP ${String(ep.ep).padStart(2, '0')} · season ${ep.season}`;
     $('.player__chip').style.setProperty('--ep', ep.accent); $('.player__chip').classList.toggle('is-dark', darkAccent(ep.accent));
     $('.player__title').textContent = ep.title; $('.player__theme').textContent = ep.theme; $('.player__quote').textContent = ep.quote;
-    const s1 = !!ep.s1;
-    cv.hidden = s1; ifr.hidden = !s1;
-    [btn('sound'), btn('aspect'), btn('dl')].forEach(b => b.disabled = s1); scrub.disabled = s1;
-    note.textContent = s1 ? 'Season 1 plays in its original player. Sound and MP4 export are for Seasons 2–5.' : '';
     if (first) {
       opener = document.activeElement; P.hidden = false; document.documentElement.classList.add('is-player-open');
       WL.onPlayer && WL.onPlayer(true);
@@ -59,34 +54,22 @@
       btn('play').focus({ preventScroll: true });
       last = performance.now(); raf = requestAnimationFrame(frame);
     }
-    if (s1) {
-      setWide(true);
-      ifr.onload = () => {
-        const d = ifr.contentDocument, st = d.createElement('style');
-        st.textContent = '.top,.bar{display:none!important}html,body{background:#FBF8F2!important;height:100%}.stage{position:fixed!important;inset:0!important;width:100%!important;max-width:none!important;margin:0!important;border:0!important;aspect-ratio:auto!important}';
-        d.head.appendChild(st); ifr.contentWindow.dispatchEvent(new Event('resize'));
-        setPlaying(true);
-      };
-      ifr.src = `shorts/s1/${ep.id}.html`;
-    } else {
-      ifr.removeAttribute('src');
-      if (!P.classList.contains('was-user-wide')) setWide(false);
-      note.textContent = loops[ep.id] ? '' : 'Getting the loop ready…';
-      const story = WL_STORIES[ep.id], target = ep;
-      setTimeout(() => {                                   // let the sheet open before the loop is computed
-        if (ep !== target) return;
-        if (!loops[ep.id]) { const s = new Shorts.Show(story); loops[ep.id] = { T: s.T, startState: s.startState }; }
-        show = new Shorts.Show(story, { loop: loops[ep.id] });
-        show.onSfx = ev => { if (soundOn && playing && actx && actx.state === 'running' && !busy) SFX.play(actx, ev, actx.currentTime + .02); };
-        note.textContent = ''; setPlaying(true);
-      }, first ? 120 : 0);
-    }
+    if (!P.classList.contains('was-user-wide')) setWide(false);
+    note.textContent = loops[ep.id] ? '' : 'Getting the loop ready…';
+    const story = WL_STORIES[ep.id], target = ep;
+    setTimeout(() => {                                   // let the sheet open before the loop is computed
+      if (ep !== target) return;
+      if (!loops[ep.id]) { const s = new Shorts.Show(story); loops[ep.id] = { T: s.T, startState: s.startState }; }
+      show = new Shorts.Show(story, { loop: loops[ep.id] });
+      show.onSfx = ev => { if (soundOn && playing && actx && actx.state === 'running' && !busy) SFX.play(actx, ev, actx.currentTime + .02); };
+      note.textContent = ''; setPlaying(true);
+    }, first ? 120 : 0);
     return true;
   }
 
   function close() {
     if (P.hidden) return;
-    const done = () => { P.hidden = true; ifr.removeAttribute('src'); show = null; cancelAnimationFrame(raf); document.documentElement.classList.remove('is-player-open'); WL.onPlayer && WL.onPlayer(false); if (opener) opener.focus({ preventScroll: true }); };
+    const done = () => { P.hidden = true; show = null; cancelAnimationFrame(raf); document.documentElement.classList.remove('is-player-open'); WL.onPlayer && WL.onPlayer(false); if (opener) opener.focus({ preventScroll: true }); };
     if (window.gsap && !WL.reduced) gsap.to(P, { clipPath: 'inset(0 0 100% 0)', duration: .5, ease: 'power3.in', onComplete: done }); else done();
     if (location.hash.startsWith('#ep/')) history.replaceState(null, '', location.pathname + location.search + '#episodes');
   }

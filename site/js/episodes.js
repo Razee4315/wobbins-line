@@ -30,9 +30,9 @@ window.WL_SEASONS = [
     { id: 'what-if', title: 'What If', theme: 'overthinking', accent: '#7b5cff', poster: 19.0, line: 'A small worry grows into a tangle, until Wobbin breathes.', quote: 'let it go.' },
   ] },
   { n: 1, title: 'First lines', episodes: [
-    { id: 'the-cloud', s1: true, title: 'The Cloud', theme: 'sadness', accent: '#3aa655', line: 'A rain cloud follows Wobbin everywhere, until something grows.', quote: 'sit with it. something grows.' },
-    { id: 'the-seed', s1: true, title: 'The Seed', theme: 'patience', accent: '#f08a24', line: 'Wobbin keeps digging up a seed to check on it.', quote: 'some things only grow when you stop watching.' },
-    { id: 'the-gap', s1: true, title: 'The Gap', theme: 'courage', accent: '#3b7dd8', line: 'Stuck at the edge, until the line behind starts to vanish.', quote: 'jump before the ground decides for you.' },
+    { id: 'the-cloud', title: 'The Cloud', theme: 'sadness', accent: '#3aa655', poster: 26.0, line: 'A rain cloud follows Wobbin everywhere, until something grows.', quote: 'sit with it. something grows.' },
+    { id: 'the-seed', title: 'The Seed', theme: 'patience', accent: '#f08a24', poster: 30.4, line: 'Wobbin keeps digging up a seed to check on it.', quote: 'some things only grow when you stop watching.' },
+    { id: 'the-gap', title: 'The Gap', theme: 'courage', accent: '#3b7dd8', poster: 20.0, line: 'Stuck at the edge, until the line behind starts to vanish.', quote: 'jump before the ground decides for you.' },
   ] },
 ];
 // release-order episode numbers (Season 1 = EP 01–03 … Season 5 = EP 19–23)

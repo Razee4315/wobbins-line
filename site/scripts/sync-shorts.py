@@ -7,7 +7,6 @@
   the hero and the walking band need)
 - extracts each Season 2-5 episode's inline story script into
   site/shorts/stories/<id>.js, wrapped so many episodes can live on one page
-- copies the Season 1 pages and engine.js into site/shorts/s1/
 """
 import pathlib, re, shutil, sys
 
@@ -17,8 +16,8 @@ OUT = SITE / 'shorts'
 ENGINE2 = ['one-more', 'the-hill', 'bloom', 'hurry', 'what-if',
            'last-minute', 'yes', 'perfect', 'battery', 'seen',
            'tomorrow', 'highlight-reel', 'small-steps', 'snooze', 'reset',
-           'monday-mountain', 'imposter', 'decision', 'busy', 'rain-check']
-SEASON1 = ['the-cloud', 'the-seed', 'the-gap']
+           'monday-mountain', 'imposter', 'decision', 'busy', 'rain-check',
+           'the-cloud', 'the-seed', 'the-gap']
 
 VIEW_OLD = """      const unit = Math.min(cw / (portrait ? 640 : 1200), ch / 600) * this.cam.z.x;
       const gy = ch * (portrait ? .64 : .7);"""
@@ -42,7 +41,6 @@ WRAP = """/* {id}: extracted from ../{id}.html by scripts/sync-shorts.py. Do not
 
 def main():
     (OUT / 'stories').mkdir(parents=True, exist_ok=True)
-    (OUT / 's1').mkdir(parents=True, exist_ok=True)
 
     engine = (ROOT / 'engine2.js').read_text(encoding='utf-8')
     for old in (VIEW_OLD, CLEAR_OLD, LEAD_OLD):
@@ -60,11 +58,10 @@ def main():
         body = '\n'.join('  ' + line if line else line for line in scripts[0].rstrip().split('\n'))
         (OUT / 'stories' / f'{ep}.js').write_text(WRAP.format(id=ep, body=body), encoding='utf-8')
 
-    shutil.copy(ROOT / 'engine.js', OUT / 's1' / 'engine.js')
-    for ep in SEASON1:
-        shutil.copy(ROOT / f'{ep}.html', OUT / 's1' / f'{ep}.html')
+    # Season 1 used to be copied as whole pages on the old engine; it now runs on engine2 like the rest
+    shutil.rmtree(OUT / 's1', ignore_errors=True)
 
-    print(f'synced {len(ENGINE2)} stories + {len(SEASON1)} season-1 pages into {OUT}')
+    print(f'synced {len(ENGINE2)} stories into {OUT}')
 
 
 if __name__ == '__main__':

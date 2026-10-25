@@ -9,8 +9,8 @@
   WL.pointer = { x: innerWidth / 2, y: innerHeight / 2 };
   addEventListener('pointermove', e => { WL.pointer.x = e.clientX; WL.pointer.y = e.clientY; }, { passive: true });
 
-  const VERSION = 9;   // bump with the ?v= in index.html when site files change
-  const STORY_IDS = WL_EPISODES.filter(e => !e.s1).map(e => e.id);
+  const VERSION = 10;   // bump with the ?v= in index.html when site files change
+  const STORY_IDS = WL_EPISODES.map(e => e.id);
   const SCRIPTS = [
     'https://cdn.jsdelivr.net/npm/gsap@3.13.0/dist/gsap.min.js',
     'https://cdn.jsdelivr.net/npm/gsap@3.13.0/dist/ScrollTrigger.min.js',
