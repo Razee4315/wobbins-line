@@ -25,7 +25,12 @@ All sound is synthesized in code (`sfx.js`): soft sine and triangle tones, filte
 | Landing thud | about −36 dB | |
 | Chime | about −34 dB | the loudest "musical" accents sit here |
 | Pop | about −43 dB | |
-| Birds ambience bed | about −51 dB | barely there, adds air |
+| Turn chord (`swell`) | about −33 dB | was −26 dB and slow; now a short bright rolled chord |
+| Ambience (`birds`, `night`, `rainbed`, `windbed`) | −60 to −69 dB | sparse little sounds only |
+
+**No held noise beds.** The steady hiss/rumble beds were the "disturbing background sound"
+(feedback 2026-10-28). Ambience is now made of sparse, separate sounds; `room` is silent.
+Never add a continuous noise layer under a whole episode.
 
 If a new sound feels loud, measure it the same way (`docs/07-workflow.md`) and keep it at or below the chime.
 
@@ -33,10 +38,10 @@ If a new sound feels loud, measure it the same way (`docs/07-workflow.md`) and k
 
 When captions type out, Wobbin "speaks" in a soft murmur, like the voices in Animal Crossing: one syllable for every second letter, the vowel picked from the letter, a slight random wobble in pitch, a rise at the end of questions and a fall on the last syllable. Each speaker has a pitch: Wobbin 1.0, friends 1.15–1.45, the critic in Inner Voice 0.72. Set it per episode with `voice: { pitch }` or per caption as the 5th item (`false` makes a caption silent).
 
-## Ambience beds
+## Ambience
 
-Long, quiet layers that run under a whole scene (they loop with the film):
-`room` (indoor room tone), `birds` (soft air with distant tweets), `night` (far crickets), `rainbed`, `windbed`. Start them once with `S.once('amb', () => S.sfx('room', { d: LOOP }))`.
+Sparse sounds that run for a whole scene (they loop with the film):
+`room` (silent now), `birds` (a few distant tweets), `night` (far crickets now and then), `rainbed` (soft plinks), `windbed` (a gust every few seconds). Start them once with `S.once('amb', () => S.sfx('room', { d: LOOP }))`.
 
 ## Every sound, by job
 

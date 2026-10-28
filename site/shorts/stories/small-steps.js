@@ -3,6 +3,8 @@
   const Shorts = Object.assign(Object.create(window.Shorts), { play: story => { (window.WL_STORIES ||= {})['small-steps'] = story; } });
   // One drop a day, from the well to a big empty jar. Days blur past and the level barely moves.
   // Bo nearly stops. One more drop, and the jar overflows into a stream that turns everything green.
+  // Button: a frog pops out of the full jar, rides a leaf down the new stream, hops onto Bo's head
+  // ("ribbit."), then splashes off into the pond. Bo hops and heads off happy.
   const { PAL, SPRITES, sprite, lerp, seg, sine, outBack, clamp, hash, spring, mix, GROUND } = Shorts;
   const V = 130, WELL = 740, PICK = 860, DROPX = 1020, JAR = 1110, JW = 120, JH = 160, POND = 1420, TREE = 1340;
   const DROPS = 9;                               // the 9th one overflows
@@ -11,11 +13,15 @@
   const FLOWERS = [[1215, PAL.pink], [1265, PAL.yellow], [1300, PAL.violet], [1390, PAL.orange], [1470, PAL.pink], [1520, PAL.yellow]];
   // measured from a run: when things happen (captions are timed to these)
   const T1 = 9.86, T2 = 13.3, SLUMP = 25.32, LAST = 33.24;
+  // the button, timed from the overflow: where Bo stops, and the frog's trip
+  const BANK = 1320, RIDE0 = 1180, RIDE1 = 1232, POOL = POND + 40;
+  const WALK = 3.8, F_OUT = 8.2, F_RIDE = 8.7, F_ON0 = 9.8, F_ON = 10.25, RIBBIT = 10.6, F_OFF = 11.5, F_SPLASH = 12.0, B_HOP = 12.4, LEAVE = 12.9;
+  const FROG = ['.G...G.', 'GKG.GKG', 'GGGGGGG', 'GLLLLLG', 'G.G.G.G'];
 
   Shorts.play({
     title: 'Small Steps',
     accent: PAL.blue,
-    loopAfter: LAST + 13.8,
+    loopAfter: LAST + LEAVE + 7.2,
     paperAt: (t, S) => mix('#ffffff', '#dcd6f2', S ? S.night || 0 : 0),
     captions: [
       [1.2, 3.4, 'an empty jar.'],
@@ -25,7 +31,8 @@
       [SLUMP + .2, SLUMP + 2.4, 'nothing is *happening.*'],
       [SLUMP + 3.2, SLUMP + 4.8, 'one more.'],
       [LAST + .6, LAST + 2.2, '*oh.*'],
-      [LAST + 4.4, LAST + 9.6, 'small steps, every day. *they add up.*'],
+      [LAST + 4.4, LAST + 8.6, 'small steps, every day. *they add up.*'],
+      [LAST + RIBBIT, LAST + RIBBIT + 1.0, '*ribbit.*', null, { pitch: 1.7, g: .5 }],
     ],
     init(S) {
       S.bo = S.addChar({ x: 0, walk: V });
@@ -76,7 +83,28 @@
         if (d > 1.2) c.eye = 'happy';
         if (d > 1.5) S.once('yay1', () => bo.jump(0, -520));
         if (d > 2.6) S.once('yay2', () => bo.jump(0, -560));
-        if (d > 3.8) Object.assign(c, { x: 1e6, speed: V, accel: 450, eye: 'open', lookX: 0, lookY: 0 });
+        S.plan(bo, d, [
+          [WALK, { x: BANK, speed: V, accel: 450, eye: 'open', lookX: 0, lookY: 0 }],
+          [6.6, { eye: 'happy', lookX: .4, lookY: .3 }],                       // all this green
+          [F_RIDE + .4, { face: -1, eye: 'open', lookX: .5, lookY: .5 }],      // a frog on a leaf?
+          [F_ON0, { eye: 'wide', lookY: -.4 }],
+          [F_ON, { crouch: .14, lookY: -1, lookX: 0 }], [F_ON + .2, { crouch: 0 }],
+          [RIBBIT + .2, { eye: 'happy' }],
+          [F_OFF, { face: 1, eye: 'open', lookX: .6, lookY: .2 }],
+          [F_SPLASH + .1, { eye: 'happy', lookY: 0 }],
+          [B_HOP - .25, { crouch: .2 }], [B_HOP, { crouch: 0 }],
+          [LEAVE, { x: 1e6, speed: V, accel: 450, eye: 'open', lookX: 0, lookY: 0 }],
+        ]);
+        // frog sounds (from sim time, not the view)
+        if (d > F_OUT) S.once('frogOut', () => S.sfx('pop', { pitch: 520, g: .06 }, JAR));
+        if (d > F_RIDE) S.once('frogLeaf', () => S.sfx('drip', { k: 1.4 }, RIDE0));
+        if (d > F_ON0) S.once('frogHop', () => S.sfx('boing', { pitch: 200, g: .05 }, bo.x));
+        if (d > F_ON) S.once('frogOn', () => S.sfx('tock', { f: 520 }, bo.x));
+        if (d > F_OFF) S.once('frogOff', () => S.sfx('boing', { pitch: 240, g: .05 }, bo.x));
+        if (d > F_SPLASH) S.once('frogSplash', () => { S.sfx('drip', { k: .9 }, POOL); S.burst(POOL, GROUND - 6, 8, [PAL.sky, '#fff'], { speed: 220, gravity: 900, size: 6, life: .7, spread: 1.6 }); });
+        if (d > B_HOP) S.once('boHop', () => { bo.jump(0, -480); S.sfx('laugh', { n: 3 }, bo.x); });
+        if (d > LEAVE + .1) S.once('hum', () => S.sfx('hum', { notes: [2, 4, 5, 7, 5], gap: .3, g: .04 }, bo.x));
+        if (d > WALK && d < LEAVE) { S.camGoal.x = 1290; S.camGoal.z = .95; S.camGoal.kx = 2; }
       }
       // days flicker by in the montage: a quick night after every drop
       S.night = clamp(Math.max(0, ...S.dropTimes.slice(1, DROPS - 1).map(d => 1 - Math.abs(t - d - .3) / .3)) * .9);
@@ -146,6 +174,21 @@
     drawFront(S, ctx, t) {
       const bo = S.bo, top = bo.top();
       if (S.carry) sprite(ctx, DROP, top.x, top.y - 16, 5, { X: PAL.sky, W: '#fff' });
+      // the frog: out of the jar, down the stream on a leaf, onto Bo's head, into the pond
+      if (S.over !== null) {
+        const d = t - S.over, arc = (a, b, u, h) => ({ x: lerp(a.x, b.x, u), y: lerp(a.y, b.y, u) - Math.sin(Math.PI * u) * h });
+        const head = { x: top.x, y: top.y + 2 }, rideX = u => lerp(RIDE0, RIDE1, sine(u));
+        const leafX = d < F_RIDE ? RIDE0 : d < F_ON0 ? rideX(seg(d, F_RIDE, F_ON0)) : RIDE1 + (d - F_ON0) * 70;
+        if (d > F_OUT && leafX < POND + 60) { ctx.globalAlpha = Math.min(seg(d, F_OUT, F_OUT + .3), 1 - clamp((leafX - POND) / 60)); sprite(ctx, ['.XXXXX.', 'XXXXXXX', '.XXXXX.'], leafX, GROUND - 6, 7, { X: PAL.green }); ctx.globalAlpha = 1; }
+        let f = null;
+        if (d > F_OUT && d < F_RIDE) f = arc({ x: JAR, y: GROUND - JH }, { x: RIDE0, y: GROUND - 16 }, seg(d, F_OUT, F_RIDE), 70);
+        else if (d >= F_RIDE && d < F_ON0) f = { x: leafX, y: GROUND - 16 };
+        else if (d >= F_ON0 && d < F_ON) f = arc({ x: RIDE1, y: GROUND - 16 }, head, seg(d, F_ON0, F_ON), 90);
+        else if (d >= F_ON && d < F_OFF) f = head;
+        else if (d >= F_OFF && d < F_SPLASH) f = arc(head, { x: POOL, y: GROUND }, seg(d, F_OFF, F_SPLASH), 110);
+        if (f) sprite(ctx, FROG, f.x, f.y - 14, 7, { G: PAL.green, K: '#111', L: PAL.lime });
+        if (d > F_SPLASH && d < F_SPLASH + .8) { const u = seg(d, F_SPLASH, F_SPLASH + .8); ctx.strokeStyle = '#fff'; ctx.lineWidth = 3; ctx.globalAlpha = 1 - u; ctx.beginPath(); ctx.ellipse(POOL, GROUND - 1, 14 + u * 50, 3 + u * 6, 0, 0, Math.PI * 2); ctx.stroke(); ctx.globalAlpha = 1; }
+      }
       if (S.fly) {
         const u = sine(clamp((t - S.fly.t0) / .35)), x = lerp(S.fly.from.x, JAR, u), y = lerp(S.fly.from.y - 16, GROUND - 120, u) - Math.sin(Math.PI * u) * 90;
         sprite(ctx, DROP, x, y, 5, { X: PAL.sky, W: '#fff' });

@@ -5,6 +5,8 @@
   // ice-cream carts, two lines. Bo's line stops, the other one flies. Bo switches. It stops.
   // Bo switches back. It stops. So Bo sits down and waits, watches the light change, and
   // suddenly it's Bo's turn: the biggest cone of the day.
+  // Button: on the bench a kid stops and stares up at Bo's giant cone. Bo looks at the kid, at the
+  // cone... and the top scoops hop over onto the kid's head. They eat together, then skip off.
   const { PAL, SPRITES, sprite, lerp, seg, sine, outBack, clamp, hash, spring, mix, GROUND } = Shorts;
   const V = 170, A_X = 1960, B_X = 800, GAP = 140;
   const slotA = k => A_X - 110 - k * GAP, slotB = k => B_X + 110 + k * GAP;
@@ -25,7 +27,9 @@
     [26.2, 'A'],                                     // Bo waits it out
   ];
   const STALL_B = [15.4, 19.3], STALL_A = [18.6, 25.8];
-  const BO_TURN = 27.6, BENCH = A_X + 330, LEAVE = 35.4, LOOP = LEAVE + 7.6;
+  const BO_TURN = 27.6, BENCH = A_X + 330, KID = BENCH + 112, SHARE = 35.9, LEAVE = 38.9, LOOP = LEAVE + 6.8;
+  // eating, in rows bitten off the top: Bo's giant cone (after the top 5 rows hop to the kid) and the kid's share
+  const boCut = t => t < SHARE ? 0 : t < 36.9 ? 5 : t < 37.5 ? 7 : MEGA.length, kidCut = t => t < 37.15 ? 0 : t < 37.7 ? 2 : 5;
 
   Shorts.play({
     title: 'The Other Line',
@@ -40,7 +44,9 @@
       [19.8, 21.2, '*what?!*'],
       [22.6, 24.2, "fine. *i'll wait.*"],
       [28.0, 29.4, 'oh! *my turn.*'],
-      [30.4, 36.6, 'the other line always looks faster. *yours is moving too.*'],
+      [30.2, 34.4, 'the other line always looks faster. *yours is moving too.*'],
+      [34.5, 35.4, '*whoa...*', null, { pitch: 1.4 }],
+      [36.5, 37.2, '*yay!*', null, { pitch: 1.4 }],
     ],
     init(S) {
       S.A = []; S.B = []; S.gone = [];
@@ -50,6 +56,7 @@
       S.vendA = S.addChar({ x: A_X + 10, face: -1, gain: .2, hair: 'antenna', hairColor: PAL.red, fill: '#fff' });
       S.vendB = S.addChar({ x: B_X - 10, face: 1, gain: .2, hairColor: PAL.sky, fill: '#fff' });
       S.bo = S.addChar({ x: 0, walk: V }); S.focus = S.bo;
+      S.kid = S.addChar({ x: 2860, face: -1, gain: .3, hair: 'antenna', hairColor: PAL.lime, blush: PAL.pink, fill: '#f4ffe0' });
       S.in = null; S.served = 0; S.mega = 0; S.bites = 0; S.fly = 0; S.hum = 0;
       S.A.forEach((c, i) => c.cone = null); S.B.forEach(c => c.cone = null);
     },
@@ -100,9 +107,30 @@
         [29.8, () => { S.A = S.A.filter(m => m !== bo); S.in = null; }],
         [29.8, { x: BENCH, speed: 110, accel: 400, eye: 'open' }],
         [31.0, { sit: 1, eye: 'happy', lookX: .3, lookY: -.4 }],
-        [LEAVE - .4, { sit: 0, eye: 'open', lookX: 0, lookY: 0 }],
-        [LEAVE, { x: 1e6, speed: V, accel: 450 }],
+        [34.6, { eye: 'open', lookX: .8, lookY: 0 }],                         // someone's staring
+        [35.1, { lookX: .2, lookY: -1 }],                                     // at the cone...
+        [35.5, { lookX: .8, lookY: 0, eye: 'happy' }],
+        [SHARE, () => { bo.q.v -= 2.5; S.sfx('toss', { pitch: 420 }, bo.x); S.sfx('whoosh', { d: .4, v: .4 }, bo.x); }],   // here!
+        [37.9, { sit: 0, eye: 'happy', lookX: 0, lookY: 0 }],
+        [38.2, { crouch: .2 }], [38.45, { crouch: 0 }], [38.45, () => bo.jump(0, -460)],
+        [LEAVE, { x: 1e6, speed: V, accel: 450, eye: 'open' }],
+        [LEAVE + .1, () => S.sfx('hum', { notes: [2, 4, 5, 7, 5], gap: .3, g: .04 }, bo.x)],
       ]);
+      // the kid: strolls up, stares at the giant cone, gets the top scoops, eats, and skips off ahead
+      const kid = S.kid;
+      S.plan(kid, t, [
+        [31.2, { x: KID, speed: 190, accel: 420, face: -1 }],
+        [33.9, { eye: 'wide', lookX: .4, lookY: -1, tilt: .08 }],
+        [SHARE + .3, { lookY: -1, lookX: 0, tilt: 0 }],
+        [SHARE + .5, { eye: 'heart' }], [SHARE + .55, () => { kid.jump(0, -340); S.sfx('catch', { pitch: 640 }, kid.x); S.sfx('sparkle', { n: 5 }, kid.x); }],
+        [36.9, { eye: 'happy', lookY: 0 }],
+        [37.8, { face: 1, x: 1e6, speed: 2 * V, accel: 800 }],
+      ]);
+      if (t > 38.3 && kid.mode === 'ground' && hash(Math.floor(t * 2.5)) > .7) S.once(`skip:${Math.floor(t * 2.5)}`, () => kid.jump(kid.vx, -300));
+      // bites: a crumb burst and a happy munch each time either cone gets smaller
+      [[36.9, bo], [37.15, kid], [37.5, bo], [37.7, kid]].forEach(([at, m], i) => {
+        if (t >= at) S.once('bite' + i, () => { S.sfx('catch', { pitch: 380 + i * 40 }, m.x); S.sfx('laugh', { k: m === bo ? 1.15 : 1.4, n: 1, g: .5 }, m.x); m.q.v -= 1.2; S.burst(m.x + 10 * m.dir, m.top().y - 30, 5, [SCOOPS[i % 6], '#fff'], { speed: 160, gravity: 600, size: 6, life: .6 }); });
+      });
       // Bo's place in whichever line Bo is in
       if (S.in) {
         const q = S.in === 'A' ? S.A : S.B, k = q.indexOf(bo), x = t > 22.3 && t < 27.3 ? c.x : S.in === 'A' ? slotA(k) : slotB(k);
@@ -110,10 +138,6 @@
         if (Math.abs(bo.x - x) > 150) c.face = Math.sign(x - bo.x); else if (t > 14.6 && t < 17.8) c.face = S.in === 'B' ? -1 : 1;
       }
       // Bo's turn: the person ahead gets served at 26.2, then Bo steps up
-      // eating the giant cone on the bench: one bite every so often, a scoop at a time
-      if (t > 31.6 && t < LEAVE - .6) {
-        if (S.bites < 5 && t > 31.8 + S.bites * .62) { S.bites++; S.sfx('catch', { pitch: 380 + S.bites * 40 }, bo.x); S.sfx('laugh', { k: 1.15, n: 1, g: .5 }, bo.x); bo.q.v -= 1.2; S.burst(bo.x + 10, bo.top().y - 30, 5, [SCOOPS[S.bites % 6], '#fff'], { speed: 160, gravity: 600, size: 6, life: .6 }); }
-      }
       // stalls: the cart shows a little "!" (B's machine sputters, A's vendor takes a call)
       if (t > STALL_B[0]) S.once('stallB', () => { S.sfx('drain', {}, B_X); S.sfx('poof', {}, B_X); });
       if (t > STALL_A[0]) S.once('stallA', () => S.sfx('ring', {}, A_X));
@@ -136,7 +160,8 @@
       else if (t < 22.2) shot((B_X + bo.x) / 2, .64);                      // ...and the other one empties
       else if (t < 27.3) shot(bo.x + 40, 1.0, 1.2);                        // waiting, close and quiet
       else if (t < 29.6) shot((bo.x + A_X) / 2, 1.0);
-      else if (t < LEAVE) shot((bo.x + A_X) / 2, .95);
+      else if (t < 33.2) shot((bo.x + A_X) / 2, .95);
+      else if (t < LEAVE) shot((BENCH + KID) / 2 + 10, 1.05);                // the kid, the cone, the share
     },
     drawSky(S, ctx, t, v) {
       for (let i = 0; i < 3; i++) {
@@ -173,9 +198,19 @@
       if (t > STALL_B[0] && t < STALL_B[1]) for (let i = 0; i < 4; i++) { const u = ((t - STALL_B[0]) * .8 + i / 4) % 1; ctx.fillStyle = PAL.grey; ctx.globalAlpha = 1 - u; ctx.beginPath(); ctx.arc(B_X + 30 + u * 20, GROUND - 130 - u * 90, 10 + u * 12, 0, Math.PI * 2); ctx.fill(); ctx.globalAlpha = 1; }
       // cones ride on heads (nobody here has hands)
       for (const m of S.gone) { const top = m.top(), k = outBack(clamp((t - m.coneAt) / .3)); sprite(ctx, CONE, top.x, top.y - 24, 4.4 * k, { S: m.cone, B: PAL.orange, W: PAL.peach }); }
+      const MC = { R: PAL.red, T: PAL.sky, Y: PAL.yellow, P: PAL.pink, S: PAL.pink, B: PAL.orange, W: PAL.peach };
       if (S.mega) {
-        const top = S.bo.top(), k = outBack(clamp((t - S.mega) / .4)), rows = MEGA.slice(Math.min(MEGA.length - 4, S.bites * 2));
-        if (S.bites < 5) sprite(ctx, rows, top.x, top.y - rows.length * 2.4 - 8, 4.8 * k, { R: PAL.red, T: PAL.sky, Y: PAL.yellow, P: PAL.pink, S: PAL.pink, B: PAL.orange, W: PAL.peach });
+        const top = S.bo.top(), k = outBack(clamp((t - S.mega) / .4)), rows = MEGA.slice(boCut(t));
+        if (rows.length) sprite(ctx, rows, top.x, top.y - rows.length * 2.4 - 8, 4.8 * k, MC);
+        // the top scoops hop over to the kid, then ride on the kid's head
+        const share = MEGA.slice(0, 5), u = seg(t, SHARE, SHARE + .5), kt = S.kid.top();
+        if (t > SHARE && t < SHARE + .5) {
+          const e = sine(u), x = lerp(top.x, kt.x, e), y = lerp(top.y - 8 - MEGA.length * 4.8 + 12, kt.y - 20, e) - Math.sin(Math.PI * u) * 110;
+          sprite(ctx, share, x, y, 4.8, MC);
+        } else if (t >= SHARE + .5) {
+          const kr = share.slice(kidCut(t));
+          if (kr.length) sprite(ctx, kr, kt.x, kt.y - kr.length * 2.4 - 8, 4.8, MC);
+        }
       }
       // the butterfly
       if (t > 23.6 && t < 28.4) {

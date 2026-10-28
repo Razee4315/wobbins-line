@@ -6,13 +6,17 @@
 <title>Hurry</title>
 </head>
 <body>
-<script src="sfx.js?v=7"></script>
-<script src="engine2.js?v=7"></script>
+<script src="sfx.js?v=8"></script>
+<script src="engine2.js?v=8"></script>
 <script>
 // A ticking clock hounds Bo from a walk to a jog to a sprint, the world streaking by,
 // until Bo trips. Sitting in the grass, Bo meets a snail and a butterfly.
+// Button: as Bo strolls on, the snail comes zooming up from behind, speed lines and all, and
+// overtakes. Bo stops, stares, deadpan... then laughs, hops, and strolls on anyway.
 const { PAL, SPRITES, sprite, lerp, seg, sine, outBack, clamp, hash, spring, GROUND, BODY_H } = Shorts;
 const V = 130, PEB = 3900, ZONE_END = 3700, STOP = 14.78;   // STOP: when Bo comes to rest after the trip
+// the button, in seconds after STOP: the snail floors it, Bo reacts, Bo walks on
+const ZOOM = 10.7, LEAVE = 14.6;
 const PROPS = [];
 for (let x = 700, i = 0; x <= ZONE_END; x += 160, i++) PROPS.push({ x, kind: i % 3 === 1 ? 'tree' : 'post' });
 const GRASS = Array.from({ length: 14 }, (_, i) => PEB + 40 + i * 48 + hash(i) * 20);
@@ -21,7 +25,7 @@ const CLOCK = ['...XXXXX...', '..XYYYYYX..', '.XYYYYYYYX.', 'XYYYYYYYYYX', 'XYYY
 Shorts.play({
   title: 'Hurry',
   accent: PAL.orange,
-  loopAfter: STOP + 16.4,
+  loopAfter: STOP + LEAVE + 6.8,
   captions: [
     [2.9, 4.6, 'tick.'],
     [5.0, 7.4, 'hurry.'],
@@ -60,13 +64,25 @@ Shorts.play({
     });
     if (S.stopT !== null) {
       const ts = t - S.stopT, sn = S.snail;
-      sn.x -= 22 * dt;
+      // the snail crawls... until, off screen behind Bo, it turns round and floors it
+      if (ts < ZOOM) sn.x -= 22 * dt;
+      else { sn.dir = 1; sn.v = Math.min(460, (sn.v || 0) + 1000 * dt); sn.x += sn.v * dt; }
       const c = bo.cmd;
       if (ts > 1.6) { c.eye = 'sad'; c.lookX = -.5; c.lookY = .2; }
       if (ts > 2.4) { c.lookX = clamp((sn.x - bo.x) / 150, -1, 1); c.lookY = .7; }
       if (ts > 4.6) c.eye = 'happy';
       if (ts > 6.5) { c.sit = 0; c.eye = 'open'; }
       if (ts > 7.2) Object.assign(c, { x: 1e6, speed: V, accel: 300, lookX: 0, lookY: 0, eye: 'open' });
+      if (ts > 11.6) Object.assign(c, { eye: 'wide', lookX: clamp((sn.x - bo.x) / 200, -1, 1), lookY: .3 });   // what's that noise?
+      if (ts > 11.95) Object.assign(c, { speed: 0, accel: 700, tilt: ts < 12.4 ? -.12 : 0 });                 // whoosh: overtaken
+      if (ts > 12.9) c.eye = 'flat';                                                                     // ...really?
+      if (ts > 13.4) Object.assign(c, { eye: 'happy', lookX: .4, lookY: 0, crouch: ts < 13.95 ? .08 * Math.abs(Math.sin((ts - 13.4) * 17)) : 0 });
+      if (ts > 14.0) c.crouch = ts < 14.25 ? .2 : 0;
+      if (ts > 14.25) S.once('hop', () => bo.jump(0, -440));
+      if (ts > LEAVE) Object.assign(c, { x: 1e6, speed: V, accel: 450, eye: 'open', lookX: 0, lookY: 0, tilt: 0, crouch: 0 });
+      if (sn.dir && sn.x > bo.x - 60) S.once('zoom', () => { S.sfx('whoosh', { d: .35, v: .55 }, sn.x); S.puff(sn.x, -1, .8); bo.q.v += 3; });
+      if (ts > 13.4) S.once('laugh', () => S.sfx('laugh', { n: 4 }, bo.x));
+      if (ts > LEAVE + .1) S.once('hum', () => S.sfx('hum', { notes: [2, 4, 5, 7, 5], gap: .3, g: .04 }, bo.x));
     }
 
     // the clock: follows Bo on a springy leash, panics more and more, then flies off and shatters
@@ -159,15 +175,25 @@ Shorts.play({
       ctx.restore();
       if (panic > .5 && !f && Math.floor(t * 6) % 2) sprite(ctx, ['XX', 'XX', 'XX', '..', 'XX'], x + 44, y - 26, 5, { X: PAL.red });
     }
-    // snail (green shell, slow)
+    // snail (green shell, slow... mostly); it faces left until it turns round to zoom
     if (S.snail) {
-      const s = S.snail, ts = t - S.stopT, stretch = Math.sin(ts * 3) * 3;
+      const s = S.snail, ts = t - S.stopT, stretch = Math.sin(ts * 3) * 3, fast = clamp(((s.v || 0) - 150) / 300);
+      ctx.save(); if (s.dir) { ctx.translate(s.x * 2, 0); ctx.scale(-1, 1); }
+      if (fast > 0) {
+        ctx.strokeStyle = '#111'; ctx.lineWidth = 4;
+        for (let i = 0; i < 4; i++) {
+          const ph = (t * 4 + hash(i + 9)) % 1, y = GROUND - 6 - i * 7, x0 = s.x + 44 + ph * 50;
+          ctx.globalAlpha = Math.sin(Math.PI * ph) * fast; ctx.beginPath(); ctx.moveTo(x0, y); ctx.lineTo(x0 + 40 + 60 * fast, y); ctx.stroke();
+        }
+        ctx.globalAlpha = 1;
+      }
       ctx.lineWidth = 5; ctx.fillStyle = '#fff';
       ctx.beginPath(); ctx.moveTo(s.x - 26 - stretch, GROUND + 2); ctx.lineTo(s.x + 24, GROUND + 2);
       ctx.quadraticCurveTo(s.x + 30, GROUND - 14, s.x + 14, GROUND - 12); ctx.stroke();
       ctx.beginPath(); ctx.moveTo(s.x - 22 - stretch, GROUND - 6); ctx.lineTo(s.x - 34 - stretch, GROUND - 26); ctx.stroke();
       ctx.beginPath(); ctx.arc(s.x - 35 - stretch, GROUND - 28, 3, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
       sprite(ctx, ['..XXXX..', '.XGGGGX.', 'XGGXXGGX', 'XGXGGXGX', 'XGXXGGGX', '.XGGGGX.', '..XXXX..'], s.x + 6, GROUND - 22, 5, { X: '#111', G: PAL.lime });
+      ctx.restore();
     }
     // a butterfly settles on Bo's hair
     if (S.stopT !== null) {

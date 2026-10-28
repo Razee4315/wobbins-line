@@ -120,13 +120,12 @@
       tone(c, o, { type: 'triangle', f: 720, f2: 60, t, a: .01, d: .95, g: .1, glide: .9 });
       tone(c, o, { f: 360, f2: 40, t, a: .01, d: .9, g: .08, glide: .9 });
     },
-    swell: (c, o, t, p) => {                    // warm, slow-attack chord: an "oh..." moment
+    // the turn: a bright little rolled chord that lands on a bell. It used to be a slow sine
+    // swell, which read as wistful and sad under every ending (feedback 2026-10-28)
+    swell: (c, o, t, p) => {
       const r = p.root ?? 392;
-      for (const [m, g] of [[1, .05], [1.25, .035], [1.5, .035], [2, .02]]) {
-        const osc = c.createOscillator(), e = c.createGain(); osc.frequency.value = r * m;
-        e.gain.setValueAtTime(.0001, t); e.gain.linearRampToValueAtTime(g, t + 1.1); e.gain.exponentialRampToValueAtTime(.0001, t + 3.4);
-        osc.connect(e).connect(o); osc.start(t); osc.stop(t + 3.5);
-      }
+      [1, 1.25, 1.5, 2].forEach((m, i) => marimba(c, o, t + i * .085, r * m, .05));
+      bell(c, o, t + .34, r * 4, .022, .9);
     },
     roll: (c, o, t, p) => noise(c, o, { t, a: .045, d: .12, g: .06 * Math.min(1, p.v ?? .5), f: 160 + 320 * (p.v ?? .5), brown: true, seed: t }),
     squish: (c, o, t) => {
@@ -138,7 +137,7 @@
       tone(c, o, { f: 560, f2: 470, t, a: .01, d: .2, g: .06 });
       tone(c, o, { f: 420, f2: 300, t: t + .22, a: .01, d: .3, g: .06 });
     },
-    rumble: (c, o, t, p) => noise(c, o, { t, a: .4, d: p.d ?? 1.3, g: .2, f: 120, f2: 70, brown: true }),
+    rumble: (c, o, t, p) => noise(c, o, { t, a: .4, d: p.d ?? 1.3, g: .12, f: 120, f2: 70, brown: true }),
     dizzy: (c, o, t) => { for (let i = 0; i < 4; i++) tone(c, o, { f: [1318.5, 1568, 1318.5, 1760][i], t: t + i * .1, a: .01, d: .14, g: .026, vib: 30, vibRate: 18 }); },
     chime: (c, o, t, p) => marimba(c, o, t, p.f ?? PENTA[p.n ?? 0], p.g ?? .12),
     arp: (c, o, t, p) => (p.notes ?? [0, 2, 4, 5, 7]).forEach((n, i) => marimba(c, o, t + i * (p.gap ?? .07), PENTA[n], p.g ?? .09)),
@@ -163,7 +162,7 @@
       tone(c, o, { f: 180, f2: 70, t, d: .15, g: .12 });
     },
     heart: (c, o, t, p) => {                    // lub-dub
-      const g = p.g ?? .25;
+      const g = (p.g ?? .25) * .6;
       tone(c, o, { f: 64, f2: 46, t, d: .13, g });
       tone(c, o, { f: 58, f2: 42, t: t + .19, d: .15, g: g * .75 });
     },
@@ -234,29 +233,34 @@
       for (const [f, q, gg] of [[f1, 5, .7], [f2, 7, .32]]) { const bp = c.createBiquadFilter(); bp.type = 'bandpass'; bp.frequency.value = f; bp.Q.value = q; const bg = c.createGain(); bg.gain.value = gg; soft.connect(bp).connect(bg).connect(e); }
       e.connect(o); osc.start(t); osc.stop(t + d + .06);
     },
-    // ---- season 6/7: ambience beds, voices and props ----
-    // beds hold steady for p.d seconds (they loop with the film, so a bed can run the whole episode)
-    room: (c, o, t, p) => bed(c, o, { t, d: p.d ?? 10, g: .022 * (p.g ?? 1), f: p.f ?? 420, brown: true }),
-    birds: (c, o, t, p) => {                    // a soft morning: a far bed of air plus a few distant tweets
-      const d = p.d ?? 10; bed(c, o, { t, d, g: .012 * (p.g ?? 1), f: 1400, type: 'bandpass', q: .4 });
-      for (let i = 0, n = Math.floor(d / 1.9); i < n; i++) if (hash(i * 3.1 + t) > .45) S.tweet(c, o, t + i * 1.9 + hash(i + t) * 1.2, { k: .8 + hash(i * 5 + t) * .4, g: .5 * (p.g ?? 1) });
+    // ---- season 6/7: ambience, voices and props ----
+    // Ambience is made of sparse little sounds only, never a held noise bed: the steady hiss and
+    // rumble under whole episodes was the "disturbing background sound" (feedback 2026-10-28).
+    // They still run for p.d seconds, so a story can start one at 0 and let it loop with the film.
+    room: () => {},                             // indoors is simply quiet
+    birds: (c, o, t, p) => {                    // a few distant tweets, no air bed
+      const d = p.d ?? 10;
+      for (let i = 0, n = Math.floor(d / 2.4); i < n; i++) if (hash(i * 3.1 + t) > .5) S.tweet(c, o, t + i * 2.4 + hash(i + t) * 1.4, { k: .8 + hash(i * 5 + t) * .4, g: .4 * (p.g ?? 1) });
     },
     tweet: (c, o, t, p) => { const k = p.k ?? 1, g = .022 * (p.g ?? 1); tone(c, o, { f: 1900 * k, f2: 2500 * k, t, a: .015, d: .07, g, glide: .06 }); tone(c, o, { f: 2100 * k, f2: 1700 * k, t: t + .1, a: .015, d: .09, g: g * .8, glide: .08 }); },
-    night: (c, o, t, p) => {                    // crickets far away over a dark room tone
-      const d = p.d ?? 10; bed(c, o, { t, d, g: .03 * (p.g ?? 1), f: 300, brown: true });
-      for (let x = .3; x < d - .4; x += .62 + hash(x * 7 + t) * .3) for (let j = 0; j < 3; j++) tone(c, o, { f: 3300 + hash(x) * 200, t: t + x + j * .055, a: .008, d: .03, g: .006 * (p.g ?? 1) });
+    night: (c, o, t, p) => {                    // far crickets, now and then
+      const d = p.d ?? 10;
+      for (let x = .3; x < d - .4; x += 1.1 + hash(x * 7 + t) * .9) for (let j = 0; j < 3; j++) tone(c, o, { f: 3300 + hash(x) * 200, t: t + x + j * .055, a: .008, d: .03, g: .004 * (p.g ?? 1) });
     },
-    rainbed: (c, o, t, p) => bed(c, o, { t, d: p.d ?? 10, g: .05 * (p.g ?? 1), f: p.f ?? 1700, type: 'bandpass', q: .5 }),
-    windbed: (c, o, t, p) => bed(c, o, { t, d: p.d ?? 10, g: .04 * (p.g ?? 1), f: 520, type: 'bandpass', q: .6, brown: true, lfo: .18 }),
-    pad: (c, o, t, p) => {                      // a long, warm chord for the quiet emotional turn
-      const r = p.root ?? 261.63, d = p.d ?? 6, g = p.g ?? 1;
-      for (const [m, gg, det] of [[1, .032, -2], [1.5, .022, 3], [2, .018, -3], [2.5, .01, 2], [.5, .02, 0]]) {
-        const osc = c.createOscillator(), e = c.createGain(), lp = c.createBiquadFilter(); osc.type = 'triangle';
-        osc.frequency.value = r * m; osc.detune.value = det; lp.type = 'lowpass'; lp.frequency.value = 1400;
-        e.gain.setValueAtTime(.0001, t); e.gain.linearRampToValueAtTime(gg * g, t + Math.min(1.8, d * .3));
-        e.gain.setValueAtTime(gg * g, t + d * .6); e.gain.linearRampToValueAtTime(.0001, t + d);
-        osc.connect(lp).connect(e).connect(o); osc.start(t); osc.stop(t + d + .05);
+    rainbed: (c, o, t, p) => {                  // soft plinks of rain, not a wash of noise
+      const d = p.d ?? 10, g = .007 * (p.g ?? 1);
+      for (let x = .1, i = 0; x < d - .2; x += .16 + hash(i * 1.7 + t) * .3, i++) {
+        const f = 1500 + hash(i * 2.3 + t) * 1100;
+        tone(c, o, { f, f2: f * .55, t: t + x, a: .007, d: .06, g: g * (.5 + hash(i * .9) * .5), glide: .04 });
       }
+    },
+    windbed: (c, o, t, p) => {                  // a soft gust every few seconds
+      const d = p.d ?? 10;
+      for (let x = .2, i = 0; x < d - 1.2; x += 2.6 + hash(i * 4.1 + t) * 2, i++) S.whoosh(c, o, t + x, { d: 1.1, v: .45 * Math.min(1, p.g ?? 1) });
+    },
+    pad: (c, o, t, p) => {                      // the quiet turn: a slow, warm rolled chord, twice
+      const r = p.root ?? 261.63, d = p.d ?? 6, g = .07 * Math.min(1, p.g ?? 1);
+      for (const at of [0, d * .45]) [.5, 1, 1.25, 1.5, 2].forEach((m, i) => S.pluck(c, o, t + at + i * .16, { f: r * m, g: g * (i ? 1 : .7) }));
     },
     pluck: (c, o, t, p) => {                    // a soft nylon-string pluck
       const f = p.f ?? PENTA[p.n ?? 0] * (p.oct ?? .5), g = p.g ?? .1;
@@ -282,7 +286,7 @@
     creak: (c, o, t) => tone(c, o, { type: 'triangle', f: 210, f2: 170, t, a: .08, d: .4, g: .02, vib: 25, vibRate: 14 }),
     baa: (c, o, t, p) => { const k = p.k ?? 1; tone(c, o, { type: 'triangle', f: 410 * k, f2: 350 * k, t, a: .04, d: .45, g: .04, vib: 22, vibRate: 8 }); tone(c, o, { f: 820 * k, f2: 700 * k, t, a: .04, d: .3, g: .01, vib: 22, vibRate: 8 }); },
     umbrella: (c, o, t) => { noise(c, o, { t, a: .02, d: .18, g: .08, f: 500, f2: 1800 }); tone(c, o, { f: 140, f2: 90, t, d: .12, g: .07 }); },
-    bus: (c, o, t, p) => { bed(c, o, { t, d: p.d ?? 4, g: .06, f: 160, brown: true }); tone(c, o, { f: 55, t, a: .6, d: (p.d ?? 4) - .6, g: .03 }); },
+    bus: (c, o, t, p) => { bed(c, o, { t, d: p.d ?? 4, g: .03, f: 160, brown: true }); tone(c, o, { f: 55, t, a: .6, d: (p.d ?? 4) - .6, g: .02 }); },
     hiss: (c, o, t) => noise(c, o, { t, a: .02, d: .35, g: .04, type: 'bandpass', f: 2400, q: .7 }),
     honk: (c, o, t) => { tone(c, o, { type: 'triangle', f: 392, t, a: .02, d: .25, g: .05 }); tone(c, o, { type: 'triangle', f: 494, t, a: .02, d: .25, g: .035 }); },
     bulb: (c, o, t) => { bell(c, o, t, 1318.5, .04, .9); bell(c, o, t + .08, 1975.5, .025, .9); },

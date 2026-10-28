@@ -2,6 +2,34 @@
 
 A running log. Newest at the top. When something breaks, write down what happened and the fix.
 
+## 2026-10-28 · Full audit (see 08-audit.md)
+
+- **"Every ending feels sad."** The cause is the pattern, not one episode: the friend leaves, Wobbin
+  walks alone into blank paper, a slow chord fades in, a consoling quote fades out. End on a button
+  (a joke or company) after the quote, and walk off happy.
+- **Noise beds were the loudest continuous sound.** Measured, the room/birds/night/rain beds sat
+  12–25 dB above footsteps and the caption voice. Ambience is now sparse separate sounds only.
+- **Measure, don't guess.** The `swell` "accent" was the loudest sound in the show at −26 dB.
+- **Render-only polish keeps seams.** Paper, ground tone, shadows, catchlights and eye darts are
+  drawn, not simulated, so all 33 seams stayed at 0.00. Anything that changes simulation (walk
+  moods, fidgets) needs each episode re-checked.
+- **The site's own scenes draw on a transparent canvas** (`clear: true`) or their own paper; the
+  paper finish skips `clear` stories and any story with `paperFinish: false`.
+- **Endings pilot (Lost, Small Talk, Battery).** A friend can leave with Wobbin if they run ahead
+  at ~2× speed so they're out of frame at the seam. `c.jump(0, vy)` zeroes horizontal speed, so
+  skipping hops while running must be `c.jump(c.vx, vy)`. A camera that sits on a fixed spot
+  (Lost's clamp to the house) has to be released before Wobbin walks out of it. Sound-only jokes
+  need a picture too (Lost's phone buzzes visibly as it rings).
+- **All 33 endings (five helpers in parallel, six episodes each).** A headless checker
+  (`node tools/loopcheck.js`) made loops checkable in seconds without the browser, so each
+  helper could verify its own work. Visual review still caught what the checker can't: props too
+  small for a phone (Reset's rock, the tiny mountain), a camera that cut Wobbin off (Perfect), and
+  **scenery popping at the seam in 16:9/1:1**. The wide frames show about ±600 units around the
+  camera, so a house, tree, bench or decoration within ~650 units behind Wobbin at the seam pops
+  on loop even when 9:16 looks clean. Always compare the first and last frame in 16:9.
+- **Background pane runs are slow.** Contact sheets for all 33 take a few minutes in the hidden
+  pane; start them with the iframe loop and wait on the files.
+
 ## 2026-10-26 · Seasons 6 and 7, sound and feel
 
 - **"It feels programmed."** Fixed with three engine changes: line boil on by default (a tiny redraw jitter about 12× a second), blinks at uneven gaps with the odd double blink, and a subtle breathing squash when a character stands still. Motion stays smooth; only the line wobbles.

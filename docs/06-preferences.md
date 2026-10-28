@@ -19,6 +19,9 @@ Collected from feedback so far. Add to it every time.
 ## Doesn't like
 
 - Anything that feels **"AI-ish" or programmed**: mechanical timing, identical repeats, robotic sounds. Hand-made warmth matters.
+- **Sad endings.** Viewers said every ending feels sad (2026-10-28). Endings should be warm and a
+  little funny: a button after the quote, company, a happy walk-off.
+- **Background noise.** The steady sound under episodes was "very disturbing" (2026-10-28). No held beds.
 - **Loud or harsh sound.** The caption voice and footsteps should be very faint; everything a bit faint.
 - **Big steps:** Wobbin's stride in the site's band was too long (now capped).
 - **Things looking too big or zoomed in** (the website's scale was reduced).

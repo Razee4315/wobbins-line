@@ -6,15 +6,19 @@
 <title>Fine</title>
 </head>
 <body>
-<script src="sfx.js?v=7"></script>
-<script src="engine2.js?v=7"></script>
+<script src="sfx.js?v=8"></script>
+<script src="engine2.js?v=8"></script>
 <script>
 // Bo walks along, low. A friend is coming, so Bo pops on a painted smile. "how are you?" "fine!"
 // Another friend: "totally fine!" (the mask slips). Another: "never better!" (it cracks). Alone on a
 // bench, the mask comes off and the little rain cloud comes back. A friend comes back too, sits in
 // the rain with Bo, and says the thing. The cloud clears.
+// Button: where the cloud was, a little rainbow. Bo's real smile (no mask needed); the friend
+// bumps shoulders with Bo in a little hop together, then skips off ahead and Bo follows, humming.
 const { PAL, SPRITES, sprite, lerp, seg, sine, outBack, clamp, hash, spring, mix, GROUND, GRAV, BODY_H } = Shorts;
-const V = 110, BENCH = 2150, MASK_ON = 4.9, SLIP = 13.4, CRACK = 18.6, SIT = 22.0, OFF = 22.7, CLOUD = 23.2, RETURN = 25.6, CLEAR = 31.0, LEAVE = 33.8, LOOP = LEAVE + 7.6;
+const V = 110, BENCH = 2150, MASK_ON = 4.9, SLIP = 13.4, CRACK = 18.6, SIT = 22.0, OFF = 22.7, CLOUD = 23.2, RETURN = 25.6, CLEAR = 31.0, LEAVE = 36.4, LOOP = LEAVE + 8.7;   // bench and lamp out of view at the seam
+const STAND_UP = 33.4, BUMP = 34.3, BOW = [31.4, 37.4];   // the shoulder bump; the rainbow comes and goes
+const rainbowAt = t => sine(seg(t, BOW[0], BOW[0] + 1)) * (1 - sine(seg(t, BOW[1], BOW[1] + 1.2)));
 const LOOKS = [{ hair: 'curl', blush: PAL.pink, fill: '#ffe9f2' }, { hair: 'antenna', hairColor: PAL.blue, fill: '#e6f0ff' }, { hairColor: PAL.orange, blush: '#ffb08a', fill: '#fff4d6' }];
 const PUFFS = [[-52, 10, 26], [-22, -6, 34], [14, -14, 38], [46, 0, 30], [0, 16, 30], [-34, 18, 24], [32, 18, 26]];
 const warm = t => sine(seg(t, 19.5, 23)) * (1 - sine(seg(t, 31.5, 36)));
@@ -34,7 +38,7 @@ Shorts.play({
     [18.4, 19.6, '*never* better!', PAL.orange],
     [24.0, 25.6, '...not fine.', PAL.sky, { pitch: .92, g: .7 }],
     [27.4, 29.4, "you don't have to be fine *with me.*", PAL.pink, { pitch: 1.3 }],
-    [32.4, 39.8, "you don't have to be *fine* all the time."],
+    [31.6, 34.0, "not fine? that's *fine* too."],
   ],
   init(S) {
     S.fr = LOOKS.map((o, i) => S.addChar({ x: 1600 + i * 4000, face: -1, gain: .5, ...o }));
@@ -73,17 +77,29 @@ Shorts.play({
       [30.4, () => S.sfx('breathOut', { d: 1.2, gain: .7 }, bo.x)],
       [CLEAR, { eye: 'happy', tilt: .14 }],
       [CLEAR, () => { S.sfx('swell', { root: 392 }); S.sfx('sparkle', { n: 8 }, bo.x); }],
-      [32.8, { sit: 0, tilt: 0, lookX: 0, lookY: 0, face: 1 }],
-      [33.2, { crouch: .2 }], [33.45, { crouch: 0 }], [33.45, () => bo.jump(0, -420)],
+      [32.0, { tilt: 0, lookY: -.8, lookX: .2 }],                              // a rainbow!
+      [STAND_UP, { sit: 0, tilt: 0, lookX: .5, lookY: 0, face: -1 }],
+      [BUMP - .25, { crouch: .2 }], [BUMP, { crouch: 0 }], [BUMP, () => bo.jump(-110, -380)],   // bump!
+      [BUMP + .35, { tilt: -.16 }], [BUMP + .8, { tilt: 0 }],
+      [BUMP + .8, () => { S.sfx('laugh', { n: 3 }, bo.x); S.sfx('laugh', { n: 3, k: 1.3, g: .8 }, S.fr[0].x); }],
+      [35.6, { face: 1, lookX: 0, crouch: .2 }], [35.85, { crouch: 0 }], [35.85, () => bo.jump(0, -400)],
       [LEAVE, { x: 1e6, speed: V, accel: 400, eye: 'open' }],
+      [LEAVE + .1, () => S.sfx('hum', { notes: [2, 4, 5, 7, 5], gap: .3, g: .04 }, bo.x)],
     ]);
     // everyone stops to talk next to Bo, then leaves; the friend who notices comes back
     if (t > 7.0 && t < 7.5) pink.cmd.eye = 'happy';
     if (t > 8.9) S.once('pinkWave', () => pink.jump(0, -300));
     if (t > RETURN) {
       S.once('pinkBack', () => moveTo(pink, BENCH - 900));
-      S.plan(pink, t, [[RETURN, { x: BENCH - 175, speed: 170, accel: 450, face: 1, eye: 'open', lookX: .5 }], [26.8, { sit: 1, eye: 'sad' }], [27.4, { eye: 'open' }], [29.6, { tilt: .12, eye: 'happy' }], [CLEAR, { eye: 'happy' }], [32.8, { sit: 0, tilt: 0 }], [LEAVE + .4, { x: BENCH - 2600, face: -1, speed: 130 }]]);
+      S.plan(pink, t, [[RETURN, { x: BENCH - 175, speed: 170, accel: 450, face: 1, eye: 'open', lookX: .5 }], [26.8, { sit: 1, eye: 'sad' }], [27.4, { eye: 'open' }], [29.6, { tilt: .12, eye: 'happy' }], [CLEAR, { eye: 'happy' }],
+        [32.0, { tilt: 0, lookY: -.8, lookX: .3 }], [STAND_UP, { sit: 0, tilt: 0, lookY: 0, lookX: .5 }],
+        [BUMP - .25, { crouch: .2 }], [BUMP, { crouch: 0 }], [BUMP, () => pink.jump(110, -380)], [BUMP + .35, { tilt: -.16 }], [BUMP + .8, { tilt: 0 }],
+        [LEAVE - .3, { x: 1e6, face: 1, speed: 250, accel: 700, eye: 'happy', lookX: 0 }]]);
+      if (t > BUMP + .25) S.once('bump', () => { S.sfx('thump', { g: .4 }, bo.x); S.sfx('pop', { pitch: 640, g: .07 }, bo.x); const top = bo.top(); S.burst((top.x + pink.top().x) / 2, top.y - 20, 5, [PAL.pink, PAL.orange], { speed: 170, gravity: -60, size: 18, life: 1.1, shape: 'heart' }); });
+      // skips off ahead (hops keep the run speed)
+      if (t > LEAVE + .2 && pink.mode === 'ground' && hash(Math.floor(t * 2.5)) > .7) S.once(`skip:${Math.floor(t * 2.5)}`, () => pink.jump(pink.vx, -300));
     }
+    if (t > BOW[0] + .3) S.once('bow', () => S.sfx('arp', { notes: [5, 7, 9], gap: .1, g: .05 }));
     // the mask: pops on, slips, cracks, then falls off
     spring(S.mask.slip, 0, 40, .25, dt);
     const M = S.mask.fall;
@@ -109,6 +125,13 @@ Shorts.play({
     }
   },
   drawBack(S, ctx, t) {
+    // a little rainbow over the two of them, once the cloud has cleared
+    const rb = rainbowAt(t);
+    if (rb > .01) {
+      ctx.save(); ctx.globalAlpha = .85 * rb; ctx.lineWidth = 10; ctx.lineCap = 'butt';
+      [PAL.red, PAL.orange, PAL.yellow, PAL.lime, PAL.sky, PAL.violet].forEach((col, i) => { ctx.strokeStyle = col; ctx.beginPath(); ctx.arc(BENCH - 95, GROUND - 30, (230 - i * 9) * (.85 + .15 * rb), Math.PI, Math.PI * 2); ctx.stroke(); });
+      ctx.restore(); ctx.strokeStyle = '#111';
+    }
     // the bench under a street lamp
     ctx.fillStyle = PAL.brown; ctx.lineWidth = 5; ctx.strokeStyle = '#111';
     ctx.beginPath(); ctx.roundRect(BENCH - 140, GROUND - 52, 280, 16, 6); ctx.fill(); ctx.stroke();

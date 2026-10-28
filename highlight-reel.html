@@ -6,17 +6,21 @@
 <title>Highlight Reel</title>
 </head>
 <body>
-<script src="sfx.js?v=7"></script>
-<script src="engine2.js?v=7"></script>
+<script src="sfx.js?v=8"></script>
+<script src="engine2.js?v=8"></script>
 <script>
 // Friends hold up big pictures of their perfect moments, hearts pouring out of them. Bo sags a
 // little more at each one. The biggest picture slips, and behind it is a friend having a rainy day.
+// Button: Bo turns round and proudly pops up a picture of its own muddy, rainy day. The friends'
+// pictures bounce, hearts pour out of Bo's picture, Zu cheers "best one yet!", and off Bo goes.
 const { PAL, SPRITES, sprite, lerp, seg, sine, outBack, clamp, hash, spring, mix, GROUND } = Shorts;
 const V = 130, REVEAL = 20.6;
-const C = { S: '#9ad7ff', Y: PAL.yellow, G: PAL.green, N: PAL.brown, B: PAL.blue, W: '#fff', P: PAL.peach, V: PAL.violet, R: PAL.red, O: PAL.orange };
+const SHOW_X = 1800, PIC = 33.0, CHEER = 33.7, TOSS = 35.85, LEAVE = 36.4;
+const C = { S: '#9ad7ff', Y: PAL.yellow, G: PAL.green, N: PAL.brown, B: PAL.blue, W: '#fff', P: PAL.peach, V: PAL.violet, R: PAL.red, O: PAL.orange, K: '#a7abb2', D: '#7a4a2a' };
 const PICS = {
   beach: ['SGGGSSSSSYYS', 'GGGGGSSSYYYY', 'SSNSSSSSSYYS', 'SSNSSSSSSSSS', 'BBNBBBBBBBBB', 'BWNBBBBBWBBB', 'BBNBBBBBBBBB', 'PPNPPPPPPPPP', 'PPPPPPPPPPPP'],
   crown: ['VWVVVVVVVVWV', 'VVVVVVVVVVVV', 'VVVYVVYVVYVV', 'VVVYYYYYYYVV', 'VVVYRYYRYYVV', 'VVVYYYYYYYVV', 'VVVVVVVVVVVV', 'VWVVVVVVVWVV', 'VVVVVVVVVVVV'],
+  mud: ['SKKKKSSSSS', 'KKKKKKSSSS', 'SBSBSBSSSS', 'SSBSBSSWWS', 'SBSSBSWWWW', 'SSSSSSWDWW', 'NNNNWWNNNN', 'NDNNNNDNNN'],   // Bo's real day
   summit: ['SRRRRRRRRRRS', 'ROOOOOOOOOOR', 'OYYYYYYYYYYO', 'YSSSSSSSSSSY', 'SSSSSWSSSSSS', 'SSSSWGWSSSSS', 'SSSWGGGWSWSS', 'SSGGGGGGGGWG', 'GGGGGGGGGGGG'],
 };
 // [friend, x, picture, cell size, likes per second]
@@ -25,14 +29,15 @@ const FRAMES = [[0, 900, 'beach', 15, 1.4], [1, 1250, 'crown', 17.5, 2.6], [2, 1
 Shorts.play({
   title: 'Highlight Reel',
   accent: PAL.pink,
-  loopAfter: 38.2,
+  loopAfter: LEAVE + 6.8,
   captions: [
     [6.4, 8.4, 'wow. *perfect.*'],
     [12.4, 14.2, 'everyone has it *figured out.*'],
     [18.4, 20.0, '...except me.'],
     [21.2, 22.6, 'oh.'],
     [24.6, 26.4, 'everyone has rainy days.'],
-    [28.2, 33.4, "don't compare your *every day* to their *best day.*"],
+    [28.2, 32.6, "don't compare your *every day* to their *best day.*"],
+    [CHEER + .1, CHEER + 1.5, '*best one yet!*', null, { pitch: 1.3 }],
   ],
   init(S) {
     const look = [{ hair: 'curl', blush: PAL.pink, fill: '#ffe9f2' }, { hair: 'antenna', hairColor: PAL.blue, fill: '#e6f0ff' }, { hairColor: PAL.orange, blush: '#ffb08a', fill: '#fff4d6' }];
@@ -58,7 +63,17 @@ Shorts.play({
       [23.0, { sit: .8, lookX: .9 }],
       [24.2, { eye: 'happy', lookY: -.4 }],
       [26.4, { sit: 0 }], [26.8, { crouch: .2 }], [27.05, { crouch: 0 }], [27.05, () => bo.jump(0, -460)],
-      [27.8, { x: 1e6, speed: V, accel: 450, eye: 'open', lookX: 0, lookY: 0, tilt: 0 }],
+      [27.8, { x: SHOW_X, speed: V, accel: 450, eye: 'open', lookX: 0, lookY: 0, tilt: 0 }],
+      // the button: Bo's own picture
+      [PIC - .5, { face: -1, lookX: .3 }],
+      [PIC, { crouch: .25, eye: 'happy' }], [PIC + .2, { crouch: 0, lookY: -.3 }],
+      [PIC + .2, () => { S.sfx('pop', { pitch: 640, g: .08 }, bo.x); S.sfx('boing', { pitch: 300, g: .06 }, bo.x); }],
+      [CHEER, () => { S.sfx('sparkle', { n: 6 }, bo.x); S.sfx('laugh', { n: 3, k: 1.3, g: .8 }, FRAMES[2][1]); }],
+      [CHEER + .8, { crouch: .15 }], [CHEER + 1.0, { crouch: 0 }],              // proud little bounce
+      [TOSS - .25, { face: 1, crouch: .2, lookX: 0, lookY: 0 }], [TOSS, { crouch: 0 }], [TOSS, () => bo.jump(0, -480)],
+      [TOSS, () => { const p = picAt(S); S.burst(p.x, p.y, 10, [PAL.pink, PAL.red], { shape: 'heart', gravity: -200, speed: 260, life: 1.3, size: 18 }); S.sfx('pop', { pitch: 900, g: .06 }, bo.x); }],
+      [LEAVE, { x: 1e6, speed: V, accel: 450, eye: 'open', lookX: 0, lookY: 0, tilt: 0 }],
+      [LEAVE + .1, () => S.sfx('hum', { notes: [2, 4, 5, 7, 5], gap: .3, g: .04 }, bo.x)],
       // sound
       ...[[5.2, 0], [11.6, 1], [17.6, 2]].map(([a, i]) => [a, () => S.sfx('twinkle', { pitch: 1760 + i * 300 }, FRAMES[i][1])]),
       ...[7.4, 12.8, 18.3].map(a => [a, () => S.sfx('drain', {}, bo.x)]),
@@ -70,7 +85,11 @@ Shorts.play({
       [23.2, { lookX: .8, lookY: 0, eye: 'open', tilt: 0 }],
       [24.2, { eye: 'happy' }],
       [26.8, { crouch: .2 }], [27.1, { crouch: 0 }], [27.1, () => zu.jump(0, -420)],
+      [PIC - .2, { face: 1, lookX: .4, eye: 'wide' }],                     // Zu sees Bo's picture...
+      [CHEER, { eye: 'happy' }], [CHEER + .05, () => zu.jump(0, -400)], [CHEER + .65, () => zu.jump(0, -360)],
     ]);
+    // hearts pour out of Bo's honest picture now
+    if (t > CHEER && t < TOSS) { S.like[3] = (S.like[3] || 0) + dt * 5; if (S.like[3] >= 1) { S.like[3] -= 1; const k = S.likeN++, p = picAt(S); S.burst(p.x + 20, p.y - 40, 1, [[PAL.pink, PAL.red][k % 2]], { shape: 'heart', gravity: -260, speed: 150, spread: 1.4, life: 1.5, size: 18, drag: 2 }); S.sfx('pop', { pitch: 900 + hash(k) * 500, g: .05 }, bo.x); } }
     // likes pour out of each picture, more for the bigger ones, until the reveal
     FRAMES.forEach(([, x, , , rate], i) => {
       if (t < 3 || t > REVEAL) return;
@@ -86,6 +105,7 @@ Shorts.play({
     if (raining) { S.rain += dt; while (S.rain >= .05) { S.rain -= .05; const k = S.likeN++; S.drops.push({ x: FRAMES[2][1] + (hash(k) - .5) * 90, y: GROUND - 320 }); S.sfx('rain', { v: .7 }, FRAMES[2][1]); } }
     S.drops = S.drops.filter(d => { d.y += 800 * dt; return d.y < GROUND - 40; });
     if (t > 5 && t < 27.8) { S.camGoal.x = bo.x + 150; S.camGoal.z = .9; S.camGoal.kx = 1.6; }
+    if (t > 27.8 && t < LEAVE) { S.camGoal.x = Math.min(bo.x + 150, 1580); S.camGoal.z = .88; S.camGoal.kx = 1.6; }
   },
   drawSky(S, ctx, t, v) {
     for (let i = 0; i < 3; i++) {
@@ -100,6 +120,7 @@ Shorts.play({
     FRAMES.forEach(([who, x, pic, cell], i) => {
       const rows = PICS[pic], w = rows[0].length * cell, h = rows.length * cell;
       let dx = 0, dy = 0, rot = 0;
+      if (i < 2 && t > CHEER && t < CHEER + 1.6) dy = -Math.abs(Math.sin((t - CHEER) * 7.85 + i)) * 22;   // cheering
       if (i === 2 && t > REVEAL) { const u = outBack(clamp((t - REVEAL) / .5)); dx = 150 * u; dy = 70 * u; rot = .42 * u; }
       const shine = i === 2 ? .5 + .5 * Math.sin(t * 5) : 0;
       ctx.save(); ctx.translate(x + dx, GROUND - 58 - h / 2 + dy - (i === 2 ? 30 : 0)); ctx.rotate(rot);
@@ -110,6 +131,15 @@ Shorts.play({
     });
   },
   drawFront(S, ctx, t) {
+    // Bo's own picture, on Bo's head
+    const pk = outBack(clamp((t - PIC - .2) / .35));
+    if (pk > 0 && t < TOSS) {
+      const p = picAt(S), rows = PICS.mud, cell = 12 * pk, w = rows[0].length * cell, h = rows.length * cell;
+      ctx.save(); ctx.translate(p.x, p.y); ctx.rotate(S.bo.rot.x * .6);
+      ctx.fillStyle = '#fff'; ctx.lineWidth = 6; ctx.beginPath(); ctx.rect(-w / 2 - 8 * pk, -h / 2 - 8 * pk, w + 16 * pk, h + 16 * pk); ctx.fill(); ctx.stroke();
+      rows.forEach((row, r) => [...row].forEach((ch, c) => { ctx.fillStyle = C[ch]; ctx.fillRect(-w / 2 + c * cell, -h / 2 + r * cell, cell + .4, cell + .4); }));
+      ctx.restore();
+    }
     // Zu's cloud and the sun after it
     const cl = sine(seg(t, REVEAL + .2, REVEAL + .8)) * (1 - sine(seg(t, 23.6, 24.4))), zx = FRAMES[2][1];
     if (cl > 0) {
@@ -126,6 +156,9 @@ Shorts.play({
     }
   },
 });
+
+// where Bo's picture sits: on top of Bo's head
+function picAt(S) { const T = S.bo.top(); return { x: T.x, y: T.y - 56 }; }
 </script>
 </body>
 </html>

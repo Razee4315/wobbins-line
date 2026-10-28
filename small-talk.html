@@ -6,16 +6,17 @@
 <title>Small Talk</title>
 </head>
 <body>
-<script src="sfx.js?v=7"></script>
-<script src="engine2.js?v=7"></script>
+<script src="sfx.js?v=8"></script>
+<script src="engine2.js?v=8"></script>
 <script>
 // A bus stop. A stranger comes and stands next to Bo. "hi." "hi." Then nothing: the silence
 // between them grows into a heavy "..." (and the crickets come out). "nice... weather?" says Bo,
 // and the sky opens. Bo's umbrella pops up; Bo shuffles over and shares it. They laugh; the "..."
 // turns into hearts. The rain stops, the stranger's bus comes, they wave, and Bo walks on.
+// Button: down the road a new stranger is coming the other way, and this time Bo speaks first.
 const { PAL, SPRITES, sprite, lerp, seg, sine, outBack, clamp, hash, spring, mix, ramp, GROUND } = Shorts;
-const V = 140, STOP = 880, PAL_X = 1100, POLE = 990;
-const RAIN = [15.4, 29.4], OPEN = 17.6, SHARE = 19.6, BUS_IN = 29.8, BOARD = 31.6, BUS_OUT = 32.6, LEAVE = 34.6, LOOP = LEAVE + 7.4;
+const V = 140, STOP = 880, PAL_X = 1100, POLE = 990, MEET = 1440;
+const RAIN = [15.4, 29.4], OPEN = 17.6, SHARE = 19.6, BUS_IN = 29.8, BOARD = 31.6, BUS_OUT = 32.6, WALK = 34.4, HI = 38.3, LEAVE = 41.6, LOOP = LEAVE + 6.8;
 const rainy = t => sine(seg(t, RAIN[0] - .6, RAIN[0] + .8)) * (1 - sine(seg(t, RAIN[1] - .4, RAIN[1] + 1.4)));
 const busX = t => t < BUS_IN ? 3000 : t < BOARD ? lerp(2600, PAL_X + 40, sine(seg(t, BUS_IN, BOARD - .4))) : t < BUS_OUT ? PAL_X + 40 : PAL_X + 40 - 1800 * Math.pow(seg(t, BUS_OUT, BUS_OUT + 2.4), 1.6);
 const PAL_VOICE = { pitch: 1.28 };
@@ -36,11 +37,14 @@ Shorts.play({
     [22.2, 23.2, '*yes please!*', null, PAL_VOICE],
     [25.0, 26.4, 'i kind of love rain.', null, PAL_VOICE],
     [26.8, 27.8, '*me too!*'],
-    [33.0, 40.2, 'every friend was a *stranger* once.'],
+    [33.4, 37.8, 'every friend was a *stranger* once.'],
+    [HI, HI + 1.6, 'hi! nice *weather?*'],
+    [HI + 1.8, HI + 2.8, '*lovely!*', null, { pitch: 1.4 }],
   ],
   init(S) {
     S.bo = S.addChar({ x: 0, walk: V }); S.focus = S.bo;
     S.pal = S.addChar({ x: 1700, face: -1, hair: 'antenna', hairColor: PAL.green, blush: PAL.pink, fill: '#e3fbef', gain: .5 });
+    S.next = S.addChar({ x: 2700, face: -1, hairColor: PAL.orange, blush: '#ffb08a', fill: '#fff4d6', gain: .5 });
     S.drops = []; S.splash = []; S.dropN = 0; S.dropT = 0; S.splashN = 0; S.umb = { x: 0, v: 0 }; S.hearts = []; S.cr = 0;
   },
   update(S, t, dt) {
@@ -65,7 +69,20 @@ Shorts.play({
       [BOARD - .6, { lookX: .9, lookY: 0 }],
       [BUS_OUT + .2, { eye: 'happy' }],
       [33.6, { crouch: .2 }], [33.85, { crouch: 0 }], [33.85, () => bo.jump(0, -420)],   // bye!
+      [WALK, { x: MEET, speed: V, accel: 450, eye: 'open', lookX: 0, lookY: 0 }],
+      [37.4, { lookX: .6 }],                                                  // someone new coming
+      [HI, { eye: 'happy', lookX: 0 }], [HI, () => S.sfx('pop', { pitch: 700, g: .08 }, bo.x)],
+      [HI + 1.7, { eye: 'open' }],
+      [HI + 2.8, { eye: 'happy' }], [HI + 2.9, () => { S.sfx('laugh', { n: 3 }, bo.x); S.sfx('laugh', { n: 3, k: 1.35 }, S.next.x); }],
+      [40.9, { crouch: .2 }], [41.15, { crouch: 0 }], [41.15, () => bo.jump(0, -400)],
       [LEAVE, { x: 1e6, speed: V, accel: 450, eye: 'open', lookX: 0, lookY: 0 }],
+    ]);
+    // the new stranger: strolls up, gets a "hi!" first, beams, and carries on to the bus stop
+    S.plan(S.next, t, [
+      [28.6, { x: MEET + 160, speed: 120, accel: 320, face: -1 }],
+      [HI + .3, { lookX: .5, eye: 'wide' }], [HI + 1.0, { eye: 'open', lookX: 0 }],
+      [HI + 1.8, { eye: 'happy' }], [HI + 1.85, { crouch: .2 }], [HI + 2.1, { crouch: 0 }], [HI + 2.1, () => S.next.jump(0, -340)],
+      [LEAVE + .3, { x: -1e5, speed: 120, accel: 320, eye: 'open' }],
     ]);
     S.plan(pal, t, [
       [2.6, { x: PAL_X, speed: 150, accel: 400, face: -1 }],
@@ -117,6 +134,7 @@ Shorts.play({
     if (t > SHARE + 3.6) S.once('hearts', () => { for (let i = 0; i < 6; i++) S.hearts.push({ x: (bo.x + PAL_X) / 2 + (i - 2.5) * 22, t0: t + i * .08 }); S.sfx('sparkle', { n: 6 }, PAL_X); });
 
     if (t > 4.6 && t < BUS_OUT + 1.8) { S.camGoal.x = (STOP + PAL_X) / 2 + 30; S.camGoal.z = t < 9 ? 1.05 : t < RAIN[0] ? 1.25 : .95; S.camGoal.kz = 1.2; S.camGoal.kx = 2; }
+    if (t > 37.2 && t < LEAVE + .4) { S.camGoal.x = MEET + 80; S.camGoal.z = 1.1; S.camGoal.kx = 2; S.camGoal.kz = 1.2; }
   },
   drawSky(S, ctx, t, v) {
     const rk = rainy(t);

@@ -3,6 +3,8 @@
   const Shorts = Object.assign(Object.create(window.Shorts), { play: story => { (window.WL_STORIES ||= {})['yes'] = story; } });
   // Bo walks with a little flower on its head. Friends keep asking; Bo keeps saying yes; the
   // boxes pile up until the flower is buried and the stack crashes. Then Bo says no, and it's fine.
+  // Button: a friend comes back with a huge moving box. "help me move?" Bo, smiling: "no."
+  // Friend: "ok!" Both happy; the friend skips off to ask someone else and Bo strolls on.
   const { PAL, SPRITES, sprite, lerp, seg, sine, outBack, clamp, hash, spring, GROUND, GRAV } = Shorts;
   const V = 130, BX = 30;
   const BOXC = [PAL.sky, PAL.orange, PAL.violet, PAL.lime, PAL.red, PAL.yellow, PAL.blue, PAL.pink];
@@ -19,6 +21,7 @@
     { who: 2, enter: 24.8, give: null, n: 1 },                   // the one Bo turns down
   ];
   const COLLAPSE = 23.5, NO = 27.2;   // the last tiny box lands at ~23.35: that's the one that breaks it
+  const ASK2 = 34.0, HALT = 35.4, NOPE = 37.5, OKAY = 38.4, LEAVE = 40.1;   // the button: one more ask
 
   function teleport(c, x) {
     const dx = x - c.x; c.x += dx; c.hx += dx; c.vx = 0; c.cmd.x = x;
@@ -33,7 +36,7 @@
   Shorts.play({
     title: 'Yes',
     accent: PAL.pink,
-    loopAfter: 40.0,
+    loopAfter: LEAVE + 6.8,
     captions: [
       [5.2, 7.0, 'sure!'],
       [9.2, 11.0, 'of course!'],
@@ -42,7 +45,10 @@
       [19.6, 21.8, 'yes. yes. *yes.*'],
       [23.6, 25.2, '...'],
       [27.3, 29.0, '*no.*'],
-      [31.9, 37.0, "you can say no. *they'll be okay.*"],
+      [31.9, 36.0, "you can say no. *they'll be okay.*"],
+      [36.2, 37.3, 'help me *move?*', null, { pitch: 1.3 }],
+      [NOPE + .1, NOPE + .9, '*no.*'],
+      [OKAY + .1, OKAY + 1.0, '*ok!*', null, { pitch: 1.3 }],
     ],
     init(S) {
       S.friends = [
@@ -110,6 +116,33 @@
         if (t >= NO + 3.7) Object.assign(c, { tilt: 0, eye: 'happy', lookX: 0, lookY: 0 });
         if (t >= NO + 3.9) S.once('yay', () => bo.jump(0, -470));
         if (t >= NO + 4.4) Object.assign(c, { x: 1e6, speed: V, accel: 400, eye: 'open' });
+        // the button: one more ask, and a cheerful no
+        if (t >= HALT) Object.assign(c, { speed: 0, accel: 400, lookX: .7, lookY: 0 });
+        if (t >= NOPE && t < NOPE + .72) {
+          const k = Math.floor((t - NOPE) / .18); Object.assign(c, { face: k % 2 ? -1 : 1, eye: 'happy', lookX: 0 });
+          if (k !== S.nopeK) { S.nopeK = k; if (k) S.sfx('whoosh', { d: .16, v: .4 }, bo.x); }
+        }
+        if (t >= NOPE + .72) Object.assign(c, { face: 1, eye: 'open', lookX: .7 });
+        if (t >= OKAY + .3) Object.assign(c, { eye: 'happy', lookX: .5, crouch: t < OKAY + .8 ? .08 * Math.abs(Math.sin((t - OKAY) * 17)) : 0 });
+        if (t >= OKAY + .3) S.once('laugh', () => { S.sfx('laugh', { n: 3 }, bo.x); S.sfx('laugh', { n: 3, k: 1.3, g: .8 }, S.friends[0].x); });
+        if (t >= LEAVE - .6) c.crouch = t < LEAVE - .35 ? .2 : 0;
+        if (t >= LEAVE - .35) S.once('hop', () => bo.jump(0, -440));
+        if (t >= LEAVE) Object.assign(c, { x: 1e6, speed: V, accel: 450, eye: 'open', lookX: 0, lookY: 0, crouch: 0 });
+        if (t >= LEAVE + .1) S.once('hum', () => S.sfx('hum', { notes: [2, 4, 5, 7, 5], gap: .3, g: .04 }, bo.x));
+      }
+      // the friend with the big moving box: walks up, asks, hears "no", beams, and skips off ahead
+      const mover = S.friends[0];
+      if (t >= ASK2) {
+        S.once('ask2', () => { teleport(mover, bo.x + 720); mover.face.x = -1; S.sfx('pop', { pitch: 700, g: .08 }, mover.x); });
+        S.plan(mover, t, [
+          [ASK2, { x: 1e6, speed: 0, accel: 900, face: -1, eye: 'happy', crouch: .06, tilt: 0 }],
+          [ASK2 + .01, { x: bo.x + 165, speed: 200, accel: 600 }],
+          [NOPE + .3, { eye: 'wide', crouch: 0 }],
+          [OKAY, { eye: 'happy' }], [OKAY + .05, () => { mover.jump(0, -420); S.sfx('twinkle', { pitch: 1760 }, mover.x); }],
+          [OKAY + .9, { face: 1, x: 1e6, speed: 280, accel: 700 }],
+        ]);
+        if (t < NOPE) mover.cmd.x = bo.x + 165;
+        if (t > OKAY + 1.3 && mover.mode === 'ground' && hash(Math.floor(t * 2.5)) > .6) S.once('skip' + Math.floor(t * 2.5), () => mover.jump(mover.vx, -300));
       }
 
       // boxes
@@ -151,6 +184,16 @@
     },
     drawBack(S, ctx) { for (const b of S.boxes) if (b.state === 'ground') drawBox(ctx, b); },
     drawFront(S, ctx) {
+      // the big moving box rides on the friend's head
+      if (S.t >= ASK2) {
+        const f = S.friends[0], top = f.top();
+        ctx.save(); ctx.translate(top.x, top.y - 4); ctx.rotate(clamp(-f.vx * .0006, -.12, .12) + f.rot.x);
+        ctx.fillStyle = '#e2b47c'; ctx.strokeStyle = '#111'; ctx.lineWidth = 5;
+        ctx.beginPath(); ctx.roundRect(-46, -66, 92, 66, 4); ctx.fill(); ctx.stroke();
+        ctx.fillStyle = '#f6dfb8'; ctx.fillRect(-8, -64, 16, 62);                   // tape
+        ctx.lineWidth = 4; ctx.beginPath(); ctx.moveTo(-46, -48); ctx.lineTo(46, -48); ctx.stroke();   // flaps
+        ctx.restore();
+      }
       const fl = S.flower, T = S.bo.tuft;
       const fx = fl.state === 'head' && T ? T.x : fl.x, fy = fl.state === 'head' && T ? T.y - 4 : fl.y;
       sprite(ctx, FLOWER, fx, fy, 4.6, { X: PAL.pink, C: PAL.yellow });

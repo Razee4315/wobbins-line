@@ -6,15 +6,30 @@
 <title>Bloom</title>
 </head>
 <body>
-<script src="sfx.js?v=7"></script>
-<script src="engine2.js?v=7"></script>
+<script src="sfx.js?v=8"></script>
+<script src="engine2.js?v=8"></script>
 <script>
 // A grey, wilted field. Bo lifts one flower; it blooms and throws its colour to the
 // next one. Then three. Then the whole field. Bo walks on carrying a little of it.
+// Button: a bee finds the flower on Bo's hair. It circles, Bo freezes and braces... and the bee
+// just lands, picks the flower up and carries it off ahead (passing it on). Bo laughs and hops.
 const { PAL, SPRITES, sprite, lerp, seg, sine, outBack, outCubic, clamp, hash, spring, mix, GROUND } = Shorts;
 const V = 130, COLS = [PAL.pink, PAL.yellow, PAL.blue, PAL.orange, PAL.violet, PAL.red, PAL.lime];
 const KEY = { f1: 820, f2: 1030, f3: 1220, f4: 1330, f5: 1440, f6: 1550, f7: 1720 };
-const BIG_AT = 19.2;
+const BIG_AT = 19.2, BX = 2000, BEE_IN = 26.0, ORBIT = 26.7, PERCH = 28.0, TAKE = 28.6, LEAVE = 30.4;
+const BEE = ['.WW.WW.', '.WW.WW.', '.YKYKY.', 'YKYKYKK', '.YKYKY.'], BEE2 = ['.......', '..WWWW.', '.YKYKY.', 'YKYKYKK', '.YKYKY.'];
+const flip = rows => rows.map(r => [...r].reverse().join(''));
+// where the bee is: flies in, circles Bo's head once, settles on the flower, then carries it off ahead
+function beeAt(S, t) {
+  if (t < BEE_IN || t > TAKE + 3) return null;
+  const top = S.bo.top(), T = S.bo.tuft, cx = top.x, cy = top.y - 40, fx = T.x, fy = T.y - 28;
+  if (t < ORBIT) { const k = sine(seg(t, BEE_IN, ORBIT)); return { x: lerp(cx + 380, cx + 80, k), y: lerp(cy - 220, cy, k) + Math.sin(t * 14) * 8, dir: -1 }; }
+  if (t < ORBIT + 1) { const a = (t - ORBIT) * Math.PI * 2; return { x: cx + Math.cos(a) * 80, y: cy + Math.sin(a) * 34, dir: Math.sin(a) > 0 ? -1 : 1 }; }
+  if (t < PERCH) { const k = sine(seg(t, ORBIT + 1, PERCH)); return { x: lerp(cx + 80, fx, k), y: lerp(cy, fy, k), dir: -1 }; }
+  if (t < TAKE) return { x: fx, y: fy, dir: 1, perch: true };
+  const P = S.beeFrom || { x: fx, y: fy }, u = t - TAKE;
+  return { x: P.x + u * 240 + Math.sin(u * 8) * 10, y: P.y - u * 120 - Math.sin(u * 5) * 20, dir: 1, carry: true };
+}
 const FLOWERS = [];
 const addF = (x, h, color, s = 1) => FLOWERS.push({ x, h, color, s, bloomAt: null, ang: { x: 2.3 + hash(x) * .3, v: 0 } });
 Object.entries(KEY).forEach(([k, x], i) => addF(x, k === 'f7' ? 112 : 62 + (i % 3) * 8, k === 'f3' ? PAL.blue : k === 'f7' ? PAL.violet : COLS[i % COLS.length], k === 'f7' ? 1.6 : 1));
@@ -29,12 +44,12 @@ const NUDGES = [[6.6, .3], [12.6, .32], [18.2, .36], [18.75, .42]];
 Shorts.play({
   title: 'Bloom',
   accent: PAL.pink,
-  loopAfter: 32.4,
+  loopAfter: LEAVE + 7.0,
   captions: [
     [7.6, 9.8, 'a little *kindness*'],
     [13.2, 15.6, 'goes a long way'],
     [19.6, 22.6, 'and it *spreads.*'],
-    [24.6, 29.2, 'pass it on.'],
+    [23.6, 26.4, 'pass it on.'],
   ],
   init(S) {
     S.bo = S.addChar({ x: 0, walk: V });
@@ -77,13 +92,23 @@ Shorts.play({
       [20.2, { eye: 'happy', crouch: .2 }], [20.5, { crouch: 0 }], [20.5, () => bo.jump(0, -620)],
       [21.4, { crouch: .2 }], [21.6, { crouch: 0 }], [21.6, () => bo.jump(0, -450)],
       [22.4, () => S.carry = { t0: t }],                                  // a spark comes along
-      [23.0, { x: 1e6, speed: V, accel: 450, eye: 'open', lookX: 0, lookY: 0, tilt: 0 }],
+      [23.0, { x: BX, speed: V, accel: 450, eye: 'open', lookX: 0, lookY: 0, tilt: 0 }],
+      // the button: a bee
+      [BEE_IN, () => S.sfx('zip', {}, BX + 300)], [BEE_IN + .3, { eye: 'wide' }],
+      [ORBIT + .2, () => S.sfx('zip', {}, BX + 60)], [ORBIT + .7, () => S.sfx('zip', {}, BX - 60)],
+      [PERCH - .2, { eye: 'squeeze', crouch: .1, lookX: 0, lookY: -1 }],   // don't. move.
+      [TAKE, () => { S.beeFrom = { x: bo.tuft.x, y: bo.tuft.y - 28 }; S.burst(bo.tuft.x + 10, bo.tuft.y - 50, 1, [PAL.pink], { speed: 50, gravity: -90, size: 18, life: 1.1, shape: 'heart' }); S.sfx('pop', { pitch: 880, g: .08 }, bo.x); }],
+      [TAKE + .2, { eye: 'open', crouch: 0, lookX: .7, lookY: -.7 }],     // ...it took the flower
+      [29.1, { eye: 'happy' }], [29.1, () => S.sfx('laugh', { n: 3 }, bo.x)],
+      [29.6, { crouch: .2 }], [29.85, { crouch: 0 }], [29.85, () => bo.jump(0, -460)],
+      [LEAVE, { x: 1e6, speed: V, accel: 450, eye: 'open', lookX: 0, lookY: 0, tilt: 0 }],
+      [LEAVE + .1, () => S.sfx('hum', { notes: [2, 4, 5, 7, 5], gap: .3, g: .04 }, bo.x)],
       // sound
       ...NUDGES.map(([at], i) => [at + .25, () => S.sfx('brush', { gain: 1 + i * .2 }, bo.x + 90)]),
       [BIG_AT, () => { S.sfx('swell', { root: 523.25 }); S.sfx('chime', { f: 261.63, g: .16 }, KEY.f7); }],
       [20.4, () => S.sfx('sparkle', { n: 10 })],
       [22.4, () => S.sfx('whistle', { d: 1.6, f: 1200, f2: 1900 }, KEY.f7)],
-      [27.0, () => S.sfx('whistle', { d: 1.6, f: 1500, f2: 2600 })],
+      [TAKE + .1, () => S.sfx('whistle', { d: 1.6, f: 1500, f2: 2600 })],
     ]);
     // every bloom rings a note; the cascade becomes a rising-and-falling glissando
     for (const f of FL) if (!f.sounded && f.bloomAt !== null && t >= f.bloomAt) {
@@ -100,6 +125,11 @@ Shorts.play({
     for (const f of FL) spring(f.ang, f.bloomAt !== null && t >= f.bloomAt ? 0 : 2.3 + hash(f.x) * .3, 70, .32, dt);
     S.rings = S.rings.filter(r => t - r.t0 < 1.4);
     if (t > 19.3 && t < 23.4) { S.camGoal.x = 1560; S.camGoal.z = .7; S.camGoal.kx = 2.5; S.camGoal.kz = 2; }
+    // Bo's eyes follow the bee round; the camera comes in close for it
+    const bee = beeAt(S, t);
+    if (bee && t > BEE_IN + .3 && t < PERCH - .2) { bo.cmd.lookX = clamp((bee.x - bo.x) / 90, -1, 1); bo.cmd.lookY = clamp((bee.y - (bo.y - 20)) / 70, -1, 1); }
+    if (t > PERCH - .2 && t < TAKE) bo.cmd.tilt = .025 * Math.sin(t * 40);   // trembling
+    if (t > 25.2 && t < LEAVE) { S.camGoal.x = BX + 30; S.camGoal.z = 1.2; S.camGoal.kx = 2; S.camGoal.kz = 1.2; }
   },
   drawSky(S, ctx, t, v) {
     // a pixel rainbow over the field once it blooms
@@ -155,13 +185,18 @@ Shorts.play({
         sprite(ctx, j ? SPRITES.dot : SPRITES.sparkle, x, y, j ? 4 - j * .4 : 3.4, { X: s.b.color }, 1 - j / 7);
       }
     }
-    // the little flower that rides on Bo's hair, then flies ahead to the next field
+    // the little flower that rides on Bo's hair (it pops open when it lands), until the bee takes it
+    const bee = beeAt(S, t);
     if (S.carry) {
       const bo = S.bo, T = bo.tuft, u = t - S.carry.t0, f7 = byX(KEY.f7);
-      const toHead = sine(clamp(u / 1.6)), away = sine(seg(t, 27, 28.6));
+      const toHead = sine(clamp(u / 1.6)), pop = 1 + .35 * Math.sin(Math.PI * seg(u, 1.5, 1.9));
       let x = lerp(f7.x, T.x, toHead), y = lerp(GROUND - f7.h, T.y - 6, toHead) - Math.sin(Math.PI * toHead) * 120;
-      x += away * 760; y -= away * 260 + Math.sin(Math.PI * away) * 80;
-      if (away < 1) sprite(ctx, ['..X..', '.XXX.', 'XXCXX', '.XXX.', '..X..'], x, y, 4.4, { X: PAL.violet, C: PAL.yellow });
+      if (bee && bee.carry) { x = bee.x; y = bee.y + 20; }
+      if (t < TAKE + 3) sprite(ctx, ['..X..', '.XXX.', 'XXCXX', '.XXX.', '..X..'], x, y, lerp(4.4, 5.4, toHead) * pop, { X: PAL.violet, C: PAL.yellow }, 1 - seg(t, TAKE + 2.2, TAKE + 3));
+    }
+    if (bee) {
+      const flap = Math.floor(t * (bee.perch ? 6 : 18)) % 2, rows = flap ? BEE : BEE2;
+      sprite(ctx, bee.dir < 0 ? flip(rows) : rows, bee.x, bee.y, 5, { Y: PAL.yellow, K: '#111', W: '#a9dcff' }, 1 - seg(t, TAKE + 2.2, TAKE + 3));
     }
     // butterflies leave the bloomed field
     for (let i = 0; i < 4; i++) {

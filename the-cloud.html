@@ -6,16 +6,20 @@
 <title>The Cloud</title>
 </head>
 <body>
-<script src="sfx.js?v=7"></script>
-<script src="engine2.js?v=7"></script>
+<script src="sfx.js?v=8"></script>
+<script src="engine2.js?v=8"></script>
 <script>
 // A little rain cloud follows Bo everywhere. Nothing shakes it off: walking away, running,
 // hiding, swatting. When Bo finally sits still in the rain, something green comes up,
 // the cloud clears, and Bo walks on. (Season 1, rebuilt on engine 2; the original is in legacy/.)
+// Button: a tiny new cloud drops in over Bo. Bo braces for rain... but it drifts over to the
+// sprout, gives it one drop, and the sprout waves its leaf. Bo laughs and hops off.
 const { PAL, SPRITES, sprite, lerp, seg, sine, outBack, clamp, hash, spring, mix, GROUND, BODY_H } = Shorts;
 const V = 120, GREY = '#a7abb2', RAIN = '#7f94b0';
 const PUFFS = [[-62, 12, 30], [-28, -8, 40], [18, -18, 46], [58, 0, 36], [82, 18, 24], [0, 20, 36], [-40, 22, 28], [40, 22, 30]];
-const SIT = 19.8, SPROUT = 22, CLEAR = 28.2, LEAVE = 32.2;
+const SIT = 19.8, SPROUT = 22, CLEAR = 28.2, LEAVE = 38.1;
+// the tiny cloud: drops in over Bo, drifts to the sprout, one drop, waves goodbye, floats off
+const TINY = 33.0, DRIFT = 35.0, DROP = 35.9, WAVE = 36.3, AWAY = 36.6;
 const CLOUD_Y = 300;
 
 Shorts.play({
@@ -29,7 +33,7 @@ Shorts.play({
     [16.6, 18.2, 'shoo! *shoo!*'],
     [20.6, 22.2, 'fine. you win.'],
     [25.0, 26.4, 'oh!'],
-    [29.0, 35.4, 'sit with it. *something grows.*'],
+    [29.0, 33.0, 'sit with it. *something grows.*'],
   ],
   init(S) {
     S.bo = S.addChar({ x: 0, walk: V });
@@ -69,7 +73,19 @@ Shorts.play({
       [28.6, { eye: 'happy' }],
       [30.4, { sit: 0, tilt: 0, lookY: 0, lookX: 0 }],
       [30.9, { crouch: .2 }], [31.15, { crouch: 0 }], [31.15, () => bo.jump(0, -460)],
+      [31.6, { x: S.sproutX + 100, speed: 110, accel: 450, eye: 'open' }],   // walks on past the sprout
+      [TINY + .2, () => S.sfx('poof', {}, S.sproutX + 100)],
+      [33.6, { lookY: -1, lookX: .1, tilt: -.1, eye: 'wide' }], [33.7, () => S.sfx('slip', {}, bo.x)],   // oh no. not again
+      [34.5, { eye: 'squeeze', crouch: .14, lookY: -.4 }],                // braces for the rain...
+      [35.3, { eye: 'open', crouch: 0, lookY: -1 }],                      // ...nothing?
+      [35.6, { face: -1, lookY: -.3, lookX: .4, tilt: 0 }],               // it's gone over to the sprout
+      [WAVE - .05, () => S.sfx('drip', { k: 1.1 }, S.sproutX)],
+      [WAVE + .1, () => S.sfx('twinkle', { pitch: 1568, gain: .7 }, S.sproutX)],
+      [AWAY, () => S.sfx('whoosh', { d: .7, v: .5 }, S.sproutX)],
+      [36.6, { eye: 'happy', lookY: .3 }], [36.7, () => S.sfx('laugh', { n: 3 }, bo.x)],
+      [37.3, { face: 1, crouch: .2, lookX: 0, lookY: 0 }], [37.55, { crouch: 0 }], [37.55, () => bo.jump(0, -460)],
       [LEAVE, { x: 1e6, speed: V, accel: 450, eye: 'open' }],
+      [LEAVE + .1, () => S.sfx('hum', { notes: [2, 4, 5, 7, 5], gap: .3, g: .04 }, bo.x)],
     ]);
     if (t > SIT && t < 30.4) bo.cmd.crouch = .06 + .025 * Math.sin(t * 2.2);   // tired breathing
     if (t > SIT && t < 30.4) { S.breath += dt; if (S.breath > 3.1) { S.breath = 0; S.sfx('breathOut', { d: .9 }, bo.x); } }
@@ -111,8 +127,8 @@ Shorts.play({
     });
     S.splashes = S.splashes.filter(s => t - s.t0 < .22);
 
-    // frame Bo and the sprout once it starts
-    if (t > SPROUT - 1 && t < LEAVE) { S.camGoal.x = bo.x + 60; S.camGoal.z = 1.12; S.camGoal.kz = 1.5; }
+    // frame Bo and the sprout once it starts; for the tiny cloud, hold on the sprout and Bo
+    if (t > SPROUT - 1 && t < LEAVE) { S.camGoal.x = t > TINY ? S.sproutX + 70 : bo.x + 60; S.camGoal.z = 1.12; S.camGoal.kz = 1.5; if (t > TINY) S.camGoal.kx = 2; }
   },
   drawSky(S, ctx, t, v) {
     // once the cloud has gone, a little pixel sun
@@ -130,14 +146,17 @@ Shorts.play({
       ctx.strokeStyle = PAL.green; ctx.fillStyle = PAL.green; ctx.lineWidth = 5;
       ctx.beginPath(); ctx.moveTo(sx, GROUND + 1); ctx.quadraticCurveTo(sx - 6, GROUND - h * .5, sx + sway, GROUND - h); ctx.stroke();
       const lf = outBack(seg(t, 23.8, 25.4)) * grow, tx = sx + sway, ty = GROUND - h;
+      // after the tiny cloud's drop, the right leaf waves at Bo
+      const wv = t > WAVE && t < WAVE + 1.3 ? Math.sin((t - WAVE) * 15) * 16 * (1 - seg(t, WAVE + .7, WAVE + 1.3)) : 0;
       if (lf > 0) for (const s of [-1, 1]) {
+        const w = s > 0 ? wv : 0;
         ctx.beginPath(); ctx.moveTo(tx, ty);
-        ctx.quadraticCurveTo(tx + s * 12 * lf, ty - 22 * lf, tx + s * 34 * lf, ty - 16 * lf);
-        ctx.quadraticCurveTo(tx + s * 20 * lf, ty + 4 * lf, tx, ty);
+        ctx.quadraticCurveTo(tx + s * 12 * lf, ty - 22 * lf - w, tx + s * 34 * lf, ty - 16 * lf - w * 1.8);
+        ctx.quadraticCurveTo(tx + s * 20 * lf, ty + 4 * lf - w, tx, ty);
         ctx.fill();
       }
-      // and after the rain, a flower
-      const fl = outBack(seg(t, CLEAR + .8, CLEAR + 1.6));
+      // and after the rain, a flower (it does a little bounce when the drop lands)
+      const fl = outBack(seg(t, CLEAR + .8, CLEAR + 1.6)) * (1 + .35 * Math.sin(Math.PI * seg(t, WAVE - .05, WAVE + .35)));
       if (fl > .05) sprite(ctx, ['..X..', '.XXX.', 'XXCXX', '.XXX.', '..X..'], tx, ty - 4, 6 * fl, { X: PAL.pink, C: PAL.yellow });
     }
   },
@@ -150,6 +169,30 @@ Shorts.play({
         ctx.beginPath(); ctx.moveTo(s.x + side * 3, s.y - 2);
         ctx.lineTo(s.x + side * (6 + 12 * u), s.y - 6 - 10 * u + 14 * u * u); ctx.stroke();
       }
+    }
+    // the tiny cloud: a little white puff with a face, outlined so it reads on white paper
+    if (t > TINY && t < AWAY + 2.2) {
+      const sx = S.sproutX, a = sine(seg(t, TINY, TINY + .9)), d = sine(seg(t, DRIFT, DRIFT + .8)), u = seg(t, AWAY, AWAY + 2.2);
+      const x = lerp(sx + 100, sx + 10, d) - 420 * u * u + Math.sin(t * 2.6) * 5;
+      const y = lerp(-220, 330, a) - 700 * u * u + Math.sin(t * 3.1) * 6 - 10 * Math.sin(Math.PI * seg(t, DROP - .2, DROP + .1));
+      const k = .45 * (1 + .12 * Math.sin(Math.PI * seg(t, DROP - .2, DROP + .1)));   // squeezes out the drop
+      ctx.lineWidth = 10; ctx.strokeStyle = '#111';
+      for (const [ox, oy, r] of PUFFS) { ctx.beginPath(); ctx.arc(x + ox * k, y + oy * k, r * k, 0, Math.PI * 2); ctx.stroke(); }
+      ctx.fillStyle = '#f4f8fd';
+      for (const [ox, oy, r] of PUFFS) { ctx.beginPath(); ctx.arc(x + ox * k, y + oy * k, r * k, 0, Math.PI * 2); ctx.fill(); }
+      ctx.fillStyle = '#111';
+      const happy = t > WAVE;
+      for (const ex of [-9, 9]) {
+        if (happy) { ctx.lineWidth = 3; ctx.beginPath(); ctx.arc(x + ex, y + 6, 4, Math.PI * 1.1, Math.PI * 1.9); ctx.stroke(); }
+        else { ctx.beginPath(); ctx.arc(x + ex, y + 3, 3.2, 0, Math.PI * 2); ctx.fill(); }
+      }
+      // one drop, onto the sprout
+      const p = seg(t, DROP, WAVE - .05);
+      if (p > 0 && p < 1) {
+        const h = 78 * 1.35, dy = lerp(y + 26, GROUND - h - 6, p * p);
+        ctx.strokeStyle = RAIN; ctx.lineWidth = 4; ctx.beginPath(); ctx.moveTo(x, dy - 16); ctx.lineTo(x, dy); ctx.stroke();
+      }
+      ctx.strokeStyle = '#111';
     }
     const cl = S.cloud, cx = cl.x.x, cy = cl.y.x + cl.dodge.x;
     ctx.fillStyle = mix(GREY, '#e9eef6', sine(seg(t, CLEAR - .4, CLEAR + .8)));

@@ -6,16 +6,18 @@
 <title>Lost</title>
 </head>
 <body>
-<script src="sfx.js?v=7"></script>
-<script src="engine2.js?v=7"></script>
+<script src="sfx.js?v=8"></script>
+<script src="engine2.js?v=8"></script>
 <script>
 // Morning. Bo gets to the key hook by the door: empty. Cushions fly, the drawer empties, the rug
 // lifts, the plant gets searched, the clock races. Bo finally stops and breathes, and hears a tiny
 // jingle: the keys have been hanging off Bo's hair the whole time (watch from the first frame).
+// Button: out on the doorstep Bo freezes. "...where's my phone?" Something rings in the mess.
+// Bo looks up at its hair, hopefully: just keys. A deadpan beat, a laugh, and Bo goes anyway.
 const { PAL, SPRITES, sprite, lerp, seg, sine, outBack, clamp, hash, spring, mix, GROUND, GRAV } = Shorts;
 const V = 150, HOUSE_A = 660, HOUSE_B = 1880, TOP = GROUND - 430;
-const HOOK = 760, CUSH = 960, DRAWER = 1170, RUG = 1370, PLANT = 1580, DOOR = 1780, CLOCK = 1270;
-const PANIC = [16.4, 19.8], CALM = 19.8, NOTICE = 23.4, OPEN = 28.6, LEAVE = 29.2, LOOP = LEAVE + 7.4;
+const HOOK = 760, CUSH = 960, DRAWER = 1170, RUG = 1370, PLANT = 1580, DOOR = 1780, CLOCK = 1270, STEP = 1960, PHONE_X = 1500;
+const PANIC = [16.4, 19.8], CALM = 19.8, NOTICE = 23.4, OPEN = 28.6, PHONE = 33.2, LEAVE = 37.8, LOOP = LEAVE + 7.2;
 const KEY = ['XXX....', 'X.XXXXX', 'XXX.X.X'];
 const ITEMS = {
   cushion: { rows: ['.XXXX.', 'XXXXXX', 'XXXXXX', '.XXXX.'], px: 9 },
@@ -47,7 +49,8 @@ Shorts.play({
     [20.4, 22.0, 'okay. *breathe.*'],
     [23.8, 24.6, '...hm?'],
     [25.2, 26.2, '*oh.*'],
-    [28.6, 35.0, "slow down. *it's usually closer than you think.*"],
+    [29.0, 32.8, "slow down. *it's usually closer than you think.*"],
+    [PHONE + .2, PHONE + 1.9, "...where's my *phone?*"],
   ],
   init(S) {
     S.bo = S.addChar({ x: 0, walk: V });
@@ -79,8 +82,18 @@ Shorts.play({
       [26.4, { sit: 0, tilt: 0, lookY: 0, lookX: 0 }],
       [26.8, { crouch: .2 }], [27.05, { crouch: 0, eye: 'happy' }], [27.05, () => bo.jump(0, -460)],
       [27.8, { x: DOOR - 40, speed: 170, accel: 500, eye: 'open' }],
-      [OPEN, () => { S.door.v += 6; S.sfx('door', {}, DOOR); S.sfx('birds', { d: 6, g: 1 }); }],
-      [LEAVE, { x: 1e6, speed: V, accel: 450 }],
+      [OPEN, () => { S.door.v += 6; S.sfx('door', {}, DOOR); S.sfx('birds', { d: LOOP - OPEN, g: 1 }); }],
+      [29.2, { x: STEP, speed: 170, accel: 500 }],                           // out onto the doorstep
+      [PHONE, { eye: 'wide', tilt: -.12 }], [PHONE, () => S.sfx('slip', {}, bo.x)],   // ...wait
+      [PHONE + 1.0, { face: -1, tilt: 0, lookX: .4 }],                        // looks back at the mess
+      [PHONE + 1.4, () => S.sfx('ring', {}, PHONE_X)], [PHONE + 1.9, () => S.sfx('ring', {}, PHONE_X)],
+      [PHONE + 2.3, { face: 1, lookY: -1, lookX: -.5, eye: 'open' }],         // hopefully, up at the hair
+      [PHONE + 2.4, () => { S.keys.a.v += 4; S.sfx('jingle', { n: 4, gain: .7 }, bo.x); }],
+      [PHONE + 3.3, { eye: 'flat', lookY: -.2, lookX: 0 }],                   // just keys
+      [PHONE + 3.4, () => S.sfx('breathOut', { d: .7 }, bo.x)],
+      [PHONE + 4.0, { eye: 'happy', lookY: 0 }], [PHONE + 4.0, () => S.sfx('laugh', { n: 4 }, bo.x)],
+      [PHONE + 4.1, { crouch: .2 }], [PHONE + 4.35, { crouch: 0 }], [PHONE + 4.35, () => bo.jump(0, -440)],
+      [LEAVE, { x: 1e6, speed: V, accel: 450, eye: 'open' }],
     ]);
     // things fly out of wherever Bo is searching
     TOSSES.forEach(([at, k, x, col, vx, vy], i) => { if (t >= at) S.once('toss' + i, () => { S.items.push({ k, x, y: GROUND - 80, vx, vy, rot: 0, spin: (hash(i) - .5) * 14, col, rest: false }); S.sfx('toss', { pitch: 260 + hash(i) * 200 }, x); }); });
@@ -105,8 +118,12 @@ Shorts.play({
     S.sweat = S.sweat.filter(d => t - d.t0 < .8);
     S.once('amb', () => S.sfx('room', { d: LOOP, g: .8 }));
 
-    if (t > 3.4 && t < LEAVE + .6) { S.camGoal.x = clamp(bo.x, HOOK + 160, DOOR - 220); S.camGoal.z = .86; S.camGoal.kx = t > PANIC[0] && t < CALM ? 3 : 2; }
+    if (t > 3.4 && t < 29.4) { S.camGoal.x = clamp(bo.x, HOOK + 160, DOOR - 220); S.camGoal.z = .86; S.camGoal.kx = t > PANIC[0] && t < CALM ? 3 : 2; }
     if (t > CALM && t < 26.4) { S.camGoal.x = bo.x; S.camGoal.z = 1.25; S.camGoal.kz = 1.2; }
+    // on the doorstep: Bo with the open door and the mess behind
+    if (t > 29.4 && t < LEAVE + .6) { S.camGoal.x = bo.x - 110; S.camGoal.z = PHONE < t ? 1.12 : 1; S.camGoal.kx = 2; S.camGoal.kz = 1.2; }
+    // when Bo looks back, so do we: there's the phone, ringing by the plant
+    if (t > PHONE + .9 && t < PHONE + 2.5) { S.camGoal.x = (PHONE_X + bo.x) / 2 + 30; S.camGoal.kx = 4; }
   },
   drawSky(S, ctx, t, v) {
     ctx.fillStyle = '#fff6dc'; ctx.fillRect(HOUSE_A, TOP, HOUSE_B - HOUSE_A, GROUND - TOP);
@@ -128,6 +145,10 @@ Shorts.play({
     if (t < 8.7) sprite(ctx, ITEMS.cushion.rows, CUSH - 40, GROUND - 74, 9, { X: PAL.pink });
     if (t < 9.0) sprite(ctx, ITEMS.cushion.rows, CUSH + 30, GROUND - 74, 9, { X: PAL.sky });
     if (t < 9.3) sprite(ctx, ITEMS.cushion.rows, CUSH - 5, GROUND - 104, 9, { X: PAL.yellow });
+    // the phone, on the floor by the plant the whole time; it buzzes when it rings
+    const ringing = (t > PHONE + 1.4 && t < PHONE + 1.75) || (t > PHONE + 1.9 && t < PHONE + 2.25), bz = ringing ? Math.sin(t * 90) * 3 : 0;
+    sprite(ctx, ['XXXXXXX', 'XWWWWWX', 'XXXXXXX'], PHONE_X + bz, GROUND - 13, 7, { X: '#111', W: ringing ? PAL.sky : '#5a6b80' });
+    if (ringing) { ctx.lineWidth = 3; for (const s of [-1, 1]) for (let k = 0; k < 2; k++) { ctx.beginPath(); ctx.arc(PHONE_X, GROUND - 14, 34 + k * 14, s > 0 ? -.6 : Math.PI - .2, s > 0 ? .2 : Math.PI + .6); ctx.stroke(); } }
     // the chest of drawers; the top drawer slides open
     ctx.fillStyle = PAL.lav; ctx.beginPath(); ctx.roundRect(DRAWER - 70, GROUND - 150, 140, 150, 6); ctx.fill(); ctx.stroke();
     const dx = S.drawer.x * 46; ctx.fillStyle = PAL.violet;

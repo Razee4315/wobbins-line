@@ -6,13 +6,18 @@
 <title>Battery</title>
 </head>
 <body>
-<script src="sfx.js?v=7"></script>
-<script src="engine2.js?v=7"></script>
+<script src="sfx.js?v=8"></script>
+<script src="engine2.js?v=8"></script>
 <script>
 // A party: lights, music, friends. Bo loves it, and Bo's little battery drains with every
 // "hey!!". At 0% Bo slips away to a quiet tree and charges back up while the party plays on.
+// Button: two friends notice, tiptoe over and sit quietly beside Bo. "shh..." "quiet party?"
+// Bo, fully charged: "yes." Then the three of them skip off together.
 const { PAL, SPRITES, sprite, lerp, seg, sine, outBack, clamp, hash, spring, mix, GROUND } = Shorts;
 const V = 130, POLE_A = 820, POLE_B = 1300, BOOM = 1090, TREE = 1720, SEAT = 1610;
+const QUIET = 24.0, WAKE = 29.4, LEAVE = 33.6;
+// the two friends who come over: [friend, seat x]
+const SITTERS = [[0, 1350], [3, 1478]];
 const SPOTS = [940, 1040, 1140, 1240];
 // battery level changes: [time, bars]
 const LEVELS = [[0, 4], [9.9, 3], [12.6, 2], [15.2, 1], [17.4, 0], [25.6, 1], [26.8, 2], [28.0, 3], [29.2, 4]];
@@ -28,15 +33,18 @@ Shorts.play({
   title: 'Battery',
   accent: PAL.lime,
   paper: '#f8f5ff',
-  loopAfter: 37.8,
+  loopAfter: LEAVE + 7.0,
   captions: [
     [1.4, 3.6, 'party tonight!'],
     [7.4, 9.2, '*fun!*'],
     [12.8, 14.4, 'still fun...'],
     [15.4, 17.0, 'so. much. fun.'],
     [17.6, 19.0, '*0%*'],
-    [24.8, 27.0, 'recharging...'],
-    [31.0, 36.2, "it's okay to need *quiet.*"],
+    [24.6, 26.2, 'recharging...'],
+    [26.9, 27.9, '*shh...*', null, { pitch: 1.3, g: .6 }],
+    [30.2, 31.3, 'quiet party?', null, { pitch: 1.2, g: .7 }],
+    [31.6, 32.4, '*yes.*'],
+    [33.2, 38.6, "it's okay to need quiet. *real friends get it.*"],
   ],
   init(S) {
     const look = [
@@ -69,9 +77,13 @@ Shorts.play({
       [17.4, { eye: 'flat', sit: .6, tilt: .16, lookX: 0 }],                   // empty
       [18.6, { sit: 0, tilt: .08, x: SEAT, speed: 135, accel: 300, eye: 'flat' }],   // slipping away
       [23.9, { sit: 1.1, tilt: .05, eye: 'closed', crouch: .05 }],
-      [29.4, { eye: 'open', crouch: 0 }], [29.8, { eye: 'happy', sit: 0, tilt: 0 }],
-      [30.2, { crouch: .2 }], [30.45, { crouch: 0 }], [30.45, () => bo.jump(0, -480)],
-      [31.0, { x: 1e6, speed: V, accel: 450, eye: 'open', lookX: 0, lookY: 0 }],
+      [WAKE, { eye: 'open', crouch: 0 }],
+      [29.8, { face: -1, lookX: .5, eye: 'wide' }],                           // oh! company
+      [30.3, { eye: 'happy', lookX: .3 }],
+      [31.6, { sit: 0, tilt: 0 }], [31.7, () => { const B = bo.top(); S.burst(B.x - 60, B.y - 20, 6, [PAL.pink], { speed: 160, gravity: -60, size: 22, life: 1.4, shape: 'heart' }); S.sfx('sparkle', { n: 4 }, bo.x); }],
+      [32.6, { face: 1, crouch: .2 }], [32.85, { crouch: 0 }], [32.85, () => bo.jump(0, -480)],
+      [LEAVE, { x: 1e6, speed: V, accel: 450, eye: 'open', lookX: 0, lookY: 0 }],
+      [LEAVE + .1, () => S.sfx('hum', { notes: [2, 4, 5, 7, 5], gap: .3, g: .04 }, bo.x)],
     ]);
     if (t > 7.8 && t < 15.2) bo.cmd.crouch = .14 * pulse;                    // dancing
     if (t > 15.2 && t < 17.4) bo.cmd.tilt = .05 * Math.sin(t * 34);         // forced smile, shaking
@@ -83,7 +95,21 @@ Shorts.play({
 
     // friends dance on the beat, and keep coming over to say hi
     S.friends.forEach((f, i) => {
-      const v = VISITS.filter(([w, a, b]) => w === i && t >= a && t < b).pop();
+      const v = VISITS.filter(([w, a, b]) => w === i && t >= a && t < b).pop(), sitter = SITTERS.find(([w]) => w === i);
+      if (sitter && t >= QUIET) {
+        // tiptoe over, sit quietly beside Bo, wake up happy, then skip off ahead
+        const [, seat] = sitter, k = SITTERS.indexOf(sitter);
+        S.plan(f, t, [
+          [QUIET, { x: seat, speed: 115, accel: 300, face: 1, eye: 'happy', crouch: .1, tilt: 0 }],
+          [27.6 + k * .3, { sit: 1.1, crouch: 0, eye: 'closed' }],
+          [29.9 + k * .2, { eye: 'happy' }],
+          [31.6, { sit: 0 }],
+          [32.7 + k * .12, { crouch: .2 }], [32.95 + k * .12, { crouch: 0 }], [32.95 + k * .12, () => f.jump(0, -420)],
+          [LEAVE - .2 + k * .3, { x: 1e6, speed: 290, accel: 700, eye: 'happy' }],
+        ]);
+        if (t > LEAVE + .4 && f.mode === 'ground' && hash(Math.floor(t * 2.5) + i) > .7) S.once(`skip${i}:${Math.floor(t * 2.5)}`, () => f.jump(f.vx, -300));
+        return;
+      }
       if (v) {
         Object.assign(f.cmd, { x: v[3], speed: 260, accel: 900, face: -1, eye: 'happy', crouch: 0, tilt: 0 });
         const k = `v${i}-${v[1]}`;
@@ -109,7 +135,7 @@ Shorts.play({
     if (t > 24.6) S.once('ff', () => S.sfx('twinkle', { pitch: 2093, gain: .6 }, TREE));
 
     if (t > 5 && t < 18.6) { S.camGoal.x = 1040; S.camGoal.z = .9; S.camGoal.kx = 2.5; }
-    if (t > 23 && t < 31) { S.camGoal.x = 1520; S.camGoal.z = 1.05; S.camGoal.kx = 2; }
+    if (t > 23 && t < LEAVE) { S.camGoal.x = t > 25.4 ? 1500 : 1540; S.camGoal.z = 1.05; S.camGoal.kx = 2; }
   },
   drawSky(S, ctx, t, v) {
     const w = 2 * Math.PI * Math.round(S.T / Math.PI) / S.T;              // ~2 rad/s, a whole number of twinkles per loop

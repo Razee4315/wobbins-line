@@ -6,22 +6,26 @@
 <title>Rain Check</title>
 </head>
 <body>
-<script src="sfx.js?v=7"></script>
-<script src="engine2.js?v=7"></script>
+<script src="sfx.js?v=8"></script>
+<script src="engine2.js?v=8"></script>
 <script>
 // An invite floats down. Bo's tired; it flies back as a paper plane, and Bo curls up in the cozy
 // chair. Night, distant party lights, and it gets a bit lonely. Next morning, another invite. Bo goes.
+// Button: Bo hops onto the dance floor and dances terribly, loving it. The friends stare... then
+// cheer "nice moves!" and copy it. Then the whole party skips off ahead, with Bo hopping after.
 const { PAL, SPRITES, sprite, zzz, lerp, seg, sine, outBack, clamp, hash, spring, mix, GROUND } = Shorts;
 const V = 130, SPOT = 760, CHAIR = 735, LAMP = 860, PARTY = [1480, 1590, 1700], POLE_A = 1420, POLE_B = 1760;
 const MAIL = ['XXXXXXX', 'XX...XX', 'X.X.X.X', 'X..X..X', 'XXXXXXX'], HAT = ['...X...', '..XYX..', '.XYXYX.', 'XYXYXYX', 'XXXXXXX'];
 const PLANE = ['X.......', 'XXX.....', 'XXXXXX..', 'XXXXXXXX', 'XXXXXX..', 'XXX.....', 'X.......'];
 const ARRIVE = 27.5;    // measured: Bo reaches the party
+// the button, in seconds after Bo arrives: onto the floor, the bad dance, the cheer, everyone copies, off they go
+const FLOOR = 1500, STEP = 7.2, BAD = 7.9, CHEER = 9.0, COPY = 9.3, RUN = 10.6, LEAVE = 11.6;
 const sky = t => ({ eve: sine(seg(t, 11, 14)) * (1 - sine(seg(t, 14, 15.5))) + Math.max(0, 1 - Math.abs(t - 19.9) / .8) * .8, nite: sine(seg(t, 13.5, 15.5)) * (1 - sine(seg(t, 19.2, 20.6))) });
 
 Shorts.play({
   title: 'Rain Check',
   accent: PAL.orange,
-  loopAfter: ARRIVE + 14.0,
+  loopAfter: ARRIVE + LEAVE + 8.0,   // long enough that the party poles are out of a 16:9 frame at the seam
   paperAt: t => { const s = sky(t); return mix(mix('#ffffff', '#ffe2c8', s.eve), '#d6d0f0', s.nite * .95); },
   captions: [
     [6.0, 7.8, 'a party invite!'],
@@ -32,7 +36,8 @@ Shorts.play({
     [21.0, 22.4, 'again?'],
     [22.6, 24.2, 'okay. *just this once.*'],
     [ARRIVE + .6, ARRIVE + 2.4, '*oh.* this is nice.'],
-    [ARRIVE + 3.4, ARRIVE + 8.6, 'not every plan needs a rain check. *sometimes, go anyway.*'],
+    [ARRIVE + 2.8, ARRIVE + 7.4, 'not every plan needs a rain check. *sometimes, go anyway.*'],
+    [ARRIVE + CHEER, ARRIVE + CHEER + 1.2, '*nice moves!*', null, { pitch: 1.3 }],
   ],
   init(S) {
     const look = [{ hair: 'curl', blush: PAL.pink, fill: '#ffe9f2' }, { hair: 'antenna', hairColor: PAL.blue, fill: '#e6f0ff' }, { hairColor: PAL.orange, blush: '#ffb08a', fill: '#fff4d6' }];
@@ -65,9 +70,20 @@ Shorts.play({
     }
     if (S.arrived) {
       const d = t - S.arrived;
-      if (d < 3.6) { c.eye = 'happy'; c.crouch = .14 * Math.max(0, 1 - (t - S.beatT0) / .18); }
-      else Object.assign(c, { x: 1e6, speed: V, accel: 450, eye: 'open', crouch: 0 });
+      if (d < STEP) { c.eye = 'happy'; c.crouch = .14 * Math.max(0, 1 - (t - S.beatT0) / .18); }
+      else if (d < BAD) Object.assign(c, { x: FLOOR, speed: 320, accel: 1000, eye: 'happy', crouch: 0 });   // onto the dance floor
+      else if (d < RUN) {
+        // the worst dance in the world, and Bo loves it
+        const k = Math.floor(t / .45);
+        Object.assign(c, { tilt: .32 * Math.sin(t * 9), face: k % 2 ? -1 : 1, crouch: .24 * Math.max(0, 1 - (t - S.beatT0) / .2), eye: k % 3 === 2 ? 'squeeze' : 'happy' });
+        if (d > 8.5) S.once('spin', () => { bo.jump(0, -520, 2 * Math.PI / .4); S.sfx('whoosh', { d: .4, v: .4 }, bo.x); });
+      } else Object.assign(c, { tilt: 0, face: 1, crouch: 0, eye: 'happy' });
+      if (d > STEP) c.x = FLOOR;
+      if (d > RUN + .3 && d < RUN + .55) c.crouch = .2;
+      if (d > RUN + .55) S.once('endHop', () => bo.jump(0, -460));
+      if (d > LEAVE) { Object.assign(c, { x: 1e6, speed: V, accel: 450, eye: 'open', crouch: 0 }); S.once('hum', () => S.sfx('hum', { notes: [2, 4, 5, 7, 5], gap: .3, g: .04 }, bo.x)); }
       if (d > 3.4) S.once('swell', () => S.sfx('swell', { root: 523.25 }));
+      if (d > CHEER) S.once('nice', () => { S.sfx('laugh', { n: 4, k: 1.3 }, PARTY[1]); S.sfx('sparkle', { n: 6 }, FLOOR); });
     }
     // the party: dancing on the beat, faint at night, close and loud in the morning
     const party = (t > 11.5 && t < 19.5) || t > 23.5;
@@ -77,7 +93,17 @@ Shorts.play({
       if (party) { const near = clamp(1 - Math.abs(bo.x - PARTY[1]) / 1100); S.sfx('thump', { g: .1 + .7 * near * near }, PARTY[1]); }
       if (party && t < 19.5 && S.beatN % 3 === 0) S.sfx('pop', { pitch: 900 + hash(S.beatN) * 500, g: .03 }, PARTY[1]);
     }
-    S.friends.forEach((f, i) => { f.cmd.crouch = party ? .14 * Math.max(0, 1 - ((t - S.beatT0 + i * .1) % .5) / .2) : 0; f.cmd.eye = 'happy'; if (party && S.beatN % 4 === i && t - S.beatT0 < dt * 1.5) S.once('hop' + S.beatN, () => f.jump(0, -260)); });
+    const btn = S.arrived ? t - S.arrived : -1;
+    S.friends.forEach((f, i) => { f.cmd.crouch = party ? .14 * Math.max(0, 1 - ((t - S.beatT0 + i * .1) % .5) / .2) : 0; f.cmd.eye = 'happy'; if (party && btn < BAD && S.beatN % 4 === i && t - S.beatT0 < dt * 1.5) S.once('hop' + S.beatN, () => f.jump(0, -260)); });
+    // the button: make room, stare at Bo's dance, cheer, copy it, then skip off ahead
+    if (btn > STEP) S.friends.forEach((f, i) => {
+      f.cmd.x = PARTY[i] + 140;
+      if (btn > BAD + .2 && btn < CHEER) Object.assign(f.cmd, { crouch: 0, eye: 'wide', face: -1 });
+      if (btn > CHEER) S.once('cheer2' + i, () => { f.jump(0, -420 - i * 20); const T = f.top(); S.burst(T.x, T.y - 30, 3, [PAL.pink], { speed: 140, gravity: -60, size: 20, life: 1.2, shape: 'heart' }); });
+      if (btn > COPY && btn < RUN) Object.assign(f.cmd, { tilt: .3 * Math.sin(t * 9 + i * 1.3), face: Math.floor(t / .45 + i) % 2 ? 1 : -1, crouch: .2 * Math.max(0, 1 - ((t - S.beatT0 + i * .1) % .5) / .2) });
+      if (btn > RUN) Object.assign(f.cmd, { tilt: 0, face: 1, x: 1e6, speed: 290, accel: 700 });
+      if (btn > RUN + .5 && f.mode === 'ground' && hash(Math.floor(t * 2.5) + i) > .7) S.once(`skip${i}:${Math.floor(t * 2.5)}`, () => f.jump(f.vx, -300));
+    });
     // night sounds, snoring, morning birds, the second invite
     if (sky(t).nite > .5) { S.cricket += dt; if (S.cricket > 2.4) { S.cricket = 0; S.sfx('chirp', { k: .62, gain: .35 }); } }
     if (t > 17.8 && t < 20.4) { S.snore += dt; if (S.snore >= 1.7) { S.snore = 0; S.sfx('snore', {}, bo.x); } }
@@ -87,6 +113,7 @@ Shorts.play({
 
     if (t > 5 && t < 13) { S.camGoal.x = 820; S.camGoal.z = .95; }
     else if (t >= 13 && t < 23.6) { S.camGoal.x = 1060; S.camGoal.z = .72; S.camGoal.kx = 1.6; }
+    if (btn > STEP - .4 && btn < LEAVE) { S.camGoal.x = 1640; S.camGoal.z = .92; S.camGoal.kx = 2; S.camGoal.kz = 1.2; }
   },
   drawSky(S, ctx, t, v) {
     const s = sky(t);

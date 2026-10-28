@@ -6,11 +6,13 @@
 <title>Tomorrow</title>
 </head>
 <body>
-<script src="sfx.js?v=7"></script>
-<script src="engine2.js?v=7"></script>
+<script src="sfx.js?v=8"></script>
+<script src="engine2.js?v=8"></script>
 <script>
 // Every morning Bo stretches, eyes the flag, gets ready... and sits back down. Tomorrow.
 // Each night the flag runs a little further and the grass grows round Bo's feet. Then one step.
+// Button: walking on, a second flag pops up ahead. Bo's old habit kicks in (starts to sit)...
+// then Bo springs back up: "today." and jogs straight to it.
 const { PAL, SPRITES, sprite, zzz, lerp, seg, sine, outBack, clamp, hash, spring, mix, GROUND } = Shorts;
 const V = 130, SPOT = 750, START = 805, ARRIVE = 1270;
 const NIGHTS = [[9.2, 11.0], [14.0, 15.2], [17.4, 18.8]];
@@ -21,11 +23,13 @@ const flagX = t => 1250 + 250 * sine(seg(t, 9.8, 10.8)) + 250 * sine(seg(t, 14.4
 const flagRun = t => [[9.8, 10.8], [14.4, 15.2], [17.8, 18.8], [24.0, 26.6]].some(([a, b]) => t > a && t < b);
 const GRASS = Array.from({ length: 9 }, (_, i) => 690 + i * 22 + hash(i) * 8);
 const ARRIVED = 28.22;  // measured: when Bo reaches the flag
+// the button, timed from the arrival: a new flag pops up, Bo nearly sits... then goes
+const LOOK = 1720, FLAG2 = 2090, POP = 4.4, GO = 6.0, JOG = 6.8, LEAVE = 9.0;
 
 Shorts.play({
   title: 'Tomorrow',
   accent: PAL.orange,
-  loopAfter: ARRIVED + 8.6,
+  loopAfter: ARRIVED + LEAVE + 6.8,
   paperAt: t => {
     const dawn = Math.max(0, ...NIGHTS.map(([, b]) => Math.max(0, 1 - Math.abs(t - b) / .7)));
     return mix(mix('#ffffff', '#ffe4cc', dawn * .8), '#d8d2f1', night(t) * .95);
@@ -37,7 +41,8 @@ Shorts.play({
     [16.7, 18.0, '...tomorrow.'],
     [19.9, 21.6, "it's further every day."],
     [22.4, 24.0, 'just *one step.*'],
-    [ARRIVED + .4, ARRIVED + 5.4, "you don't have to be ready. *just start.*"],
+    [ARRIVED + .4, ARRIVED + 4.4, 'ready or not... *just start.*'],
+    [ARRIVED + GO + .1, ARRIVED + GO + 1.3, '*today.*'],
   ],
   init(S) { S.bo = S.addChar({ x: 0, walk: V }); S.snore = 1.2; S.steps0 = null; S.stepSeen = 0; S.pt = 0; S.arrived = null; },
   update(S, t, dt) {
@@ -76,7 +81,20 @@ Shorts.play({
       const d = t - S.arrived, c = bo.cmd;
       if (d > .1 && d < .3) c.crouch = .2;
       if (d > .3) { c.crouch = 0; S.once('hop', () => bo.jump(0, -540)); c.eye = 'happy'; c.lookY = -.6; c.lookX = .5; }
-      if (d > 1.3) Object.assign(c, { x: 1e6, speed: V, accel: 450, eye: 'open', lookX: 0, lookY: 0 });
+      if (d > 1.3) Object.assign(c, { x: LOOK, speed: V, accel: 450, eye: 'open', lookX: 0, lookY: 0 });
+      S.plan(bo, d, [
+        [POP, () => S.sfx('pop', { pitch: 520, g: .08 }, FLAG2)],
+        [POP + .4, { eye: 'wide', lookX: .7, lookY: -.2 }],                 // ...another one
+        [POP + .7, { sit: .55, tilt: .1, eye: 'flat', lookX: .4 }],          // the old habit: sit down...
+        [GO, { sit: 0, tilt: 0, crouch: .2, eye: 'happy', lookX: 0, lookY: 0 }],   // ...no. today.
+        [GO + .25, { crouch: 0 }], [GO + .25, () => bo.jump(0, -500)],
+        [JOG, { x: 1e6, speed: 250, accel: 700, eye: 'happy' }],
+        [LEAVE, { speed: V, accel: 450, eye: 'open' }],
+        [LEAVE + .1, () => S.sfx('hum', { notes: [2, 4, 5, 7, 5], gap: .3, g: .04 }, bo.x)],
+      ]);
+      // a happy hop as Bo jogs past the new flag
+      if (d > JOG && bo.x > FLAG2 - 40) S.once('hop2', () => { bo.jump(bo.vx, -440); S.sfx('chime', { n: 7, g: .1 }, FLAG2); S.burst(FLAG2 + 30, GROUND - 120, 12, [PAL.orange, PAL.yellow, PAL.lime], { speed: 300, gravity: 700, size: 8, life: 1.2 }); });
+      if (d > POP - 2.2 && d < JOG + .6) { S.camGoal.x = (LOOK + FLAG2) / 2 + 10; S.camGoal.z = .95; S.camGoal.kx = 2.6; }
     }
 
     // sound: morning birds, yawns, the "nah", snoring, the flag running off, and each step ringing higher
@@ -123,6 +141,15 @@ Shorts.play({
     for (let c = 0; c < 7; c++) for (let r = 0; r < 4; r++) ctx.fillRect(2 + c * 8, -122 + r * 8 + Math.sin(t * 6 - c * .8) * 3 * (c / 6), 8.4, 8.4);
     if (run) { ctx.lineWidth = 5; for (const s of [-1, 1]) { ctx.beginPath(); ctx.moveTo(0, -4); ctx.lineTo(s * 12 + Math.sin(t * 28) * 8 * s, 0); ctx.stroke(); } }   // little legs
     ctx.restore();
+    // the next flag, springing up out of the ground
+    const k = S.arrived === null ? 0 : outBack(clamp((t - S.arrived - POP) / .45));
+    if (k > 0) {
+      ctx.save(); ctx.translate(FLAG2, GROUND + 2); ctx.scale(1, k);
+      ctx.lineWidth = 6; ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(0, -124); ctx.stroke();
+      ctx.fillStyle = PAL.orange;
+      for (let c = 0; c < 7; c++) for (let r = 0; r < 4; r++) ctx.fillRect(2 + c * 8, -122 + r * 8 + Math.sin(t * 6 - c * .8) * 3 * (c / 6), 8.4, 8.4);
+      ctx.restore();
+    }
   },
   drawFront(S, ctx, t) {
     const bo = S.bo, top = bo.top();

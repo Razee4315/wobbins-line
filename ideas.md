@@ -11,14 +11,14 @@ line and a few pixel colours. Each idea is written as a visual metaphor, never l
 | **Last Minute** | Putting things off for days, then doing a week's work in one night when the deadline hits | A pile of blocks and a sign counting down the days; Bo naps, plays, cloud-watches as the days fly by, then builds the whole tower in a frantic final night | "why is the last night always the most productive?" |
 | **Yes** | People-pleasing: never saying no until you're crushed | Friends keep stacking boxes on Bo's head; Bo's own little flower gets buried; the stack collapses; Bo finally says no and nobody minds | "you can say no. they'll be okay." |
 | **Perfect** | Perfectionism: redoing work forever over one tiny flaw | Bo paints a pixel heart, spots one wrong pixel, wipes it all, again and again, while a friend happily finishes painting after painting | "done is better than perfect." |
-| **Battery** | The social battery: fun, but draining | A pixel battery over Bo's head drains bar by bar at a party; Bo slips away to a quiet tree and recharges | "it's okay to need quiet." |
+| **Battery** | The social battery: fun, but draining | A pixel battery over Bo's head drains bar by bar at a party; Bo slips away to a quiet tree and recharges; two friends come and sit with Bo | "it's okay to need quiet. real friends get it." |
 | **Seen** | Waiting for a reply and spiralling | Bo sends a paper plane; "seen"; typing dots appear and vanish; the worry scribble grows; the plane comes back with a heart | "not every silence is about you." |
 
 ## Season 4 (built)
 
 | Short | The struggle | The metaphor | Closing line |
 |---|---|---|---|
-| **Tomorrow** | "I'll start tomorrow" | Every morning Bo gets ready at a start line and sits back down; the flag runs further away each night and grass grows round Bo's feet; one step, and the flag was close all along | "you don't have to be ready. just start." |
+| **Tomorrow** | "I'll start tomorrow" | Every morning Bo gets ready at a start line and sits back down; the flag runs further away each night and grass grows round Bo's feet; one step, and the flag was close all along | "ready or not... just start." |
 | **Highlight Reel** | Comparison | Friends hold up perfect pictures pouring out likes; Bo sags at each one; the biggest one slips and its owner is sitting under a little rain cloud | "don't compare your every day to their best day." |
 | **Small Steps** | Consistency | One drop a day from a well into a big jar; days blur, the level barely moves; one more drop and it overflows into a stream that turns everything green | "small steps, every day. they add up." |
 | **Snooze** | "Five more minutes" | Alarm birds multiply (1, 2, 4) while the sun crosses the sky and friends go kite-flying; Bo wakes to stars, then gets up with the next sunrise | "the day doesn't wait. get up for it." |
@@ -29,7 +29,7 @@ line and a few pixel colours. Each idea is written as a visual metaphor, never l
 | Short | The struggle | The metaphor | Closing line |
 |---|---|---|---|
 | **Monday Mountain** | Dread of the week ahead | A storm mountain looms bigger the longer Bo stares; walking up to it, it's five small steps (one dot per day) with a picnic at the top | "it's never as big up close." |
-| **Imposter** | Imposter syndrome | Bo wins a crown and keeps trying to get rid of it (give back, pass on, bury, throw); it always lands back on Bo's head, until Bo keeps it and it melts into a glow | "you're not an imposter. you belong here." |
+| **Imposter** | Imposter syndrome | Bo wins a crown and keeps trying to get rid of it (give back, pass on, bury, throw); it always lands back on Bo's head, until Bo keeps it and it melts into a glow | "you did earn it. you belong here." |
 | **Decision** | Choice paralysis | Paths split 2, 4, 8, 16 while the sun sets; Bo dithers faster and faster, then just walks with eyes closed and the choices melt into dawn | "pick one. you can always turn." |
 | **Busy** | Rushing past what matters | Bo rushes parcels past a friend waving a birthday cake, faster each trip; the friend gives up and starts to leave; Bo notices just in time | "slow down for the ones who wait." |
 | **Rain Check** | Cancelling plans | Bo sends the invite back for a cozy night in, gets lonely as the party glows in the distance, then goes the next morning | "not every plan needs a rain check. sometimes, go anyway." |
@@ -44,15 +44,15 @@ Every one opens on a small mystery (what is Bo doing?), then reveals it, escalat
 | **Why Was I Here?** | Forgetting | A thought bubble (water the plant) pops every time Bo walks through the doorway, even tiptoeing; so the plant rides along on Bo's head | "it's not just you. doorways really do make you forget." |
 | **Lost** | Losing things | Frantic search: cushions, drawer, rug, plant, a racing clock. The keys hang off Bo's tuft from the first frame | "slow down. it's usually closer than you think." |
 | **Small Talk** | Awkward silence | A bus stop; the silence between two strangers swells into a heavy "..." (crickets). "nice... weather?" and it pours; one umbrella | "every friend was a stranger once." |
-| **Can't Sleep** | Night thoughts | Counted sheep start carrying worries (the alarm, that email, 2015) and won't leave; Bo opens the window and they float off as stars | "you don't have to solve tomorrow tonight." |
+| **Can't Sleep** | Night thoughts | Counted sheep start carrying worries (the alarm, that email, 2015) and won't leave; Bo opens the window and they float off as stars | "tomorrow is tomorrow's problem." |
 
 ## Season 7 · heavy things (built)
 
 | Short | The struggle | The metaphor | Closing line |
 |---|---|---|---|
-| **Just in Case** | Overpacking life | Umbrella, sweater, lamp, duck, ladder stacked on Bo's head "just in case"; Bo can't get up the hill until it all goes | "you don't have to carry every just-in-case." |
+| **Just in Case** | Overpacking life | Umbrella, sweater, lamp, duck, ladder stacked on Bo's head "just in case"; Bo can't get up the hill until it all goes | "pack light. keep one umbrella." |
 | **Heavy** | Asking for help | A kite stuck in a tree; "no no, I've got it!", jumps, a crate. Then "could you help me?" and a tower of friends | "asking for help isn't weak. it's how we reach higher." |
-| **Fine** | Pretending you're okay | A painted smile for every "how are you?"; it slips, cracks, falls off, and the rain cloud returns, until a friend sits in it with Bo | "you don't have to be fine all the time." |
+| **Fine** | Pretending you're okay | A painted smile for every "how are you?"; it slips, cracks, falls off, and the rain cloud returns, until a friend sits in it with Bo | "not fine? that's fine too." |
 | **Comfort Zone** | Stepping out | A warm dome in a grey world that shrinks the longer Bo stays; each step out blooms colour back | "comfort zones grow every time you step out." |
 | **Inner Voice** | The inner critic | A grumbly ink scribble grows with every jab at Bo's keepy-uppy; spoken to kindly, it shrinks into a cheering buddy | "talk to yourself the way you would talk to a friend." |
 

@@ -3,10 +3,13 @@
   const Shorts = Object.assign(Object.create(window.Shorts), { play: story => { (window.WL_STORIES ||= {})['last-minute'] = story; } });
   // A pile of blocks, a tower to build, and a sign counting down the days. Bo naps, plays and
   // watches clouds while the days fly by, until the sign says 1. Then the whole tower goes up in one night.
+  // Button: as Bo strolls off, the sign flips back to 7. Bo turns, gives it a flat look ("...one whole
+  // week."), then laughs, shrugs it off with a hop, and goes.
   const { PAL, SPRITES, sprite, zzz, lerp, seg, sine, outBack, clamp, hash, spring, mix, GROUND } = Shorts;
   const V = 130, PILE = 880, PICK = 1030, DROP = 1222, SITE = 1330, SIGN = 1410, TREE = 1490, BS = 32;
   const D = [6.0, 10.0, 13.4, 16.2, 18.6, 20.4, 21.6];        // each day starts (7 days left … 1 day left)
   const DONE = 36.13;                                      // when the last block lands (measured)
+  const AGAIN = 44.4, LEAVE = AGAIN + 4.2;                 // the sign starts a new week; Bo walks on
   const TRIPS = [1, 2, 3, 4], SPEEDS = [340, 400, 460, 520];
   const COLS = [PAL.red, PAL.orange, PAL.yellow, PAL.lime, PAL.sky, PAL.violet, PAL.pink, PAL.blue];
   const ROWS = [5, 4, 4, 2, 1];
@@ -74,7 +77,7 @@
   Shorts.play({
     title: 'Last Minute',
     accent: PAL.red,
-    loopAfter: DONE + 14.9,
+    loopAfter: LEAVE + 6.8,
     paperAt: t => {
       const dusk = sine(seg(t, 25, 29)) * (1 - sine(seg(t, DONE + 3.5, DONE + 5.5)));
       return mix(mix('#ffffff', '#ffe4cc', dusk), '#d8d2f1', night(t) * .95);
@@ -89,6 +92,7 @@
       [27.4, 29.4, 'go. go. *go.*'],
       [DONE + .4, DONE + 2.3, '*done.*'],
       [DONE + 2.7, DONE + 7.9, 'why is the last night always the *most productive?*'],
+      [AGAIN + 1.0, AGAIN + 2.6, '...one whole *week.*'],
     ],
     init(S) {
       S.bo = S.addChar({ x: 0, walk: V });
@@ -128,7 +132,17 @@
         if (d > 5.4) c.eye = 'open';
         if (d > 5.8) Object.assign(c, { sit: 0, crouch: 0, tilt: 0 });
         if (d > 6.4) Object.assign(c, { x: 1e6, speed: V, accel: 450, eye: 'open' });
+        // the button: the sign flips back to 7 behind Bo
+        if (t > AGAIN + .3) Object.assign(c, { speed: 0, accel: 600 });
+        if (t > AGAIN + .6) Object.assign(c, { face: -1, eye: 'flat', lookX: .2, lookY: -.2 });     // ...really?
+        if (t > AGAIN + 2.8) Object.assign(c, { eye: 'happy', lookX: 0, lookY: 0, crouch: t < AGAIN + 3.3 ? .08 * Math.abs(Math.sin((t - AGAIN) * 17)) : 0 });
+        if (t > AGAIN + 2.8) S.once('laugh', () => S.sfx('laugh', { n: 4 }, bo.x));
+        if (t > AGAIN + 3.4) Object.assign(c, { face: 1, crouch: t < AGAIN + 3.65 ? .2 : 0 });
+        if (t > AGAIN + 3.65) S.once('shrug', () => bo.jump(0, -440));
+        if (t > LEAVE) Object.assign(c, { x: 1e6, speed: V, accel: 450, eye: 'open', crouch: 0 });
+        if (t > LEAVE + .1) S.once('hum', () => S.sfx('hum', { notes: [2, 4, 5, 7, 5], gap: .3, g: .04 }, bo.x));
       }
+      if (t > AGAIN) S.once('again', () => { S.sfx('flip', {}, SIGN); S.sfx('pop', { pitch: 600, g: .08 }, SIGN); });
 
       // blocks in flight
       for (const b of S.blocks) if (b.state === 'fly') {
@@ -150,6 +164,7 @@
       // keep the countdown sign in the shot while Bo wastes the days (but follow the butterfly chase)
       if (t > 5.4 && t < 21.6 && !(t > 10.3 && t < 12.9)) { S.camGoal.x = 1030; S.camGoal.z = .8; S.camGoal.kx = 2.5; S.camGoal.kz = 2; }
       if (t > 21.6 && (S.doneT === null || t < S.doneT + 6.4)) { S.camGoal.x = 1115; S.camGoal.z = .95; S.camGoal.kx = 3; }
+      if (t > AGAIN && t < LEAVE) { S.camGoal.x = (SIGN + bo.x) / 2 + 20; S.camGoal.z = 1.12; S.camGoal.kx = 2; S.camGoal.kz = 1.2; }   // Bo and the sign
     },
     drawSky(S, ctx, t, v) {
       const nt = night(t);
@@ -180,10 +195,11 @@
       // the countdown sign: the number flips each morning
       ctx.lineWidth = 5; ctx.beginPath(); ctx.moveTo(SIGN, GROUND + 2); ctx.lineTo(SIGN, GROUND - 64); ctx.stroke();
       ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.roundRect(SIGN - 26, GROUND - 120, 52, 58, 6); ctx.fill(); ctx.stroke();
-      const done = S.doneT !== null && t >= S.doneT, dl = daysLeft(t);
-      const last = D.filter(a => a <= t).pop() ?? 0, flipK = Math.abs(Math.cos(Math.PI * seg(t, last, last + .3)));
+      const again = t >= AGAIN, done = S.doneT !== null && t >= S.doneT && !again, dl = daysLeft(t);
+      const last = again ? AGAIN : D.filter(a => a <= t).pop() ?? 0, flipK = Math.abs(Math.cos(Math.PI * seg(t, last, last + .3)));
       ctx.save(); ctx.translate(SIGN, GROUND - 91); ctx.scale(1, t < last + .3 && last > D[0] ? flipK : 1);
       if (done) sprite(ctx, SPRITES.check, 0, 0, 7, { X: PAL.green });
+      else if (again) sprite(ctx, SPRITES.d7, 0, 0, 7, { X: '#111' });            // ...and here we go again
       else if (t >= D[0] - 1.5) sprite(ctx, SPRITES['d' + dl], 0, 0, 7, { X: dl === 1 ? PAL.red : '#111' }, dl === 1 && Math.floor(t * 3) % 2 ? .35 : 1);
       ctx.restore();
       // the tower's footprint

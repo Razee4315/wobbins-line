@@ -3,12 +3,14 @@
   const Shorts = Object.assign(Object.create(window.Shorts), { play: story => { (window.WL_STORIES ||= {})['one-more'] = story; } });
   // Bo finds a glowing screen. Every tap gives a heart, each one smaller and greyer,
   // while a butterfly, a friend and a whole day go by unnoticed. Then the battery dies.
+  // Button: phone-free, Bo walks on and a butterfly lands on Bo's hair. Bo holds perfectly
+  // still, beaming (a real "notification"), until it flutters off ahead. Bo hops and follows.
   const { PAL, SPRITES, sprite, lerp, seg, sine, outBack, outCubic, hash, spring, mix, clamp, GROUND } = Shorts;
   const PX = 900, V = 130;
   // taps: [time, hearts, size]
   const TAPS = [[7.0, 1, 34], [10.2, 2, 24], [10.55, 2, 24]];
   for (let t = 15.0; t < 21.6; t += .3) TAPS.push([t, 1 + (Math.round(t * 10) % 2), 13]);
-  const DEAD_TAP = 22.9;
+  const DEAD_TAP = 22.9, STOP_X = 1100, LAND = 30.9, LIFT = 32.6, LEAVE = 33.8;
 
   function tapPulse(t) {
     let p = 0;
@@ -19,14 +21,14 @@
   Shorts.play({
     title: 'One More',
     accent: PAL.blue,
-    loopAfter: 33.8,
+    loopAfter: LEAVE + 6.6,
     captions: [
       [7.4, 9.4, 'ding.'],
       [10.6, 12.6, 'one more.'],
       [15.6, 18.0, 'one more. one more.'],
       [18.4, 21.6, 'just *one* more...'],
       [24.4, 26.8, 'look up.'],
-      [28.0, 32.8, "life doesn't send *notifications.*"],
+      [27.4, 30.7, "life doesn't send *notifications.*"],
     ],
     init(S) {
       S.mo = S.addChar({ x: 1500, face: -1, hair: 'curl', blush: PAL.pink, gain: .7 });
@@ -53,7 +55,16 @@
         [24.3, { eye: 'wide' }],
         [25.3, { eye: 'happy' }],
         [26.6, { sit: 0, tilt: 0 }],
-        [27.4, { x: 1e6, speed: V, accel: 450, eye: 'open', lookX: 0, lookY: 0 }],
+        [27.4, { x: STOP_X, speed: V, accel: 450, eye: 'open', lookX: 0, lookY: 0 }],
+        // the button: a butterfly lands on Bo's hair. hold very, very still
+        [LAND - .2, { lookY: -1, lookX: -.4, eye: 'wide', tilt: -.06 }],
+        [31.6, { eye: 'happy' }],
+        [31.7, () => { const T = bo.tuft; S.burst(T.x + 10, T.y - 30, 2, [PAL.pink], { speed: 70, gravity: -90, size: 16, life: 1.1, shape: 'heart' }); S.sfx('twinkle', { pitch: 1568, gain: .6 }, bo.x); }],
+        [LIFT, { lookY: -.6, lookX: .8, eye: 'open', tilt: 0 }],          // there it goes
+        [LIFT, () => { S.sfx('flap', {}, bo.x); S.sfx('flap', {}, bo.x + 40); }],
+        [33.0, { crouch: .2, eye: 'happy' }], [33.25, { crouch: 0 }], [33.25, () => bo.jump(0, -460)],
+        [LEAVE, { x: 1e6, speed: V, accel: 450, eye: 'open', lookX: 0, lookY: 0, tilt: 0 }],
+        [LEAVE + .1, () => S.sfx('hum', { notes: [2, 4, 5, 7, 5], gap: .3, g: .04 }, bo.x)],
         // sound
         [5.3, () => S.sfx('twinkle', { pitch: 2093 }, PX)], [6.1, () => S.sfx('twinkle', { pitch: 2349, gain: .8 }, PX)],
         [21.85, () => S.sfx('beep', { pitch: 660 }, PX)], [22.25, () => S.sfx('beep', { pitch: 494 }, PX)],
@@ -97,6 +108,8 @@
         S.camGoal.x = 845; S.camGoal.kx = 3;
         S.camGoal.z = 1 + .32 * sine(seg(t, 15, 21.6)) * (1 - sine(seg(t, 22.6, 25.5)));
       }
+      // closer on Bo and the butterfly
+      if (t > 29.4 && t < LEAVE) { S.camGoal.x = STOP_X + 20; S.camGoal.z = 1.22; S.camGoal.kx = 2; S.camGoal.kz = 1.2; }
     },
     drawSky(S, ctx, t, v) {
       // a whole day passes while Bo stares at the screen
@@ -163,9 +176,14 @@
       const fly = (x, y, col, a = 1) => sprite(ctx, Math.floor(t * 12) % 2 ? SPRITES.flyA : SPRITES.flyB, x, y, 4.2, { X: col, B: '#111' }, a);
       const p = seg(t, 8.4, 12.8);
       if (p > 0 && p < 1) fly(lerp(1250, 250, p) + Math.sin(p * 9) * 60, GROUND - 210 - Math.sin(p * Math.PI) * 70 + Math.sin(p * 23) * 12, PAL.yellow);
-      if (t > 27.6 && t < 33.6) {
-        const k2 = t - 27.6, up = Math.max(0, t - 30.6);
-        fly(bo.x + 70 + Math.sin(t * 3) * 40 + up * 260, bo.top().y - 70 + Math.sin(t * 5) * 15 - up * 320, PAL.violet, clamp(k2 * 2) * (1 - seg(t, 33, 33.6)));
+      // the second one flutters round Bo, lands on the tuft, rests there, then flies off ahead
+      if (t > 27.6 && t < LIFT + 3) {
+        const T = bo.tuft, fx = bo.x + 70 + Math.sin(t * 3) * 40, fy = bo.top().y - 70 + Math.sin(t * 5) * 15;
+        const land = sine(seg(t, LAND - .7, LAND)), lift = Math.max(0, t - LIFT);
+        const x = lerp(fx, T.x, land) + lift * 220 + Math.sin(lift * 7) * 14 * clamp(lift * 3);
+        const y = lerp(fy, T.y - 22, land) - lift * 110 - Math.sin(lift * 5) * 26;
+        const resting = t > LAND && t < LIFT, wing = resting ? Math.floor(t * 2.2) % 2 : Math.floor(t * 12) % 2;
+        sprite(ctx, wing ? SPRITES.flyA : SPRITES.flyB, x, y, 6, { X: PAL.violet, B: '#111' }, clamp((t - 27.6) * 2) * (1 - seg(t, LIFT + 2.2, LIFT + 3)));
       }
     },
   });

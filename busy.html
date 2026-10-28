@@ -6,14 +6,19 @@
 <title>Busy</title>
 </head>
 <body>
-<script src="sfx.js?v=7"></script>
-<script src="engine2.js?v=7"></script>
+<script src="sfx.js?v=8"></script>
+<script src="engine2.js?v=8"></script>
 <script>
 // Bo rushes parcels from the pile to the desk, faster every trip, straight past a friend waving
 // with a birthday cake. The friend waves, then waits, then starts to leave. Bo notices, just in time.
+// Button: Bo leans in to blow out the candle, the friend hops "happy birthday!" and the cake bounces
+// up into Bo's face. Splat. Deadpan, then both laugh; Bo shakes it off and they skip away together.
 const { PAL, SPRITES, sprite, lerp, seg, sine, outBack, clamp, hash, spring, mix, GROUND } = Shorts;
 const V = 130, PILE = 760, PICK = 845, DROP = 1290, DESK = 1385, MO = 1070, TRIPS = 4, SPEEDS = [300, 380, 460, 530];
 const CAKE = ['...Y...', '...R...', 'PPPPPPP', 'WPWPWPW', 'WWWWWWW', 'PPPPPPP'];
+const SQUASHED = ['P.....P', 'PP.P.PP', 'WPWPWPW', 'WWWWWWW', 'PPPPPPP'];
+// the button, in seconds after Bo reaches the friend
+const LEAN = 6.4, BDAY = 6.9, SPLAT = 7.45, SHAKE = 9.3, UP = 9.9, LEAVE = 11.5;
 const PARCEL = ['XXXXXX', 'XXTTXX', 'XXTTXX', 'XXXXXX'];
 // measured: when Bo drops the last parcel, and when Bo reaches the friend
 const DONE = 19.36, MEET = 21.74;
@@ -21,7 +26,7 @@ const DONE = 19.36, MEET = 21.74;
 Shorts.play({
   title: 'Busy',
   accent: PAL.pink,
-  loopAfter: MEET + 14.6,
+  loopAfter: MEET + LEAVE + 8.0,   // long enough that the desk is out of a 16:9 frame at the seam
   captions: [
     [6.4, 8.2, 'so much to do.'],
     [10.6, 12.2, 'busy. busy.'],
@@ -29,7 +34,8 @@ Shorts.play({
     [DONE + .3, DONE + 1.6, 'done!'],
     [DONE + 1.8, MEET - .1, '...oh.'],
     [MEET + .6, MEET + 2.6, 'you *waited.*'],
-    [MEET + 3.4, MEET + 8.6, 'slow down for the ones *who wait.*'],
+    [MEET + 3.0, MEET + 6.2, 'slow down for the ones *who wait.*'],
+    [MEET + BDAY - .3, MEET + BDAY + 1.0, '*happy birthday!*', null, { pitch: 1.3 }],
   ],
   init(S) {
     S.mo = S.addChar({ x: MO, face: -1, hair: 'curl', blush: PAL.pink, fill: '#ffe9f2', gain: .5 });
@@ -77,8 +83,19 @@ Shorts.play({
       Object.assign(c, { x: S.meetSpot ?? (S.meetSpot = bo.x), face: -1, eye: 'happy', lookX: .3 });
       if (d > .2) S.once('meet', () => { S.sfx('swell', { root: 440 }); S.sfx('chime', { n: 7, g: .12 }); bo.jump(0, -400); });
       if (d > 1.0) c.sit = 1;
-      if (d > 5.4) { c.sit = 0; }
-      if (d > 6.0) Object.assign(c, { face: 1, x: 1e6, speed: V, accel: 450, eye: 'open', lookX: 0 });
+      if (d > LEAN && d < SPLAT) Object.assign(c, { tilt: .5, eye: 'open', lookX: -.2, lookY: .6 });   // leaning in to blow the candle
+      if (d > SPLAT) {
+        S.once('splat', () => { const f = bo.toWorld(34 * bo.fw, -6); S.burst(f.x, f.y, 14, [PAL.pink, '#fff', PAL.red], { speed: 280, gravity: 900, size: 8, life: .8 }); S.sfx('squish', {}, bo.x); bo.q.v += 3; });
+        Object.assign(c, { tilt: d < 7.8 ? -.15 : 0, eye: d < 8.9 ? 'flat' : 'happy', lookX: 0, lookY: 0 });   // ...
+      }
+      if (d > 8.9) S.once('boLaugh', () => S.sfx('laugh', { n: 4 }, bo.x));
+      if (d > SHAKE && d < SHAKE + .5) c.tilt = .22 * Math.sin((d - SHAKE) * 38);                         // shake it off
+      if (d > SHAKE + .05) S.once('shake', () => { const f = bo.toWorld(30 * bo.fw, -10); S.burst(f.x, f.y, 12, [PAL.pink, '#fff'], { speed: 360, gravity: 900, size: 7, life: .7 }); S.sfx('rustle', { n: 3 }, bo.x); });
+      if (d > UP) c.sit = 0;
+      if (d > 10.6) Object.assign(c, { face: 1 });
+      if (d > 10.8 && d < 11.05) c.crouch = .2;
+      if (d > 11.05) { c.crouch = 0; S.once('endHop', () => bo.jump(0, -460)); }
+      if (d > LEAVE) { Object.assign(c, { x: 1e6, speed: V, accel: 450, eye: 'open', lookX: 0 }); S.once('hum', () => S.sfx('hum', { notes: [2, 4, 5, 7, 5], gap: .3, g: .04 }, bo.x)); }
     }
 
     // the friend: waves every time Bo zooms past, sadder each time, then starts to go home
@@ -98,15 +115,20 @@ Shorts.play({
       const d = t - S.meetT;
       Object.assign(mo.cmd, { x: mo.x, face: 1, eye: d > .4 ? 'happy' : 'wide', tilt: 0, lookX: .3 });
       if (d > .5) S.once('moHop', () => mo.jump(0, -420));
-      if (d > 1.1) mo.cmd.sit = 1;
-      if (d > 5.4) mo.cmd.sit = 0;
-      if (d > 6.2) Object.assign(mo.cmd, { face: -1, x: -1500, speed: 120, accel: 300 });
-      if (d > 6.4) S.once('bye', () => mo.jump(0, -360));
+      if (d > 1.1) { mo.cmd.sit = 1; S.once('cakeDown', () => S.cakeX = (mo.x + bo.x) / 2); }
+      if (d > BDAY) S.once('bday', () => mo.jump(0, -360));
+      if (d > BDAY + .3) S.once('bounce', () => S.sfx('boing', { pitch: 300, g: .07 }, S.cakeX));     // the landing bounces the cake up
+      if (d > SPLAT && d < 8.4) mo.cmd.eye = 'wide';
+      if (d > 8.4) S.once('moLaugh', () => { mo.jump(0, -300); S.sfx('laugh', { n: 5, k: 1.3 }, mo.x); });
+      if (d > UP) mo.cmd.sit = 0;
+      if (d > 10.5) Object.assign(mo.cmd, { x: 1e6, speed: 290, accel: 700, face: 1, eye: 'happy' });   // skips off ahead
+      if (d > 11.0 && mo.mode === 'ground' && hash(Math.floor(t * 2.5)) > .7) S.once(`skip:${Math.floor(t * 2.5)}`, () => mo.jump(mo.vx, -300));
     }
     S.bubbles = S.bubbles.filter(b => t - b.t0 < 1);
     // the busy clock
     if (S.stage && S.stage !== 'done') { S.tick += dt; if (S.tick >= .3 - S.trip * .04) { S.tick = 0; S.sfx('tick', { tock: S.tickN++ % 2, gain: .6 }); } }
     if (t > 5.4 && (S.meetT === null || t < S.meetT + 6)) { S.camGoal.x = S.meetT === null ? 1070 : bo.x - 60; S.camGoal.z = .78; S.camGoal.kx = 2.2; }
+    if (S.meetT !== null && t > S.meetT + 6 && t < S.meetT + LEAVE) { S.camGoal.x = S.meetSpot - 80; S.camGoal.z = 1.05; S.camGoal.kx = 2.2; S.camGoal.kz = 1.2; }
   },
   drawSky(S, ctx, t, v) {
     for (let i = 0; i < 3; i++) {
@@ -125,11 +147,27 @@ Shorts.play({
     const bo = S.bo, mo = S.mo, top = bo.top();
     if (S.carry) sprite(ctx, PARCEL, top.x, top.y - 16, 7, { X: '#c58b5a', T: '#f5e6c8' });
     if (S.toss) { const u = sine(clamp((t - S.toss.t0) / .35)); sprite(ctx, PARCEL, lerp(S.toss.from.x, DESK, u), lerp(S.toss.from.y - 16, GROUND - 90, u) - Math.sin(Math.PI * u) * 90, 7, { X: '#c58b5a', T: '#f5e6c8' }); }
-    // the cake: on Mo's head, then set down between them when they finally sit together
-    const mt = mo.top(), sat = S.meetT !== null && t > S.meetT + 1.1;
-    const cx = sat ? (mo.x + bo.x) / 2 : mt.x, cy = sat ? GROUND - 20 : mt.y - 20, flame = Math.floor(t * 9) % 2;
-    sprite(ctx, CAKE.map((r, i) => i === 0 && flame ? '...O...' : r), cx, cy, 6, { Y: PAL.yellow, O: PAL.orange, R: PAL.red, P: PAL.pink, W: '#fff' });
-    if (sat && t < S.meetT + 5.4) for (let i = 0; i < 3; i++) sprite(ctx, SPRITES.sparkle, cx - 30 + i * 30, cy - 40 - ((t * 30 + i * 15) % 30), 2.2, { X: PAL.yellow }, Math.max(0, Math.sin(t * 4 + i * 2)));
+    // the cake: on Mo's head, then set down between them when they finally sit together;
+    // it bounces up into Bo's face, falls back squashed, and hops back onto Mo's head to go
+    const mt = mo.top(), d = S.meetT === null ? -1 : t - S.meetT, sat = d > 1.1 && S.cakeX !== undefined, flame = Math.floor(t * 9) % 2;
+    let cx = mt.x, cy = mt.y - 20;
+    if (sat) {
+      const gx = S.cakeX, gy = GROUND - 20, f = bo.toWorld(34 * bo.fw, -6);
+      cx = gx; cy = gy;
+      if (d > BDAY + .3 && d < 7.8) { const up = d < SPLAT ? sine(seg(d, BDAY + .3, SPLAT)) : 1 - sine(seg(d, SPLAT + .08, 7.8)); cx = lerp(gx, f.x, up); cy = lerp(gy, f.y, up); }
+      if (d > 10.1) { const u = sine(seg(d, 10.1, 10.4)); cx = lerp(gx, mt.x, u); cy = lerp(gy, mt.y - 20, u) - Math.sin(Math.PI * u) * 60; }
+    }
+    sprite(ctx, d > SPLAT ? SQUASHED : CAKE.map((r, i) => i === 0 && flame ? '...O...' : r), cx, cy, 6, { Y: PAL.yellow, O: PAL.orange, R: PAL.red, P: PAL.pink, W: '#fff' });
+    // frosting on Bo's face until Bo shakes it off
+    const fr = d > SPLAT ? 1 - seg(d, SHAKE, SHAKE + .3) : 0;
+    if (fr > 0) {
+      ctx.globalAlpha = fr;
+      for (const [x, y, r, col] of [[36, 6, 13, PAL.pink], [20, 0, 9, PAL.pink], [48, -6, 7, PAL.pink], [26, -40, 8, PAL.pink], [40, -36, 5, PAL.pink], [30, 8, 3, '#fff'], [44, 2, 2.5, '#fff'], [28, -42, 2.5, '#fff']]) {
+        const p = bo.toWorld(x * bo.fw, y); ctx.fillStyle = col; ctx.beginPath(); ctx.arc(p.x, p.y, r, 0, Math.PI * 2); ctx.fill();
+      }
+      ctx.globalAlpha = 1;
+    }
+    if (sat && d < 5.4) for (let i = 0; i < 3; i++) sprite(ctx, SPRITES.sparkle, cx - 30 + i * 30, cy - 40 - ((t * 30 + i * 15) % 30), 2.2, { X: PAL.yellow }, Math.max(0, Math.sin(t * 4 + i * 2)));
     // "hey!!" bubbles
     for (const b of S.bubbles) {
       const u = (t - b.t0) / 1, k = outBack(clamp(u / .2)) * (1 - seg(u, .7, 1)) * b.big;

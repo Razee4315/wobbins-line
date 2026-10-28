@@ -9,6 +9,17 @@ python -m http.server 8123
 - Episodes: http://localhost:8123/the-gap.html (any episode page)
 - Website: http://localhost:8123/site/
 
+## Quick loop check (no browser)
+
+```bash
+node tools/loopcheck.js                 # every episode
+node tools/loopcheck.js lost battery    # just these
+```
+
+Prints each loop's length and seam error, which parts of Wobbin's state differ at the seam, and
+any other character still within 650 units of Wobbin at the seam. All 33 take about 17 seconds.
+It checks the simulation only; use the contact sheets below to check how it looks.
+
 ## Check an episode properly (the dev tools)
 
 `tools/dev_server.py` serves the project and saves PNGs/MP4s that the page POSTs to it, so we can make contact sheets and renders without downloads.

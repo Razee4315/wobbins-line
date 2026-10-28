@@ -6,11 +6,13 @@
 <title>Snooze</title>
 </head>
 <body>
-<script src="sfx.js?v=7"></script>
-<script src="engine2.js?v=7"></script>
+<script src="sfx.js?v=8"></script>
+<script src="engine2.js?v=8"></script>
 <script>
 // "Just a quick nap." An alarm bird keeps coming back (one, two, four of them); Bo keeps
 // swatting. The sun crosses the sky, friends fly a kite and go home. Bo wakes up to stars.
+// Button: Bo doesn't go back to bed. Next morning the alarm bird swoops in to ring... and Bo is
+// already up, waiting right there: "morning!" The bird is so shocked it faints onto the bed.
 const { PAL, SPRITES, sprite, zzz, lerp, seg, sine, outBack, clamp, hash, spring, mix, GROUND } = Shorts;
 const V = 130, BED = 900, BL = 815, BR = 985, BED_H = 44;
 const HEAD = [BL - 3, GROUND - 124], FOOT = [BR + 3, GROUND - 90], QUILT = [935, GROUND - 104];
@@ -20,7 +22,9 @@ const VISITS = [
   { at: 14.3, off: 15.5, perches: [HEAD, FOOT] },
   { at: 18.6, off: 20.0, perches: [HEAD, FOOT, 'bo', QUILT] },
 ];
-const DAWN_BIRD = 29.6;
+// the button: Bo gets up in the night and waits; the dawn bird finds Bo already up
+const UP = 28.5, STAND_X = 1090, BIRD = 34.2, STUN = 34.75, FAINT = 35.35, B_HOP = 36.6, LEAVE = 37.1;
+const DAWN_BIRD = BIRD;
 const BIRD_A = ['..XX...', '.XXXXO.', 'XXXXX..', '.XXXX..', '..K.K..'], BIRD_B = ['X....X.', 'XXXXXO.', '.XXXX..', '..XX...', '..K.K..'];
 const sky = t => {
   const eve = sine(seg(t, 19, 23)) * (1 - sine(seg(t, 23, 25))), nite = sine(seg(t, 22.5, 25)) * (1 - sine(seg(t, 28.2, 30.2)));
@@ -31,7 +35,7 @@ const sky = t => {
 Shorts.play({
   title: 'Snooze',
   accent: PAL.red,
-  loopAfter: 37.2,
+  loopAfter: LEAVE + 6.8,
   ground: x => x > BL + 3 && x < BR - 3 ? GROUND - BED_H : GROUND,
   lineAt: () => GROUND,
   paperAt: t => { const s = sky(t); return mix(mix('#ffffff', '#ffe2c8', s.eve), '#d6d0f0', s.nite * .95); },
@@ -41,7 +45,8 @@ Shorts.play({
     [15.2, 16.8, 'five... more...'],
     [19.8, 21.2, '*FIVE. MORE.*'],
     [26.4, 28.2, 'wait... where did the day go?'],
-    [30.4, 35.2, "the day doesn't wait. *get up for it.*"],
+    [29.8, 33.8, "the day doesn't wait. *get up for it.*"],
+    [BIRD + .3, BIRD + 1.3, '*morning!*'],
   ],
   init(S) {
     S.friends = [
@@ -65,31 +70,38 @@ Shorts.play({
       [26.0, { crouch: 0, eye: 'happy' }],                                               // good morn—
       [26.6, { eye: 'wide', lookX: -.5, lookY: -.6 }],                                   // ...it's night
       [27.4, { eye: 'sad', sit: .8, lookY: 0 }], [27.4, () => S.sfx('drain', {}, bo.x)],
-      [DAWN_BIRD + .2, { eye: 'wide', sit: 0, lookX: -.6, lookY: -.4 }],                 // the bird! up!
-      [30.0, { crouch: .2 }], [30.25, { crouch: 0 }], [30.25, () => bo.jump(0, -520)],
-      [30.3, () => S.sfx('swell', { root: 523.25 })],
-      [30.9, { eye: 'happy', lookX: 0, lookY: 0 }],
-      [31.3, { x: 1060 }], [31.3, () => bo.jump(300, -560)],
-      [31.9, { x: 1e6, speed: V, accel: 450, eye: 'open' }],
+      [UP, { sit: 0, eye: 'squeeze', lookX: 0, lookY: 0, crouch: .2 }],              // not again. up!
+      [UP + .35, { crouch: 0, x: STAND_X }], [UP + .35, () => bo.jump(240, -560)],
+      [UP + .4, () => S.sfx('swell', { root: 523.25 })],
+      [UP + 1.2, { face: -1, eye: 'open', lookX: .3, lookY: -.1 }],                    // up before the sun, waiting
+      [BIRD - .4, { lookX: .7, lookY: -.4 }],
+      [BIRD + .1, { eye: 'happy', crouch: .15 }], [BIRD + .25, { crouch: 0 }],          // morning!
+      [FAINT + .25, { eye: 'wide', lookX: .5, lookY: .2 }],
+      [FAINT + .75, { eye: 'happy' }], [FAINT + .75, () => S.sfx('laugh', { n: 3 }, bo.x)],
+      [B_HOP - .25, { face: 1, crouch: .2, lookX: 0, lookY: 0 }], [B_HOP, { crouch: 0 }], [B_HOP, () => bo.jump(0, -480)],
+      [LEAVE, { x: 1e6, speed: V, accel: 450, eye: 'open', lookX: 0, lookY: 0 }],
+      [LEAVE + .1, () => S.sfx('hum', { notes: [2, 4, 5, 7, 5], gap: .3, g: .04 }, bo.x)],
     ]);
     // swatting at the alarm: a twitch, bigger every time; the last time the blanket goes over the head
     VISITS.forEach((v, i) => { if (t > v.off - .1) S.once('swat' + i, () => { S.swat.v += 5 + i * 3; bo.q.v += 2 + i; S.sfx('whoosh', { d: .25, v: .7 }, bo.x); }); });
     spring(S.swat, 0, 120, .3, dt);
     if (t > 7.4 && t < 25.4) bo.cmd.tilt = -.28 + S.swat.x * .08;
-
+    if (t > BIRD + .3 && t < BIRD + 1.15) bo.cmd.tilt = .14 * Math.sin((t - BIRD - .3) * 15);   // a little waving wiggle
+    if (t > FAINT + .45) S.once('faint', () => { S.sfx('tock', { f: 520 }, FOOT[0]); S.sfx('dizzy', {}, FOOT[0]); });
+    if (t > STUN) S.once('stun', () => S.sfx('pop', { pitch: 1100, g: .06 }, FOOT[0]));
     // friends go out to fly a kite... and come home at dusk
     S.plan(mo, t, [[11.0, () => teleport(mo, S.bo.x - 760)], [11.0, { x: 1900, speed: 150, accel: 400, eye: 'happy' }], [21.4, () => teleport(mo, 1700)], [21.5, { face: -1, x: -300, speed: 160, eye: 'open' }], [26.7, () => mo.jump(0, -360)]]);
     S.plan(ky, t, [[11.6, () => teleport(ky, S.bo.x - 780)], [11.6, { x: 1800, speed: 150, accel: 400, eye: 'happy' }], [21.6, () => teleport(ky, 1640)], [21.7, { face: -1, x: -400, speed: 160, eye: 'open' }], [26.9, () => ky.jump(0, -340)]]);
 
     // the alarm rings while birds are perched; snoring otherwise
-    const ringing = VISITS.some(v => t > v.at && t < v.off) || (t > DAWN_BIRD && t < DAWN_BIRD + .3);
-    if (ringing) { S.ring += dt; if (S.ring >= .3) { S.ring = 0; S.sfx(S.ringN++ % 2 ? 'chirp' : 'ring', { k: 1.1 }, HEAD[0]); } } else { S.ring = .3; S.ringN = 0; }
+    const ringing = VISITS.some(v => t > v.at && t < v.off) || (t > DAWN_BIRD && t < STUN);
+    if (ringing) { S.ring += dt; if (S.ring >= .3) { S.ring = 0; S.sfx(S.ringN++ % 2 ? 'chirp' : 'ring', { k: 1.1 }, t > DAWN_BIRD ? FOOT[0] : HEAD[0]); } } else { S.ring = .3; S.ringN = 0; }
     VISITS.forEach((v, i) => { [v.at - .4, v.off + .1].forEach((a, k) => { if (t > a) S.once(`flap${i}-${k}`, () => S.sfx('flap', {}, HEAD[0])); }); });
     const asleep = t > 7.6 && t < 25 && !ringing;
     if (asleep) { S.snore += dt; if (S.snore >= 1.7) { S.snore = 0; S.sfx('snore', {}, bo.x); } } else S.snore = 1.2;
-    if (t > DAWN_BIRD - .2) S.once('dawnBird', () => S.sfx('chirp', { k: 1.2 }, HEAD[0]));
+    if (t > DAWN_BIRD - .2) S.once('dawnBird', () => S.sfx('chirp', { k: 1.2 }, FOOT[0]));
 
-    if (t > 5 && t < 31.6) { S.camGoal.x = BED + 20; S.camGoal.z = .95; S.camGoal.kx = 2; }
+    if (t > 5 && t < LEAVE) { S.camGoal.x = t > UP ? (BED + STAND_X) / 2 : BED + 20; S.camGoal.z = .95; S.camGoal.kx = 2; }
   },
   drawSky(S, ctx, t, v) {
     const s = sky(t);
@@ -152,12 +164,19 @@ Shorts.play({
       else if (t < v.off) fly(px, py - Math.abs(Math.sin((t - v.at) * 18 + k)) * 6, 0);
       else { const u = seg(t, v.off, v.off + .8); fly(px - u * 420 - k * 60, py - u * 380, Math.floor(t * 14) % 2); }
     }));
-    if (t > DAWN_BIRD - .6 && t < 35) {
-      let x, y;
-      if (t < DAWN_BIRD) { const u = sine(seg(t, DAWN_BIRD - .6, DAWN_BIRD)); x = lerp(HEAD[0] + 400, HEAD[0], u); y = lerp(HEAD[1] - 360, HEAD[1], u); }
-      else if (t < 31.3) { x = HEAD[0]; y = HEAD[1] - Math.abs(Math.sin(t * 10)) * 5; }
-      else { const away = Math.max(0, t - 33); x = top.x + 70 + Math.sin(t * 4) * 30 + away * 300; y = top.y - 80 + Math.sin(t * 6) * 10 - away * 280; }
-      fly(x, y, t > 31.3 || t < DAWN_BIRD ? Math.floor(t * 12) % 2 : 0);
+    // the next morning's alarm bird: swoops in to the foot of the bed, rings, sees Bo already up... faints
+    if (t > BIRD - .6) {
+      const [fx, fy] = FOOT, bedY = GROUND - BED_H - 16;
+      if (t < BIRD) { const u = sine(seg(t, BIRD - .6, BIRD)); fly(lerp(fx - 420, fx, u), lerp(fy - 360, fy, u) - Math.sin(Math.PI * u) * 40, Math.floor(t * 14) % 2); }
+      else if (t < FAINT) {
+        fly(fx, fy - (t < STUN ? Math.abs(Math.sin((t - BIRD) * 18)) * 6 : 0), 0);
+        if (t > STUN) sprite(ctx, SPRITES.bang, fx, fy - 56 - 8 * outBack(seg(t, STUN, STUN + .25)), 6, { X: PAL.red });
+      } else {
+        // keels over backwards onto the bed, feet up, little stars going round
+        const u = seg(t, FAINT, FAINT + .45), x = lerp(fx, fx - 50, u), y = lerp(fy - 6, bedY, u * u) - Math.sin(Math.PI * u) * 24;
+        ctx.save(); ctx.translate(x, y); ctx.rotate(-Math.PI * sine(u)); sprite(ctx, BIRD_A, 0, 0, 7, { X: PAL.red, O: PAL.orange, K: '#111' }); ctx.restore();
+        if (u >= 1) for (let k = 0; k < 3; k++) { const a = t * 4 + k * 2.1; sprite(ctx, SPRITES.star, x + Math.cos(a) * 30, y - 34 + Math.sin(a) * 8, 3.4, { X: PAL.orange }); }
+      }
     }
   },
 });

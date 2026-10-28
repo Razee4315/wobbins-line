@@ -3,8 +3,18 @@
   const Shorts = Object.assign(Object.create(window.Shorts), { play: story => { (window.WL_STORIES ||= {})['seen'] = story; } });
   // Bo sends a little paper plane. "Seen." Typing... and nothing. The worry grows, Bo paces,
   // imagines the worst, until the plane flies back with a heart. They were just busy.
+  // Button: Bo writes back, with a heart, and another, and another... ten hearts piled on one little
+  // plane. It takes off, sags under the weight, nearly scrapes the ground, and wobbles off. Bo laughs.
   const { PAL, SPRITES, sprite, lerp, seg, sine, outBack, clamp, hash, spring, mix, GROUND } = Shorts;
   const V = 130, SPOT = 700, HEART_AT = 23.3;
+  // the button: write back, pile on the hearts, launch the overloaded plane, walk on
+  const WRITE = 27.6, LOAD = 28.0, LOAD_EVERY = .14, FOLD = 29.6, LAUNCH = 29.85, LEAVE = 32.3;
+  const PILE = [4, 3, 2, 1].flatMap((n, r) => Array.from({ length: n }, (_, k) => ({ r, dx: (k - (n - 1) / 2) * 19, col: [PAL.pink, PAL.red, PAL.pink, PAL.orange][(r + k) % 4] })));
+  // the heavy plane's flight, u seconds after launch: sags, nearly scrapes the ground, then struggles up and away
+  const flight = u => ({
+    dx: 40 + 150 * u, dy: 150 * Math.sin(Math.PI * clamp(u / 1.3)) - Math.pow(Math.max(0, u - 1), 2) * 110 + Math.sin(u * 11) * 7,
+    rot: .4 * Math.cos(Math.PI * clamp(u / 1.3)) * (u < 1.3 ? 1 : 0) - .15 * clamp(u - 1.3) + Math.sin(u * 9) * .12,
+  });
   const PLANE = ['X.......', 'XXX.....', 'XXXXXX..', 'XXXXXXXX', 'XXXXXX..', 'XXX.....', 'X.......'];
   const MAIL = ['XXXXXXX', 'XX...XX', 'X.X.X.X', 'X..X..X', 'XXXXXXX'];
   const ICON = {
@@ -22,7 +32,7 @@
   Shorts.play({
     title: 'Seen',
     accent: PAL.blue,
-    loopAfter: 32.2,
+    loopAfter: LEAVE + 6.8,
     captions: [
       [6.8, 8.4, 'sent.'],
       [9.3, 10.9, '*seen.*'],
@@ -30,12 +40,12 @@
       [16.2, 18.4, 'did I say something *wrong*?'],
       [19.0, 21.0, 'they *hate* me.'],
       [23.6, 25.6, '"sorry! was *busy.*"'],
-      [26.4, 31.6, 'not every silence is about *you.*'],
+      [26.4, 30.0, 'not every silence is about *you.*'],
     ],
     init(S) {
       S.bo = S.addChar({ x: 0, walk: V });
       S.tc = { x: { x: 0, v: 0 }, y: { x: 0, v: 0 }, init: false };
-      S.scr = 0; S.beat = 0; S.type = 0;
+      S.scr = 0; S.beat = 0; S.type = 0; S.launchAt = null;
     },
     update(S, t, dt) {
       const bo = S.bo;
@@ -65,8 +75,20 @@
         [HEART_AT + .7, { eye: 'happy', sit: 0 }],
         [24.2, { crouch: .3 }], [24.2, () => S.sfx('breathOut', { d: 1.1 }, bo.x)],   // phew
         [24.9, { crouch: 0 }], [24.9, () => bo.jump(0, -480)],
-        [26.6, { x: 1e6, speed: V, accel: 450, eye: 'open', lookX: 0, lookY: 0, tilt: 0, face: 1 }],
+        [WRITE, { eye: 'happy', lookX: 0, lookY: -.6, tilt: 0, face: 1 }],         // writing back...
+        [WRITE, () => S.sfx('pop', { pitch: 720, g: .1 }, bo.x)],
+        [FOLD, { crouch: .25, eye: 'squeeze' }], [LAUNCH, { crouch: 0, eye: 'open', lookX: .8, lookY: -.3 }],
+        [LAUNCH, () => { const T = bo.top(); S.launchAt = { x: T.x, y: T.y - 40 }; bo.jump(0, -480); S.sfx('plane', {}, bo.x); }],
+        [30.5, { eye: 'wide', lookX: 1, lookY: .2 }],                         // whoa, it's sinking
+        [31.0, { eye: 'happy', lookY: -.5 }], [31.0, () => S.sfx('laugh', { n: 4 }, bo.x)],
+        [31.5, { crouch: .2 }], [31.75, { crouch: 0 }], [31.75, () => bo.jump(0, -420)],
+        [LEAVE, { x: 1e6, speed: V, accel: 450, eye: 'open', lookX: 0, lookY: 0, tilt: 0, face: 1 }],
+        [LEAVE + .1, () => S.sfx('hum', { notes: [2, 4, 5, 7, 5], gap: .3, g: .04 }, bo.x)],
       ]);
+      // ...one heart after another lands on the reply; Bo sinks a little under the weight
+      PILE.forEach((h, i) => { if (t >= LOAD + i * LOAD_EVERY) S.once('load' + i, () => S.sfx('pop', { pitch: 640 + i * 45, g: .05 }, bo.x)); });
+      if (t > LOAD && t < FOLD) bo.cmd.crouch = .02 * Math.min(PILE.length, Math.floor((t - LOAD) / LOAD_EVERY) + 1);
+      if (t > LAUNCH + .9) S.once('scrape', () => S.sfx('whoosh', { d: .4, v: .4 }, bo.x + 250));
       if (t > 17 && t < 21) bo.cmd.tilt = .06 + .03 * Math.sin(t * 20);
 
       // the reply: back it comes, lands on Bo's head and opens into a heart
@@ -86,7 +108,7 @@
       if (!S.tc.init) { S.tc.x.x = tx; S.tc.y.x = ty; S.tc.init = true; }
       spring(S.tc.x, tx, 16, .45, dt); spring(S.tc.y, ty, 16, .45, dt);
       if (t > 18.6 && t < HEART_AT) S.shake(.4);
-      if (t > 5 && t < 26.6) { S.camGoal.x = 715; S.camGoal.z = 1; S.camGoal.kx = 2.5; }
+      if (t > 5 && t < LEAVE) { S.camGoal.x = 715; S.camGoal.z = 1; S.camGoal.kx = 2.5; }
       if (t > 16.5 && t < HEART_AT + 1) S.camGoal.y = GROUND - 90 * sine(seg(t, 16.5, 18.5)) * (1 - sine(seg(t, HEART_AT, HEART_AT + 1)));
     },
     drawSky(S, ctx, t, v) {
@@ -129,6 +151,21 @@
         sprite(ctx, SPRITES.heart, top.x, top.y - 40 - u * 45, 7 * k * (1 + .06 * Math.sin(u * 9)), { X: PAL.pink }, 1 - seg(t, 27.4, 28.5));
       }
 
+      // the reply to the reply: an envelope piled high with hearts, then the overloaded plane
+      const loaded = clamp(Math.floor((t - LOAD) / LOAD_EVERY) + 1, 0, PILE.length);
+      if (t > WRITE && t < LAUNCH) {
+        const cx = top.x, cy = top.y - 40, sway = loaded > 6 ? Math.sin(t * 9) * (loaded - 6) * .8 : 0;
+        if (t < FOLD) sprite(ctx, MAIL, cx, cy, 5 * outBack(seg(t, WRITE, WRITE + .3)), { X: PAL.sky });
+        else sprite(ctx, PLANE, cx, cy, 5, { X: PAL.sky });
+        drawLoad(ctx, t, cx, cy - 16, loaded, sway, 0);
+      }
+      if (t >= LAUNCH && t < LAUNCH + 3.6 && S.launchAt) {
+        const f = flight(t - LAUNCH), x = S.launchAt.x + f.dx, y = S.launchAt.y + f.dy;
+        ctx.save(); ctx.translate(x, y); ctx.rotate(f.rot);
+        sprite(ctx, PLANE, 0, 0, 5, { X: PAL.sky });
+        drawLoad(ctx, t, 0, -16, PILE.length, Math.sin(t * 13) * 3, 0);
+        ctx.restore();
+      }
       // the worry scribble, same family as What If
       const R = radius(t), anx = anxiety(t), cx = S.tc.x.x, cy = S.tc.y.x;
       if (R > 2) {
@@ -150,4 +187,12 @@
       }
     },
   });
+
+  // the pile of hearts: rows of 4, 3, 2, 1, each popping in as it's added
+  function drawLoad(ctx, t, cx, cy, n, sway) {
+    PILE.slice(0, n).forEach((h, i) => {
+      const k = outBack(clamp((t - (LOAD + i * LOAD_EVERY)) / .2));
+      sprite(ctx, SPRITES.heart, cx + h.dx + sway * (h.r + 1), cy - h.r * 15, 3 * k, { X: h.col });
+    });
+  }
 })();

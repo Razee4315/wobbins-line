@@ -6,20 +6,29 @@
 <title>Can't Sleep</title>
 </head>
 <body>
-<script src="sfx.js?v=7"></script>
-<script src="engine2.js?v=7"></script>
+<script src="sfx.js?v=8"></script>
+<script src="engine2.js?v=8"></script>
 <script>
 // Dusk. Bo comes home yawning, hops into bed, lamp off... and eyes snap open. Counting sheep:
 // one, two, three. Then the sheep start bringing worries (the alarm, that email, that thing from
 // 2015) and they don't leave. The room fills up. Bo gets up, opens the window, breathes out, and
 // the worries float away and become stars. Bo sleeps; dawn comes; Bo walks on.
+// Button: one last sleepy sheep hops onto the foot of the bed and dozes off too. At dawn Bo gets
+// up and the sheep wriggles into the warm spot. "sleep tight, sheep." Bo tiptoes off, humming.
 const { PAL, SPRITES, sprite, zzz, lerp, seg, sine, outBack, clamp, hash, spring, mix, ramp, GROUND } = Shorts;
 const V = 120, HOUSE_A = 700, HOUSE_B = 1500, TOP = GROUND - 420, BED = 1000, WIN = 1290, LAMP = 830;
 const DAWN = '#ffe2e2', DUSK = '#ead6f0', NIGHT = '#7f85c1', MOON = '#fff2a8';
 const SKY = [[0, DAWN], [4.6, DUSK], [7.4, NIGHT], [27.6, NIGHT], [31.2, '#f2d7ea'], [33.6, DAWN]];
 const WALL = [[0, '#ffeedd'], [6.2, '#ffeedd'], [7.2, '#5f66a3'], [28.8, '#5f66a3'], [32.4, '#ffe7e2']];
-const INBED = 6.0, LAMPOFF = 6.6, AWAKE = 8.6, UP = 22.2, BLOW = 25.0, BACK = 27.8, ASLEEP = 29.4, WAKE = 33.2, LEAVE = 34.8, LOOP = LEAVE + 7.0;
+const INBED = 6.0, LAMPOFF = 6.6, AWAKE = 8.6, UP = 22.2, BLOW = 25.0, BACK = 27.8, ASLEEP = 29.4, WAKE = 33.2, LEAVE = 37.2, LOOP = LEAVE + 8.8;   // long walk-off: the house is out of view at the seam
+const SHEEP_IN = 29.8, TUCK = WAKE + 1.1, NAP = { x: BED + 72, y: GROUND - 66 }, SNUG = { x: BED - 26, y: GROUND - 76 };
 const SHEEP = ['.WWWW..', 'WWWWWWK', 'WWWWWKK', 'WWWWWW.', '.K..K..'];
+const DOZE = ['.WWWW..', 'WWWWWWK', 'WWWWWKK', '.WWWWW.'], SNUGGLE = ['..WWWW.', 'KWWWWWW', 'KKWWWWW', '.WWWWW.'];   // lying down
+// the sleepy sheep: hops onto the foot of the bed, then (once Bo is up) into the warm spot
+const napAt = t => {
+  if (t < SHEEP_IN + 1) { const u = seg(t, SHEEP_IN, SHEEP_IN + 1); return { x: lerp(BED - 200, NAP.x, u), y: lerp(GROUND - 370, NAP.y, u) - Math.sin(Math.PI * u) * 90, k: 0 }; }
+  const u = sine(seg(t, TUCK, TUCK + .6)); return { x: lerp(NAP.x, SNUG.x, u), y: lerp(NAP.y, SNUG.y, u) - Math.sin(Math.PI * u) * 40, k: u };
+};
 const ALARM = ['X...X', '.XXX.', 'XWWWX', 'XWKWX', 'XWWWX', '.XXX.'];
 const MAIL = ['XXXXXXX', 'XX...XX', 'X.X.X.X', 'X..X..X', 'XXXXXXX'];
 const BLUSH = ['.XXX.', 'XKXKX', 'XXXXX', 'PXXXP', '.XXX.'];
@@ -43,7 +52,8 @@ Shorts.play({
     [17.9, 19.6, 'that thing i said in *2015...*', MOON],
     [20.6, 21.8, '*so many thoughts.*', MOON],
     [23.8, 25.2, 'tomorrow can *wait.*', MOON],
-    [30.4, 37.4, "you don't have to solve tomorrow *tonight.*"],
+    [30.6, 33.6, "tomorrow is tomorrow's *problem.*"],
+    [35.4, 36.8, 'sleep tight, *sheep.*', null, { pitch: .95, g: .7 }],
   ],
   init(S) {
     S.bo = S.addChar({ x: 0, walk: V });
@@ -77,8 +87,13 @@ Shorts.play({
       [BACK + 1.6, { x: BED, speed: 60 }],
       [ASLEEP - .1, { sit: 1, eye: 'closed' }], [ASLEEP, () => S.sfx('musicbox', { notes: [4, 2, 0, 2, 4, 4, 4], gap: .42, oct: .5, g: .03 })],
       [WAKE, { eye: 'happy' }], [WAKE + .2, () => S.sfx('tweet', { k: 1 })],
-      [WAKE + .9, { sit: 0 }], [WAKE + 1.1, () => { bo.jump(260, -460); S.sfx('creak', {}, BED); }],
+      [WAKE + .9, { sit: 0 }], [TUCK, () => { bo.jump(300, -460); S.sfx('creak', {}, BED); }],
+      [TUCK, { x: BED + 200, speed: 110, accel: 300 }],
+      [35.2, { face: -1, lookX: .5, eye: 'wide' }],                            // ...who's that in my bed?
+      [35.5, { eye: 'happy' }], [35.6, () => S.sfx('laugh', { n: 2, g: .5 }, bo.x)],
+      [36.6, { face: 1, lookX: 0, crouch: .2 }], [36.85, { crouch: 0 }], [36.85, () => bo.jump(0, -380)],   // tiptoe hop
       [LEAVE, { x: 1e6, speed: V, accel: 450, eye: 'open' }],
+      [LEAVE + .1, () => S.sfx('hum', { notes: [2, 4, 5, 7, 5], gap: .3, g: .035 }, bo.x)],
     ]);
     // sheep: jump the little fence over the bed; worry-sheep stop and hover, crowding the room
     for (const s of S.sheep) {
@@ -88,6 +103,10 @@ Shorts.play({
     if (t > 7.4 && t < UP) S.once('night1', () => S.sfx('night', { d: 22, g: .7 }));
     if (t > 23.4) S.once('night2', () => S.sfx('night', { d: 7, g: 1.4 }, WIN));
     if (t > ASLEEP && t < WAKE - .2) { S.snore += dt; if (S.snore >= 1.8) { S.snore = 0; S.sfx('snore', {}, bo.x); } }
+    if (t > SHEEP_IN) S.once('sheepIn', () => S.sfx('baa', { k: 1.25 }, BED));
+    if (t > SHEEP_IN + 1) S.once('sheepLand', () => S.sfx('rustle', { n: 3 }, BED));
+    if (t > TUCK + .2) S.once('sheepTuck', () => S.sfx('rustle', { n: 4 }, BED));
+    if (t > 35.2) S.once('sheepSnore', () => S.sfx('snore', {}, BED));
     if (t > 31.6) S.once('dawn', () => S.sfx('birds', { d: LOOP - 31.6, g: .9 }));
     S.once('amb', () => S.sfx('room', { d: LOOP, g: .6 }));
     spring(S.win, t > 23.4 && t < 29 ? 1 : 0, 30, .55, dt);
@@ -136,13 +155,22 @@ Shorts.play({
   drawFront(S, ctx, t) {
     const bo = S.bo, top = bo.top();
     // the blanket covers Bo in bed
-    const inBed = (t > INBED + .3 && t < UP + .15) || (t > BACK + 1.75 && t < WAKE + 1.15);
-    if (inBed) {
+    // (after Bo gets up, the blanket stays tucked over the sheep)
+    const inBed = (t > INBED + .3 && t < UP + .15) || (t > BACK + 1.75 && t < TUCK + .05), sheepBed = t > TUCK + .05;
+    const nap = t > SHEEP_IN ? napAt(t) : null, drawNap = () => {
+      const rows = nap.k > .5 ? SNUGGLE : DOZE, a = seg(t, SHEEP_IN, SHEEP_IN + .2);   // inked outline, so it reads on the pale dawn wall
+      for (const [dx, dy] of [[-3, 0], [3, 0], [0, -3], [0, 3]]) sprite(ctx, rows, nap.x + dx, nap.y + dy, 9.5, { W: '#111', K: '#111' }, a);
+      sprite(ctx, rows, nap.x, nap.y, 9.5, { W: '#fff', K: '#111' }, a);
+    };
+    if (nap && nap.k > .5) drawNap();                                         // under the blanket
+    if (inBed || sheepBed) {
       ctx.fillStyle = PAL.sky; ctx.lineWidth = 5; ctx.strokeStyle = '#111';
-      const up = t > 19.6 && t < UP - .5 ? 26 : 0;
-      ctx.beginPath(); ctx.moveTo(BED - 60, GROUND - 24); ctx.quadraticCurveTo(BED - 70, top.y + 70 - up, BED, top.y + 64 - up); ctx.quadraticCurveTo(BED + 90, top.y + 70 - up, BED + 112, GROUND - 24); ctx.closePath(); ctx.fill(); ctx.stroke();
-      for (let i = 0; i < 4; i++) sprite(ctx, SPRITES.star, BED - 30 + i * 36, top.y + 100 - up + (i % 2) * 18, 3, { X: '#fff' });
+      const up = t > 19.6 && t < UP - .5 ? 26 : 0, py = sheepBed ? lerp(top.y + 64, GROUND - 66, seg(t, TUCK, TUCK + .5)) : top.y + 64 - up, lx = sheepBed ? BED - 40 : BED - 60;
+      ctx.beginPath(); ctx.moveTo(lx, GROUND - 24); ctx.quadraticCurveTo(lx - 10, py + 6, BED, py); ctx.quadraticCurveTo(BED + 90, py + 6, BED + 112, GROUND - 24); ctx.closePath(); ctx.fill(); ctx.stroke();
+      for (let i = 0; i < 4; i++) sprite(ctx, SPRITES.star, BED - 30 + i * 36 + (sheepBed ? 10 : 0), py + 36 + (i % 2) * 18, 3, { X: '#fff' });
     }
+    if (nap && nap.k <= .5) drawNap();                                        // on top, at the foot of the bed
+    if (nap && t > SHEEP_IN + 1.2) zzz(ctx, nap.x - 20, nap.y - 10, t + .9, seg(t, SHEEP_IN + 1.2, SHEEP_IN + 1.6));
     // the sheep and their worries
     const fence = { x: BED + 60, y: GROUND - 330 };
     ctx.lineWidth = 6; ctx.strokeStyle = '#fff';

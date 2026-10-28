@@ -6,20 +6,22 @@
 <title>Why Was I Here?</title>
 </head>
 <body>
-<script src="sfx.js?v=7"></script>
-<script src="engine2.js?v=7"></script>
+<script src="sfx.js?v=8"></script>
+<script src="engine2.js?v=8"></script>
 <script>
 // Bo comes home, sees the plant drooping and gets an idea (a thought bubble: the watering can).
 // Bo marches to the kitchen... and the idea pops the moment Bo walks through the doorway. Again.
 // And again, even tiptoeing. So Bo carries the plant along, and the plant does the remembering.
 // (The "doorway effect" is real: walking through a doorway makes people forget.)
+// Button: out the back door, the doorway gets Bo one last time: "?". Bo looks back, and the plant
+// on the sill thinks of the answer for Bo (a little sun). "oh, right! thanks." Off Bo goes, happy.
 const { PAL, SPRITES, sprite, lerp, seg, sine, outBack, clamp, hash, spring, mix, ramp, GROUND } = Shorts;
 const V = 160, HOUSE_A = 640, HOUSE_B = 2000, TOP = GROUND - 430;
 const SOFA = 860, TABLE = 1060, DOOR = 1300, SINK = 1580, SILL = 1820, CLOCK = 760, STOP = DOOR + 130, BACK = TABLE - 130;
 const CAN = ['..XX...', '.X..X..', 'XXXXXXX', 'XXXXXXX.X', 'XXXXXXX.X', 'XXXXXXXX.', '.XXXXX...'];
 // each trip: [bulb, leave, (pop happens at the door)]
 const TRIPS = [[6.2, 6.7], [13.9, 14.3], [19.9, 20.4]];
-const CARRY = 28.8, WATER = 35.8, SET = 39.5, LEAVE = 40.4, LOOP = LEAVE + 5.8;
+const CARRY = 28.8, WATER = 35.8, SET = 39.5, LEAVE = 40.4, OUT = HOUSE_B + 120, HINT = 43.3, GO = 45.1, LOOP = GO + 6.8;
 const evening = t => sine(seg(t, 8, 34));
 
 Shorts.play({
@@ -34,12 +36,13 @@ Shorts.play({
     [24.4, 25.4, '*no!*'],
     [29.3, 30.9, "okay. *you're coming with me.*"],
     [34.4, 35.4, 'oh! *right.*'],
-    [37.8, 44.6, "it's not just you. *doorways really do make you forget.*"],
+    [37.8, 41.9, "it's not just you. *doorways really do make you forget.*"],
+    [44.1, 45.3, 'oh, right! *thanks.*'],
   ],
   init(S) {
     S.bo = S.addChar({ x: 0, walk: V });
     S.thought = null; S.pops = []; S.wilt = { x: 1, v: 0 }; S.plant = { mode: 'table', x: TABLE, y: GROUND - 64, t0: 0, fx: 0, fy: 0 };
-    S.ask = null; S.tick = 0; S.water = 0; S.bloom = 0; S.crossed = 0; S.lastSide = -1;
+    S.ask = null; S.hint = 0; S.tick = 0; S.water = 0; S.bloom = 0; S.crossed = 0; S.lastSide = -1;
   },
   update(S, t, dt) {
     const bo = S.bo, c = bo.cmd;
@@ -78,7 +81,14 @@ Shorts.play({
       [37.5, { x: SILL - 30, speed: 110, accel: 400 }],
       [SET - .2, { crouch: .2 }], [SET + .1, { crouch: 0 }],
       [SET + .1, () => { S.plant.mode = 'set'; S.plant.t0 = t; const top = bo.top(); S.plant.fx = top.x; S.plant.fy = top.y - 26; S.sfx('tock', { f: 900 }, SILL); }],
-      [LEAVE, { x: 1e6, speed: V, accel: 450, eye: 'open', lookX: 0, lookY: 0 }],
+      [LEAVE, { x: OUT, speed: V, accel: 450, eye: 'open', lookX: 0, lookY: 0 }],
+      [42.4, { eye: 'flat', lookY: -1, lookX: 0 }],                         // ...why was I going out?
+      [42.9, { face: -1, eye: 'open', lookX: .6, lookY: -.3 }],              // looks back at the plant
+      [HINT, () => { S.hint = t; S.sfx('bulb', {}, SILL); }],               // the plant remembers for Bo
+      [43.7, { eye: 'wide', lookY: -.5 }], [44.1, { eye: 'happy', lookY: 0, lookX: .3 }],
+      [44.4, { face: 1, crouch: .2 }], [44.65, { crouch: 0 }], [44.65, () => bo.jump(0, -460)],
+      [GO, { x: 1e6, speed: V, accel: 450, eye: 'open', lookX: 0, lookY: 0 }],
+      [GO + .1, () => S.sfx('hum', { notes: [2, 4, 5, 7, 5], gap: .3, g: .04 }, bo.x)],
     ]);
     // the doorway eats the thought: crossing it pops the bubble (and, at the very end, a tiny "?")
     const side = Math.sign(bo.x - DOOR);
@@ -89,8 +99,8 @@ Shorts.play({
       }
       S.lastSide = side;
     }
-    if (bo.x > HOUSE_B + 40 && t > LEAVE) S.once('backdoor', () => { S.ask = { t0: t, small: true }; S.sfx('pluck', { n: 4, oct: .5, g: .06 }, bo.x); S.sfx('pluck', { n: 2, oct: .5, g: .06 }, bo.x + 1); });
-    if (S.ask && t - S.ask.t0 > (S.ask.small ? 1.4 : 3.6)) S.ask = null;
+    if (bo.x > HOUSE_B + 40 && t > LEAVE) S.once('backdoor', () => { S.ask = { t0: t, small: true, life: HINT + .6 - t }; S.sfx('pluck', { n: 4, oct: .5, g: .06 }, bo.x); S.sfx('pluck', { n: 2, oct: .5, g: .06 }, bo.x + 1); });
+    if (S.ask && t - S.ask.t0 > (S.ask.life ?? (S.ask.small ? 1.4 : 3.6))) S.ask = null;
     if (S.ask && t >= S.ask.t0) S.once('ask' + Math.round(S.ask.t0 * 10), () => { if (!S.ask.small) { S.sfx('pluck', { n: 4, oct: .5, g: .07 }, bo.x); S.sfx('pluck', { n: 2, oct: .5, g: .07 }, bo.x); } });
     // the plant droops until it's watered
     spring(S.wilt, S.bloom ? 0 : 1, 60, .35, dt);
@@ -113,7 +123,7 @@ Shorts.play({
 
     // camera: follow Bo home, then hold the doorway with a room either side
     if (t > 2.6 && t < SET - .2) { S.camGoal.x = DOOR - 40; S.camGoal.z = .8; S.camGoal.kx = 1.6; S.camGoal.kz = 1.4; }
-    else if (t >= SET - .2 && t < LEAVE + 1) { S.camGoal.x = (bo.x + SILL) / 2; S.camGoal.z = .9; S.camGoal.kx = 1.6; S.camGoal.kz = 1.4; }
+    else if (t >= SET - .2 && t < GO + .4) { S.camGoal.x = (bo.x + SILL) / 2; S.camGoal.z = .9; S.camGoal.kx = 1.6; S.camGoal.kz = 1.4; }
   },
   drawSky(S, ctx, t, v) {
     const e = evening(t);
@@ -183,6 +193,15 @@ Shorts.play({
       for (const [dx, dy, r] of [[-38, 56, 6], [-24, 34, 10]]) { ctx.beginPath(); ctx.arc(bx + dx * u, by + dy * u, r * u, 0, Math.PI * 2); ctx.fill(); ctx.stroke(); }
       ctx.beginPath(); ctx.ellipse(bx, by, 62 * u, 46 * u, 0, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
       sprite(ctx, CAN, bx + 4, by, 6 * u, { X: PAL.green });
+    }
+    // the plant's own thought: a little sun (go on, go outside)
+    const hk = S.hint ? outBack(clamp((t - S.hint) / .35)) * (1 - seg(t, GO + .9, GO + 1.3)) : 0;
+    if (hk > .01) {
+      const bx = SILL + 110, by = GROUND - 330 + Math.sin(t * 2.4) * 4;
+      ctx.fillStyle = '#fff'; ctx.strokeStyle = '#111'; ctx.lineWidth = 4;
+      for (const [dx, dy, r] of [[-56, 72, 5], [-40, 48, 8]]) { ctx.beginPath(); ctx.arc(bx + dx * hk, by + dy * hk, r * hk, 0, Math.PI * 2); ctx.fill(); ctx.stroke(); }
+      ctx.beginPath(); ctx.ellipse(bx, by, 50 * hk, 40 * hk, 0, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+      sprite(ctx, SPRITES.sun, bx, by, 5 * hk, { X: PAL.orange });
     }
     // popped thoughts burst into little bits
     for (const p of S.pops) { const u = (t - p.t0) / .5; if (u > 1) continue; for (let i = 0; i < 8; i++) { const a = i / 8 * Math.PI * 2; sprite(ctx, SPRITES.dot, p.x + Math.cos(a) * (20 + u * 70), p.y + Math.sin(a) * (16 + u * 50), 4, { X: i % 2 ? PAL.green : '#111' }, 1 - u); } }

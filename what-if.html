@@ -6,13 +6,15 @@
 <title>What If</title>
 </head>
 <body>
-<script src="sfx.js?v=7"></script>
-<script src="engine2.js?v=7"></script>
+<script src="sfx.js?v=8"></script>
+<script src="engine2.js?v=8"></script>
 <script>
 // A small worry appears over Bo's head. It grows, fills with more worries, and weighs Bo
 // down until Bo can't walk. Bo stops and breathes, and the tangle unwinds into a bird.
+// Button: the bird swoops back, lands on Bo's tuft, tweets once (Bo beams), and flies on ahead.
 const { PAL, SPRITES, sprite, lerp, seg, sine, outBack, clamp, hash, spring, mix, GROUND } = Shorts;
 const V = 130, BREATH0 = 22.8, BREATH = 2.4, RELEASE = 30.2;
+const BACK = 35.0, PERCH = 35.9, TWEET = 36.4, AWAY = 37.0, LEAVE = 38.0;   // the bird comes back to say hi
 const ICON = {
   q: ['.XXX.', 'X...X', '....X', '...X.', '..X..', '.....', '..X..'],
   bang: ['XX', 'XX', 'XX', 'XX', '..', 'XX'],
@@ -36,7 +38,7 @@ const anxiety = t => t < 9 ? .2 : t < 16 ? .5 : lerp(1, 0, sine(seg(t, BREATH0, 
 Shorts.play({
   title: 'What If',
   accent: PAL.violet,
-  loopAfter: 38.2,
+  loopAfter: LEAVE + 6.8,
   captions: [
     [3.6, 6.4, 'what if...'],
     [9.6, 12.6, 'but what if...'],
@@ -67,6 +69,14 @@ Shorts.play({
       [32.6, { sit: 0 }], [33.0, { crouch: .18 }],
       [33.3, { crouch: 0 }], [33.3, () => bo.jump(0, -420)],            // light again
       [34.0, { x: 1e6, speed: V, accel: 300, eye: 'open', lookX: 0, lookY: 0, tilt: 0 }],
+      [BACK + .2, { speed: 0, accel: 260, lookX: .6, lookY: -.6 }],                // oh! it's back
+      [35.3, () => S.sfx('flap', {}, bo.x)], [35.55, () => S.sfx('flap', {}, bo.x)],
+      [PERCH, { lookX: 0, lookY: -1, eye: 'wide' }], [PERCH, () => S.sfx('tap', {}, bo.x)],
+      [TWEET, () => S.sfx('chirp', { k: 1.15 }, bo.x)], [TWEET + .1, { eye: 'happy' }],
+      [AWAY, () => S.sfx('flap', {}, bo.x)], [AWAY + .1, { lookX: .7, lookY: -.8 }], [AWAY + .25, () => S.sfx('flap', {}, bo.x)],
+      [37.3, { crouch: .18 }], [37.55, { crouch: 0 }], [37.55, () => bo.jump(0, -420)],
+      [LEAVE, { x: 1e6, speed: V, accel: 450, eye: 'open', lookX: 0, lookY: 0 }],
+      [LEAVE + .1, () => S.sfx('hum', { notes: [2, 4, 5, 7, 5], gap: .3, g: .04 }, bo.x)],
       // sound
       [3.0, () => S.sfx('pop', { pitch: 420, g: .1 })],
       ...[13.0, 13.3, 13.6, 13.9].map(at => [at, () => S.sfx('whoosh', { d: .2, v: .5 })]),
@@ -154,10 +164,19 @@ Shorts.play({
       });
     }
     // ...and the circle becomes a bird and flies off
-    if (t > RELEASE + .3 && t < 36.5) {
+    if (t > RELEASE + .3 && t < 34) {
       const u = t - (RELEASE + .3), k = outBack(clamp(u / .4));
       const x = cx + Math.pow(u, 1.6) * 170, y = cy - Math.pow(u, 1.4) * 150 + Math.sin(u * 5) * 14;
       sprite(ctx, Math.floor(t * 8) % 2 ? SPRITES.birdA : SPRITES.birdB, x, y, 8 * k, { X: PAL.blue });
+    }
+    // ...swoops back to perch on Bo's tuft, says one tweet, and flies on ahead
+    if (t > BACK && t < AWAY + 2.2) {
+      const T = bo.tuft, inK = sine(seg(t, BACK, PERCH)), out = Math.max(0, t - AWAY);
+      const hop = t > TWEET && t < TWEET + .35 ? Math.sin(Math.PI * (t - TWEET) / .35) * 12 : 0;
+      const x = lerp(T.x + 420, T.x, inK) + out * out * 160 + out * 120, y = lerp(T.y - 320, T.y - 16, inK) + Math.sin(inK * Math.PI) * 60 - hop - out * out * 150 - out * 90;
+      const perched = t > PERCH && t < AWAY;
+      sprite(ctx, Math.floor(t * (perched ? 2.5 : 8)) % 2 ? SPRITES.birdA : SPRITES.birdB, x, y, 8, { X: PAL.blue });
+      if (t > TWEET && t < TWEET + .9) sprite(ctx, SPRITES.note, x + 34, y - 30 - (t - TWEET) * 30, 5, { X: PAL.violet }, 1 - seg(t, TWEET + .5, TWEET + .9));
     }
   },
   drawSky(S, ctx, t, v) {

@@ -4,11 +4,13 @@
   // Bo plants a seed, can't stand waiting, digs it up to check. Again. And again.
   // Only when Bo gives up and falls asleep does it grow, and a fruit lands right on Bo's head.
   // (Season 1, rebuilt on engine 2; the original is in legacy/.)
+  // Button: Bo stomps the fallen fruit into the ground, sits down and stares at it, tapping...
+  // catches itself, looks the other way, hums innocently ("not watching.") and hops off.
   const { PAL, sprite, zzz, lerp, seg, sine, outCubic, outBack, clamp, spring, GROUND, GRAV } = Shorts;
   const V = 150, TREE_X = 870, SEED_REST = GROUND - 10;
   // fruit spots on the canopy, relative to its centre; the first one falls on Bo
   const FRUIT = [[-70, 40, 27.8], [40, -60, 28.1], [78, 34, 28.3], [-22, -78, 28.6]];
-  const LEAVE = 34.4;
+  const PLANT = 35.3, STARE = 37.3, CATCH = 38.5, LEAVE = 40.8;
 
   function pop(S) { Object.assign(S.seed, { state: 'air', vy: -1000 }); S.sfx('pop', { pitch: 700 }, S.seed.x); S.sfx('jump', { v: .4 }, S.seed.x); }
   // the seed, cracking open once it sprouts
@@ -34,12 +36,13 @@
       [17.6, 19.0, '*now?*'],
       [22.6, 23.8, 'fine.'],
       [29.9, 31.2, '*whoa.*'],
-      [32.0, 39.4, 'some things only grow *when you stop watching.*'],
+      [32.0, 35.6, 'some things only grow *when you stop watching.*'],
+      [39.0, 40.4, 'not watching. *nope.*'],
     ],
     init(S) {
       S.bo = S.addChar({ x: 0, walk: V });
       S.seed = { x: TREE_X, y: SEED_REST, vy: 0, rot: 0, state: 'ground', t0: 0 };
-      S.mound = { x: 0, v: 0 }; S.wasAir = false; S.bonkT = null; S.snore = 1.2; S.tapK = 0; S.peckK = 0;
+      S.mound = { x: 0, v: 0 }; S.mound2 = { x: 0, v: 0 }; S.wasAir = false; S.bonkT = null; S.snore = 1.2; S.tapK = 0; S.peckK = 0;
       S.drop = { on: false, x: 0, y: 0, vx: 0, vy: 0, rest: false, bounces: 0 };
     },
     update(S, t, dt) {
@@ -85,7 +88,18 @@
         [32.0, { eye: 'happy', tilt: .05, lookY: .5, lookX: 1 }],
         [32.6, { crouch: .2 }],
         [32.9, { crouch: 0 }], [32.9, () => { bo.jump(0, -450); S.sfx('arp', { notes: [0, 2, 4, 7, 9] }); }],
+        // the button: plant the fruit... and immediately start watching it
+        [34.0, { x: 905, speed: 120, accel: 450, eye: 'open', lookX: 1, lookY: .5, tilt: 0 }],
+        [PLANT - .3, { crouch: .2 }],
+        [PLANT, { crouch: 0, x: 997 }], [PLANT, () => bo.jump(200, -560)],   // stomp it in, like the first seed
+        [36.2, { x: 905, speed: 100, lookX: 1, lookY: .5, eye: 'open' }],    // back off, keep watching
+        [STARE, { sit: 1, lookY: .55 }],
+        [CATCH, { eye: 'wide', sit: 0, tilt: -.08, lookY: .2 }], [CATCH, () => S.sfx('pop', { pitch: 900, g: .08 }, bo.x)],   // ...wait
+        [38.9, { eye: 'closed', lookY: -1, lookX: -.5, tilt: -.16 }],          // nose in the air. not watching
+        [39.0, () => S.sfx('hum', { notes: [4, 2, 4, 2, 5], gap: .22, g: .035 }, bo.x)],
+        [40.0, { crouch: .2, eye: 'happy' }], [40.25, { crouch: 0 }], [40.25, () => bo.jump(0, -420)],
         [LEAVE, { x: 1e6, speed: V, accel: 450, eye: 'open', lookX: 0, lookY: 0, tilt: 0 }],
+        [LEAVE + .1, () => S.sfx('hum', { notes: [2, 4, 5, 7, 5], gap: .3, g: .04 }, bo.x)],
       ]);
       // impatience: foot-tap bounces while sitting, then pecking at the dirt
       const tap = (a, b, hz) => {
@@ -93,8 +107,8 @@
         bo.cmd.crouch = .065 * Math.abs(Math.sin((t - a) * Math.PI * hz));
         const k = Math.floor((t - a) * hz); if (k > S.tapK) { S.tapK = k; S.sfx('tock', { f: 1500 + (k % 2) * 200 }, bo.x); }
       };
-      if (t > 10.95 && t < 11.05) S.tapK = 0; if (t > 17.35 && t < 17.45) S.tapK = 0;
-      tap(11, 12, 4); tap(17.4, 18.2, 6);
+      if (t > 10.95 && t < 11.05) S.tapK = 0; if (t > 17.35 && t < 17.45) S.tapK = 0; if (t > STARE + .35 && t < STARE + .45) S.tapK = 0;
+      tap(11, 12, 4); tap(17.4, 18.2, 6); tap(STARE + .4, CATCH, 5);
       const peck = (a, b, hz) => {
         if (t <= a || t >= b) return;
         bo.cmd.tilt = .38 * Math.max(0, Math.sin((t - a) * Math.PI * hz));
@@ -107,6 +121,9 @@
 
       // landing on the seed pushes it into the ground
       if (S.wasAir && bo.mode === 'ground' && Math.abs(bo.x - sd.x) < 60 && sd.state === 'ground') { sd.state = 'sinking'; sd.t0 = t; S.sfx('squish', {}, sd.x); }
+      // ...and the same stomp plants the fallen fruit
+      const dr = S.drop;
+      if (S.wasAir && bo.mode === 'ground' && t > PLANT && dr.rest && !dr.sunk && Math.abs(bo.x - dr.x) < 60) { dr.sunk = t; S.sfx('squish', {}, dr.x); }
       S.wasAir = bo.mode === 'air';
       if (sd.state === 'sinking') {
         sd.y = lerp(SEED_REST, GROUND + 44, outCubic(seg(t, sd.t0, sd.t0 + .35)));
@@ -119,6 +136,8 @@
         }
       }
       spring(S.mound, sd.state === 'under' || sd.state === 'sinking' ? 1 : 0, 120, .5, dt);
+      spring(S.mound2, dr.sunk ? 1 : 0, 120, .5, dt);
+      if (dr.sunk) dr.y = lerp(GROUND - 14, GROUND + 34, outCubic(seg(t, dr.sunk, dr.sunk + .35)));
 
       // the falling fruit
       const d = S.drop;
@@ -136,7 +155,9 @@
       }
 
       // keep the tree in frame while it grows
-      if (t > 23.6 && t < LEAVE) { S.camGoal.x = (bo.x + TREE_X) / 2; S.camGoal.z = .9; S.camGoal.kz = 1.6; }
+      if (t > 23.6 && t < 34.6) { S.camGoal.x = (bo.x + TREE_X) / 2; S.camGoal.z = .9; S.camGoal.kz = 1.6; }
+      // closer for the planting and the staring
+      if (t > 34.6 && t < LEAVE) { S.camGoal.x = 950; S.camGoal.z = 1.12; S.camGoal.kx = 2; S.camGoal.kz = 1.4; }
     },
     drawBack(S, ctx, t) {
       const sd = S.seed;
@@ -180,11 +201,19 @@
       }
       // buried seed sits behind Bo; out of the ground it is drawn in front
       if (sd.state === 'under' || sd.state === 'sinking') drawSeed(S, ctx, t);
+      // the planted fruit and its little mound
+      const d = S.drop, m2 = S.mound2.x;
+      if (d.sunk) { ctx.fillStyle = PAL.orange; ctx.beginPath(); ctx.arc(d.x, d.y, 14, 0, Math.PI * 2); ctx.fill(); }
+      if (m2 > .02) {
+        ctx.fillStyle = PAL.brown; ctx.lineWidth = 6;
+        ctx.beginPath(); ctx.moveTo(d.x - 34, GROUND + 4);
+        ctx.quadraticCurveTo(d.x, GROUND + 4 - 22 * m2, d.x + 34, GROUND + 4); ctx.fill(); ctx.stroke();
+      }
     },
     drawFront(S, ctx, t) {
       if (S.seed.state === 'ground' || S.seed.state === 'air') drawSeed(S, ctx, t);
       const d = S.drop;
-      if (d.on) { ctx.fillStyle = PAL.orange; ctx.beginPath(); ctx.arc(d.x, d.y, 14, 0, Math.PI * 2); ctx.fill(); }
+      if (d.on && !d.sunk) { ctx.fillStyle = PAL.orange; ctx.beginPath(); ctx.arc(d.x, d.y, 14, 0, Math.PI * 2); ctx.fill(); }
       const top = S.bo.top();
       if (t > 23.8 && t < 29.2) zzz(ctx, top.x + 10, top.y, t, seg(t, 23.8, 24.2) * (1 - seg(t, 28.8, 29.2)));
     },

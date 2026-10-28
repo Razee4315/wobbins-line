@@ -6,16 +6,19 @@
 <title>Inner Voice</title>
 </head>
 <body>
-<script src="sfx.js?v=7"></script>
-<script src="engine2.js?v=7"></script>
+<script src="sfx.js?v=8"></script>
+<script src="engine2.js?v=8"></script>
 <script>
 // Bo flicks up a ball and starts bouncing it on its head: 1, 2, 3. A grumbly ink scribble pops up
 // beside Bo: "is that it?" Bo drops it. "you're going to drop it." Bo drops it. Each jab, the
 // scribble gets bigger. So Bo turns and talks to it kindly, and the scribble shrinks into a little
 // buddy who cheers. Bo bounces the ball higher than ever, then heads it over to the new friend.
+// Button: the buddy tries a header too and... bonk, right on its head, dizzy. "oops!" Bo laughs:
+// "nice try!" (kind, like it learned). Then the buddy skips ahead through the air and Bo follows.
 const { PAL, SPRITES, sprite, lerp, seg, sine, outBack, clamp, hash, spring, mix, GROUND } = Shorts;
 const V = 140, SPOT = 860, BALL0 = 930, BR = 22;
-const FLICKS = [5.2, 9.4, 12.8, 23.0], DROPS = [8.0, 11.6, 14.2], BIG = 26.4, PASS = 27.3, LEAVE = 29.4, LOOP = LEAVE + 7.2;
+const FLICKS = [5.2, 9.4, 12.8, 23.0], DROPS = [8.0, 11.6, 14.2], BIG = 26.4, PASS = 29.7, LEAVE = 33.8, LOOP = LEAVE + 7.0;
+const BONK = 30.5, GO = LEAVE - .2;   // BONK: when the passed ball lands on the buddy (follows from PASS; checked)
 const SCRIB = '#33333d', CRITIC = { pitch: .72 }, BUDDY = { pitch: 1.45 };
 const POOF = 6.6, KIND = [17.6, 19.6], TURN = 21.4;
 const size = t => t < POOF ? 0 : t < 10.2 ? 1 : t < 13.4 ? 1.7 : t < KIND[0] ? 2.6 : t < KIND[1] ? 1.8 : t < TURN ? 1.15 : .9;
@@ -33,11 +36,14 @@ Shorts.play({
     [KIND[0], KIND[0] + 1.6, "hey. i'm *learning.*"],
     [KIND[1], KIND[1] + 1.8, "it's okay to be bad *at first.*"],
     [22.4, 23.6, 'you got this!', PAL.violet, BUDDY],
-    [27.6, 34.4, 'talk to yourself the way you would *talk to a friend.*'],
+    [26.6, 30.0, 'talk to yourself the way you would *talk to a friend.*'],
+    [BONK + .5, BONK + 1.3, '*oops!*', PAL.violet, BUDDY],
+    [BONK + 1.5, BONK + 2.6, 'nice *try!*'],
   ],
   init(S) {
     S.bo = S.addChar({ x: 0, walk: V });
     S.ball = { x: BALL0, y: GROUND - BR, vx: 0, vy: 0, mode: 'rest' }; S.count = 0; S.best = 0; S.morph = { x: 0, v: 0 }; S.sc = { x: 0, v: 0 };
+    S.budAnchor = null; S.budHop = null; S.bonk = null;
   },
   update(S, t, dt) {
     const bo = S.bo, c = bo.cmd, b = S.ball, top = bo.top();
@@ -55,10 +61,15 @@ Shorts.play({
       [22.0, { sit: 0, face: 1, lookY: -1 }],
       [BIG + .6, { eye: 'happy' }],
       [PASS - .3, { face: -1 }],
-      [LEAVE - 1.1, { face: 1, eye: 'happy', lookY: 0 }],
-      [LEAVE - .7, { crouch: .2 }], [LEAVE - .45, { crouch: 0 }], [LEAVE - .45, () => bo.jump(0, -400)],   // a little bye hop
+      [PASS + .6, { lookY: -.3, lookX: .6 }],                                   // your turn!
+      [BONK + .1, { eye: 'wide', lookY: 0 }],                                   // ...ouch
+      [BONK + .9, { eye: 'happy' }], [BONK + .9, () => { S.sfx('laugh', { n: 4 }, bo.x); S.sfx('laugh', { n: 3, k: 1.5, g: .7 }, bo.x - 150); }],
+      [BONK + 1.0, { crouch: .1 }], [BONK + 1.2, { crouch: 0 }], [BONK + 1.4, { crouch: .1 }], [BONK + 1.6, { crouch: 0 }],   // giggles
+      [LEAVE - 1.0, { face: 1, eye: 'happy', lookY: 0, lookX: 0 }],
+      [LEAVE - .7, { crouch: .2 }], [LEAVE - .45, { crouch: 0 }], [LEAVE - .45, () => bo.jump(0, -400)],   // a little hop: let's go
       [LEAVE - .1, { eye: 'open' }],
       [LEAVE, { x: 1e6, speed: V, accel: 450 }],
+      [LEAVE + .1, () => S.sfx('hum', { notes: [2, 4, 5, 7, 5], gap: .3, g: .04 }, bo.x)],
     ]);
     // the ball: flicked up from the ground, then bounced off Bo's head until a drop
     const dropping = DROPS.some(d => t > d && t < d + .9);
@@ -66,15 +77,16 @@ Shorts.play({
     if (b.mode === 'air' || b.mode === 'pass') {
       b.vy += 2200 * dt; b.x += b.vx * dt; b.y += b.vy * dt;
       const headY = top.y - BR + 6;
+      // the pass (checked first, so the next touch after PASS is the pass): aimed to land right on the buddy's head
+      if (b.mode === 'air' && t > PASS && b.vy > 0 && b.y > headY - 4 && b.y < headY + 30 && Math.abs(b.x - top.x) < 50) S.once('pass', () => { b.mode = 'pass'; b.y = headY; b.vy = -900; b.vx = ((S.budPos ? S.budPos.x : bo.x - 150) - b.x) / .69; bo.q.v += 2.2; S.sfx('boing', { pitch: 260, g: .08 }, bo.x); });
       if (b.mode === 'air' && b.vy > 0 && b.y > headY && b.y < headY + 30 && Math.abs(b.x - top.x) < 50 && !dropping) {
         S.count++; S.best = Math.max(S.best, S.count);
         const big = t > BIG && t < PASS;
-        b.y = headY; b.vy = big ? -1500 : -940; b.vx = (top.x - b.x) * 2 + (hash(t) - .5) * 40;
+        b.y = headY; b.vy = big ? -1500 : -940; b.vx = big ? (top.x - b.x) / 1.36 + (hash(t) - .5) * 16 : (top.x - b.x) * 2 + (hash(t) - .5) * 40;   // big ones stay on target
         bo.q.v += 2.2;
         S.sfx('boing', { pitch: 230, g: .07 }, bo.x); S.sfx('catch', { pitch: 400 }, bo.x);
         if (t > FLICKS[3]) S.sfx('chime', { n: Math.min(10, S.count + 1), g: .09 }, bo.x);
       }
-      if (b.mode === 'air' && t > PASS && b.vy > 0 && b.y > headY - 4) S.once('pass', () => { b.mode = 'pass'; b.vy = -900; b.vx = -380; S.sfx('boing', { pitch: 260, g: .08 }, bo.x); S.sfx('laugh', { n: 3 }, bo.x); });
       if (b.y > GROUND - BR && b.vy > 0) {
         b.y = GROUND - BR; b.vy *= -.45; b.vx *= .7; S.sfx('thump', { g: .3 }, b.x); S.count = 0;
         if (Math.abs(b.vy) < 120) { b.mode = 'rest'; b.vy = 0; }
@@ -84,11 +96,18 @@ Shorts.play({
     // where the scribble / buddy hovers (worked out here, not in drawing, so the soundtrack pass agrees)
     { const sc = S.sc.x, hop = S.budHop ? Math.max(0, Math.sin(Math.PI * clamp((t - S.budHop) / .3))) * 20 : 0;
       const ax = t > PASS && S.budAnchor ? S.budAnchor.x : bo.x - 120 - sc * 30, ay = t > PASS && S.budAnchor ? S.budAnchor.y : top.y - 40 - sc * 34;
-      if (t > PASS) S.budAnchor ??= { x: ax, y: ay };                       // once it has the ball, it stays and plays
-      S.budPos = { x: ax, y: ay + Math.sin(t * 2.4) * 6 - hop, r: 34 * sc }; }
-    // the buddy (the scribble, once it's kind) bounces the passed ball on its own head
+      if (t > PASS) S.budAnchor ??= { x: ax, y: ay };                       // once the ball is passed, it stays put
+      // giggling after the bonk, then skipping off ahead through the air (over Bo's head)
+      const gig = t > BONK + .9 && t < BONK + 2 ? Math.abs(Math.sin(t * 16)) * 7 : 0;
+      const u = Math.max(0, t - GO), run = u < .6 ? 250 * u * u : 90 + 300 * (u - .6), skip = u > 0 ? Math.abs(Math.sin(u * 7)) * 34 : 0;
+      S.budPos = { x: ax + run, y: ay + Math.sin(t * 2.4) * 6 - hop - gig - skip, r: 34 * sc }; }
+    // the buddy tries a header too... and the ball bonks it on the head
     const bud = S.morph.x > .5 ? S.budPos : null;
-    if (bud && b.mode === 'pass' && b.vy > 0 && Math.abs(b.x - bud.x) < 50 && Math.abs(b.y - (bud.y - 50)) < 24) { b.vy = -760; b.vx = (bud.x - b.x) * 3; S.sfx('boing', { pitch: 380, g: .06 }, bud.x); S.budHop = t; }
+    if (bud && !S.bonk && b.mode === 'pass' && b.vy > 0 && Math.abs(b.x - bud.x) < 50 && Math.abs(b.y - (bud.y - 50)) < 24) {
+      S.bonk = t; b.vy = -560; b.vx = -240; S.budHop = t;
+      S.sfx('boing', { pitch: 170, g: .08 }, bud.x); S.sfx('thump', { g: .3 }, bud.x); S.sfx('dizzy', {}, bud.x);
+    }
+    if (t > GO) S.once('budGo', () => S.sfx('arp', { notes: [4, 5, 7], gap: .08, g: .05 }, bo.x - 120));
     // the scribble: appears, grows with every jab, shrinks with every kind word
     spring(S.sc, size(t), 30, .45, dt); spring(S.morph, t > TURN ? 1 : 0, 20, .6, dt);
     if (t > POOF) S.once('poof', () => { S.sfx('poof', {}, bo.x - 120); S.sfx('rumble', { d: .8 }); });
@@ -109,7 +128,7 @@ Shorts.play({
     }
   },
   drawBack(S, ctx, t) {
-    for (let i = 0; i < 16; i++) { const x = 560 + i * 60 + hash(i) * 30; ctx.strokeStyle = PAL.green; ctx.lineWidth = 4; for (let k = -1; k <= 1; k++) { ctx.beginPath(); ctx.moveTo(x + k * 4, GROUND + 2); ctx.lineTo(x + k * 4 + Math.sin(t * 1.4 + i) * 2, GROUND - 14); ctx.stroke(); } }
+    for (let i = 0; i < 9; i++) { const x = 560 + i * 60 + hash(i) * 30; ctx.strokeStyle = PAL.green; ctx.lineWidth = 4; for (let k = -1; k <= 1; k++) { ctx.beginPath(); ctx.moveTo(x + k * 4, GROUND + 2); ctx.lineTo(x + k * 4 + Math.sin(t * 1.4 + i) * 2, GROUND - 14); ctx.stroke(); } }
   },
   drawFront(S, ctx, t) {
     const bo = S.bo, top = bo.top(), b = S.ball, sc = S.sc.x, m = S.morph.x;
@@ -135,14 +154,20 @@ Shorts.play({
       }
       // the buddy it becomes: small, round, lavender, smiling
       if (m > .02) {
+        // after the bonk: squashed for a moment, swirly eyes and little stars for a second
+        const since = S.bonk ? t - S.bonk : 9, sq = since < 1 ? Math.exp(-since * 5) * Math.cos(since * 22) * .3 : 0, dizzy = since < 1.1;
         ctx.save(); ctx.globalAlpha = m; const rb = 30 * outBack(m);
+        ctx.translate(x, y + rb); ctx.scale(1 + sq, 1 - sq); ctx.translate(-x, -y - rb);
         ctx.fillStyle = '#e4dcff'; ctx.strokeStyle = '#111'; ctx.lineWidth = 5;
         ctx.beginPath(); ctx.arc(x, y, rb, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
-        ctx.lineWidth = 4; for (const s of [-1, 1]) { ctx.beginPath(); ctx.arc(x + s * 10, y - 2, 6, Math.PI * 1.15, Math.PI * 1.85); ctx.stroke(); }
+        ctx.lineWidth = 4;
+        if (dizzy) for (const s of [-1, 1]) { ctx.beginPath(); for (let k = 0; k <= 16; k++) { const a = k * .7 + t * 9 * s, rr = 1 + k * .36; k ? ctx.lineTo(x + s * 10 + Math.cos(a) * rr, y - 2 + Math.sin(a) * rr) : ctx.moveTo(x + s * 10, y - 2); } ctx.stroke(); }
+        else for (const s of [-1, 1]) { ctx.beginPath(); ctx.arc(x + s * 10, y - 2, 6, Math.PI * 1.15, Math.PI * 1.85); ctx.stroke(); }
         ctx.fillStyle = PAL.pink; ctx.globalAlpha = .8 * m; ctx.beginPath(); ctx.ellipse(x - 18, y + 8, 6, 3.5, 0, 0, Math.PI * 2); ctx.ellipse(x + 18, y + 8, 6, 3.5, 0, 0, Math.PI * 2); ctx.fill();
         ctx.globalAlpha = m; ctx.strokeStyle = PAL.violet; ctx.lineWidth = 4; ctx.beginPath(); ctx.moveTo(x, y - rb); ctx.quadraticCurveTo(x + 6, y - rb - 18, x - 4, y - rb - 26); ctx.stroke();
         ctx.restore();
         if (m < .9 && t > TURN) for (let i = 0; i < 6; i++) { const a = i / 6 * Math.PI * 2 + t * 3; sprite(ctx, SPRITES.sparkle, x + Math.cos(a) * 54, y + Math.sin(a) * 44, 3, { X: PAL.violet }, 1 - m); }
+        if (dizzy) for (let i = 0; i < 3; i++) { const a = i / 3 * Math.PI * 2 + t * 6; sprite(ctx, SPRITES.star, x + Math.cos(a) * 34, y - rb - 12 + Math.sin(a) * 9, 3.5, { X: PAL.orange }, 1 - seg(since, .8, 1.1)); }
       }
     }
   },

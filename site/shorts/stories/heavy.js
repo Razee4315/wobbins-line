@@ -4,9 +4,12 @@
   // Bo walks along flying a kite. A gust blows it into a tree. Bo jumps, and jumps higher. A friend
   // offers a hand: "no no, I've got it!" A crate: so close. Another friend: "I'm fine." Then, quietly:
   // "...could you help me?" Two friends make a tower, Bo climbs to the top, and the kite flies again.
+  // Button: a stranger hops under the same tree for a stuck balloon (it's been there since frame 0).
+  // Bo: "need a hand?" "yes please!" The stranger stands on Bo's head, gets it, and everyone skips on.
   const { PAL, SPRITES, sprite, lerp, seg, sine, outBack, clamp, hash, spring, mix, GROUND, STAND } = Shorts;
   const V = 130, TREE = 1180, UNDER = 1150, CRATE0 = 880, BRANCH = { x: 1210, y: GROUND - 440 }, STRING_END = { x: 1170, y: GROUND - 350 };
-  const GUST = 4.2, SNAP = 5.0, ASK = 23.8, BUILD = 26.6, FREE = 29.3, TUMBLE = 30.1, LEAVE = 33.6, LOOP = LEAVE + 7.4;
+  const GUST = 4.2, SNAP = 5.0, ASK = 23.8, BUILD = 26.6, FREE = 29.3, TUMBLE = 30.1, LEAVE = 40.0, LOOP = LEAVE + 8.3;   // the tree is out of view at the seam
+  const BAL = { x: 985, y: GROUND - 370 }, HELP = 37.2, GOT = 37.9, DOWN = 38.4;   // the stuck balloon; the second tower
   const KITE = ['...X...', '..XYX..', '.XXYXX.', 'XXXYXXX', '.YYYYY.', '..XYX..', '...X...'];
 
   Shorts.play({
@@ -26,12 +29,17 @@
       [20.8, 21.8, "i'm *fine.*"],
       [ASK, ASK + 1.6, '...could you help me?', null, { pitch: .92, g: .8 }],
       [25.6, 26.6, '*of course!*', null, { pitch: 1.25 }],
-      [31.6, 39.0, "asking for help isn't weak. *it's how we reach higher.*"],
+      [31.4, 34.9, "asking for help isn't weak. *it's how we reach higher.*"],
+      [35.0, 36.0, 'need a *hand?*'],
+      [36.2, 37.1, '*yes please!*', null, { pitch: 1.38 }],
     ],
     init(S) {
       S.pink = S.addChar({ x: 1900, face: -1, hair: 'curl', blush: PAL.pink, fill: '#ffe9f2', gain: .5 });
       S.blue = S.addChar({ x: 2100, face: -1, hair: 'antenna', hairColor: PAL.blue, fill: '#e6f0ff', gain: .5 });
+      // the stranger waits out of sight (hidden) until the very end
+      S.kid = S.addChar({ x: 200, face: 1, hairColor: PAL.green, blush: '#ffb08a', fill: '#eafbe8', gain: .5 }); S.kid.hidden = true;
       S.bo = S.addChar({ x: 0, walk: V }); S.focus = S.bo;
+      S.bal = { ...BAL };
       S.kite = null; S.kv = { x: 0, y: 0 }; S.mode = 'fly'; S.crate = { x: CRATE0, up: false, tip: { x: 0, v: 0 } }; S.flap = 0; S.climb = [];
     },
     update(S, t, dt) {
@@ -61,7 +69,15 @@
         [25.6, { eye: 'happy', sit: 0 }],
         [BUILD + 1.2, { x: UNDER - 60, speed: 120, accel: 400 }],
         [TUMBLE + 1.2, { eye: 'happy', lookY: -.6, lookX: -.3 }],
+        [34.0, { face: -1, lookX: .6, lookY: -.3, eye: 'open' }],              // someone else has a tree problem
+        [35.2, { x: 1000, speed: 90, accel: 400 }],
+        [36.3, { eye: 'happy', lookY: -.4 }],
+        [HELP + .4, { crouch: .12, eye: 'squeeze', lookY: -1, lookX: 0 }],     // a step to stand on
+        [DOWN, { crouch: 0, eye: 'happy', lookY: 0, lookX: .6 }],
+        [39.0, { face: 1, lookX: 0 }],
+        [39.1, { crouch: .2 }], [39.35, { crouch: 0 }], [39.35, () => bo.jump(0, -420)],
         [LEAVE, { x: 1e6, speed: V, accel: 450, eye: 'happy', lookX: -.3, lookY: -.6 }],
+        [LEAVE + .1, () => S.sfx('hum', { notes: [2, 4, 5, 7, 5], gap: .3, g: .04 }, bo.x)],
       ]);
       S.plan(pink, t, [
         [10.0, { x: UNDER + 170, speed: 150, accel: 400, face: -1 }],
@@ -69,13 +85,33 @@
         [25.6, { eye: 'happy' }], [BUILD, { x: UNDER + 100, speed: 160, accel: 500 }],
         [BUILD + .5, { crouch: .2 }], [BUILD + .75, { crouch: 0, x: S.crate.x }], [BUILD + .75, () => pink.jump(-240, -560)],   // onto the crate
         [TUMBLE + 1.6, { eye: 'happy' }],
+        [34.2, { eye: 'open', lookX: .5, lookY: -.3 }], [DOWN + .2, { eye: 'happy', lookY: 0 }],
+        [LEAVE - .2, { x: 1e6, speed: 280, accel: 700, face: 1, eye: 'happy', lookX: 0 }],
       ]);
       S.plan(blue, t, [
         [18.4, { x: UNDER + 290, speed: 200, accel: 500, face: -1 }],
         [19.4, { eye: 'happy' }], [20.8, { eye: 'sad' }],
         [25.6, { eye: 'happy' }], [BUILD + .2, { x: UNDER + 120, speed: 160, accel: 500 }],
         [TUMBLE + 1.6, { eye: 'happy' }],
+        [34.3, { eye: 'open', lookX: .5 }], [DOWN + .25, { eye: 'happy', lookY: 0 }],
+        [LEAVE - .35, { x: 1e6, speed: 300, accel: 700, face: 1, eye: 'happy', lookX: 0 }],
       ]);
+      // the stranger: walks in, hops for the balloon (like Bo did for the kite), sits, then says yes
+      const kid = S.kid;
+      if (t > 30.4) kid.hidden = false;
+      S.plan(kid, t, [
+        [30.4, { x: BAL.x - 10, speed: 260, accel: 600, face: 1, eye: 'happy' }],
+        [33.2, { eye: 'wide', lookY: -1, lookX: .2 }],
+        [33.6, { crouch: .2 }], [33.85, { crouch: 0, eye: 'open' }], [33.85, () => kid.jump(0, -540)],
+        [34.5, { crouch: .24 }], [34.75, { crouch: 0 }], [34.75, () => kid.jump(0, -600)],
+        [35.3, { x: 890, speed: 90, accel: 300, eye: 'sad', lookY: -.6, lookX: .4 }], [35.9, { sit: 1, tilt: .08 }],
+        [36.2, { sit: 0, tilt: 0, eye: 'happy', lookY: 0, lookX: .5 }],
+        [GOT, { eye: 'heart' }],
+        [DOWN + .6, { eye: 'happy' }],
+        [LEAVE - .3, { x: 1e6, speed: 290, accel: 700, face: 1, eye: 'happy', lookX: 0, lookY: 0 }],
+      ]);
+      // ...and everyone skips off ahead together (hops keep their run speed)
+      [pink, blue, kid].forEach((f, i) => { if (t > LEAVE + .3 && f.mode === 'ground' && hash(Math.floor(t * 2.5) + i * 3) > .72) S.once(`skip${i}:${Math.floor(t * 2.5)}`, () => f.jump(f.vx, -300)); });
       // the crate: Bo nudges it along, it's a step to stand on; it tips when Bo falls off
       const cr = S.crate;
       if (t > 14.6 && t < 16.0 && bo.x > cr.x - 120) cr.x = Math.max(cr.x, bo.x + 100);
@@ -99,7 +135,15 @@
         [pink, blue, bo].forEach(m => m.cmd.tilt = 0); pink.jump(170, -420);
         S.sfx('laugh', { n: 4 }, bo.x); S.sfx('laugh', { n: 3, k: 1.3 }, pink.x); S.sfx('laugh', { n: 3, k: 1.15 }, blue.x);
       });
-      if (t > TUMBLE + .3) { blue.cmd.x = UNDER + 240; pink.cmd.x = UNDER + 120; }
+      if (t > TUMBLE + .3 && t < LEAVE - .4) { blue.cmd.x = UNDER + 240; pink.cmd.x = UNDER + 120; }
+      // the second tower: the stranger stands on Bo's head and gets the balloon back
+      if (t > HELP && t < DOWN) { onHead(kid, bo, HELP); if (t > HELP + .1) S.once('climb3', () => S.sfx('toss', { pitch: 470 }, bo.x)); }
+      if (t >= DOWN) S.once('down', () => { kid.release(150, -420); kid.towerFrom = null; kid.towered = false; kid.heldFeet = null; });
+      if (t > GOT) S.once('got', () => { S.sfx('catch', { pitch: 720 }, BAL.x); S.sfx('sparkle', { n: 5 }, BAL.x); });
+      if (t > DOWN + .4) S.once('yay', () => { const k = kid.top(); S.burst((k.x + bo.x) / 2, k.y - 30, 6, [PAL.pink, PAL.violet], { speed: 160, gravity: -60, size: 20, life: 1.3, shape: 'heart' }); S.sfx('laugh', { n: 3 }, bo.x); S.sfx('laugh', { n: 3, k: 1.35 }, kid.x); });
+      // the balloon: stuck on the tree's edge, then back on the stranger's tuft, floating above
+      if (t > GOT && kid.tuft) { const k = Math.min(1, dt * 7); S.bal.x += (kid.tuft.x - 26 + Math.sin(t * 1.7) * 8 - S.bal.x) * k; S.bal.y += (kid.tuft.y - 130 - S.bal.y) * k; }
+      else if (t < GOT) { S.bal.x = BAL.x; S.bal.y = BAL.y; }
 
       // the kite: flies behind Bo on a string tied to its tuft; the gust drops it in the tree
       const T = bo.tuft;
@@ -117,7 +161,7 @@
       if (t > GUST) S.once('gust', () => S.sfx('windbed', { d: 2.4, g: 1.6 }));
       S.once('amb', () => { S.sfx('birds', { d: LOOP, g: .8 }); S.sfx('windbed', { d: LOOP, g: .35 }); });
 
-      if (t > 4.4 && t < LEAVE + .4) { S.camGoal.x = UNDER + 20; S.camGoal.y = GROUND - 90; S.camGoal.z = t > BUILD && t < TUMBLE + .6 ? .74 : .82; S.camGoal.kx = 1.6; S.camGoal.kz = 1.2; }
+      if (t > 4.4 && t < LEAVE + .4) { S.camGoal.x = t > 32.4 ? 1110 : UNDER + 20; S.camGoal.y = GROUND - 90; S.camGoal.z = t > BUILD && t < TUMBLE + .6 ? .74 : .82; S.camGoal.kx = 1.6; S.camGoal.kz = 1.2; }
     },
     drawSky(S, ctx, t, v) {
       for (let i = 0; i < 3; i++) {
@@ -139,7 +183,17 @@
       ctx.beginPath(); ctx.moveTo(-46, -80); ctx.lineTo(46, 0); ctx.moveTo(46, -80); ctx.lineTo(-46, 0); ctx.stroke(); ctx.restore();
     },
     drawFront(S, ctx, t) {
-      const bo = S.bo, T = bo.tuft, K = S.kite; if (!K) return;
+      const bo = S.bo, T = bo.tuft, K = S.kite;
+      // the balloon: caught on the edge of the leaves, string dangling; later back on the stranger's tuft
+      { const B = S.bal, kt = S.kid.tuft, held = t > GOT && kt, sw = Math.sin(t * 1.6) * 6;
+        ctx.strokeStyle = '#111'; ctx.lineWidth = 2.5; ctx.beginPath(); ctx.moveTo(B.x, B.y + 32);
+        if (held) ctx.quadraticCurveTo(B.x + 10, (B.y + kt.y) / 2 + 20, kt.x, kt.y); else ctx.quadraticCurveTo(B.x - 6 + sw, B.y + 60, B.x - 3 + sw * 1.5, B.y + 82);
+        ctx.stroke();
+        ctx.save(); ctx.translate(B.x, B.y); ctx.rotate(held ? Math.sin(t * 1.7) * .1 : -.12 + Math.sin(t * 2.3) * .03);
+        ctx.fillStyle = PAL.violet; ctx.lineWidth = 5; ctx.beginPath(); ctx.ellipse(0, 0, 24, 30, 0, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(-5, 34); ctx.lineTo(0, 28); ctx.lineTo(5, 34); ctx.closePath(); ctx.fillStyle = PAL.violet; ctx.fill(); ctx.lineWidth = 3; ctx.stroke();
+        ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.ellipse(-9, -11, 5, 8, -.4, 0, Math.PI * 2); ctx.fill(); ctx.restore(); }
+      if (!K) return;
       // the string: tied to Bo's tuft, or snapped and dangling from the branch
       ctx.strokeStyle = '#111'; ctx.lineWidth = 2.5;
       const attached = t < SNAP || t > FREE;

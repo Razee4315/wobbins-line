@@ -3,8 +3,12 @@
   const Shorts = Object.assign(Object.create(window.Shorts), { play: story => { (window.WL_STORIES ||= {})['the-hill'] = story; } });
   // Bo pushes a ball up a hill. It rolls back. The hill gets bigger. Again.
   // The third time Bo makes it, and the other side turns out to be the fun part.
+  // Button: on the flat, the ball rolls to a stop. Bo braces for one more huge push... and the
+  // ball zips off at a touch. Bo stumbles after it, laughs, and skips off the same way.
   const { PAL, SPRITES, sprite, lerp, seg, sine, outBack, clamp, hash, spring, GROUND, STAND } = Shorts;
   const V = 130, HX = 1300, HW = 560, R = 56, FLAG_X = 1400, G1 = 13.4, G2 = 26.6;
+  // the flick lands at ~49.8 s (it fires when Bo's leaning head touches the ball); Bo leaves 2.3 s later
+  const BRACE = 49.0, FLICK = 49.8, LEAVE = FLICK + 2.4;
   const hillH = t => 130 + 100 * sine(seg(t, G1, G1 + 1.4)) + 110 * sine(seg(t, G2, G2 + 1.4));
   const prof = u => Math.abs(u) >= 1 ? 0 : sine(clamp((1 - Math.abs(u)) / .62));
   const GRASS = Array.from({ length: 22 }, (_, i) => 700 + i * 62 + hash(i) * 30);
@@ -12,9 +16,9 @@
 
   function stepBall(S, t, dt) {
     const b = S.ball, bo = S.bo, gs = (S.groundAt(b.x + 4) - S.groundAt(b.x - 4)) / 8;
-    const free = S.ride || S.free, fr = free ? .25 : Math.abs(gs) < .02 ? 2.4 : .35;
+    const free = S.ride || S.free, fr = S.coast ? 1.1 : free ? .25 : Math.abs(gs) < .02 ? 2.4 : .35;
     b.vx += (free ? 700 : 1400) * gs * dt + (S.ride ? 150 * dt : 0);
-    b.vx *= Math.exp(-fr * dt); b.x += b.vx * dt;
+    b.vx *= Math.exp(-fr * dt); if (S.coast && Math.abs(b.vx) < 6) b.vx = 0; b.x += b.vx * dt;
     if (S.pushing) {
       // keep the ball resting against Bo's leaning head: slide it along the ground until
       // its edge just touches the nearest point of Bo's outline
@@ -35,7 +39,7 @@
   Shorts.play({
     title: 'The Hill',
     accent: PAL.red,
-    loopAfter: 52.6,
+    loopAfter: LEAVE + 7.0,
     ground: (x, t) => GROUND - hillH(t) * prof((x - HX) / HW),
     captions: [
       [6.6, 8.8, 'push.'],
@@ -45,13 +49,13 @@
       [29.0, 31.4, 'one more time.'],
       [37.6, 39.4, 'almost...'],
       [41.0, 43.0, '*made it.*'],
-      [44.8, 47.2, 'whee!'],
-      [48.2, 52.4, 'every hill has *another side.*'],
+      [44.6, 46.6, 'whee!'],
+      [46.9, 49.9, 'every hill has *another side.*'],
     ],
     init(S) {
       S.bo = S.addChar({ x: 0, walk: V });
       S.ball = { x: 655, px: 655, y: 0, vx: 0, ang: 0, over: 0 };
-      S.pushing = false; S.ride = false; S.free = false; S.wantRide = false; S.rollClock = 0;
+      S.pushing = false; S.ride = false; S.free = false; S.wantRide = false; S.rollClock = 0; S.coast = false; S.flickT = null;
     },
     update(S, t, dt) {
       const bo = S.bo, b = S.ball;
@@ -114,7 +118,7 @@
       S.rollClock = (S.rollClock || 0) + dt;
       if (S.rollClock >= .085) {
         S.rollClock = 0;
-        if (Math.abs(b.vx) > 6) S.sfx('roll', { v: clamp(Math.abs(b.vx) / 550) }, b.x);
+        if (Math.abs(b.vx) > 6 && Math.abs(b.x - S.cam.x.x) < 900) S.sfx('roll', { v: clamp(Math.abs(b.vx) / 550) }, b.x);
         if (S.ride) S.sfx('wind', { v: clamp(b.vx / 700) }, b.x);
       }
       if (t > G1 && t < G1 + 1.4 || t > G2 && t < G2 + 1.4) S.shake(1.2);
@@ -130,15 +134,38 @@
         bo.hold(b.x - 6 + S.catch.dx * settle, b.y - R - STAND + 2 * Math.sin(b.ang * 2.4) + S.catch.dy * settle);
         bo.cmd.eye = 'happy';
         if (b.x > 1930) S.once('hop', () => {
-          S.ride = false; S.free = true; bo.release(b.vx * .55, -620);
+          S.ride = false; S.free = true; S.coast = true; bo.release(b.vx * .55, -620);
           Object.assign(bo.cmd, { x: 1e6, speed: V, accel: 450, eye: 'happy', lookX: 0, lookY: 0, tilt: 0 });
         });
       }
-      if (S.fired.has('hop')) Object.assign(bo.cmd, { x: 1e6, speed: V, accel: 450, eye: t > 49.4 ? 'open' : 'happy' });
+      if (S.fired.has('hop') && !S.flickT) {
+        // the ball rolls to a stop on the flat; Bo catches up and braces for a big push
+        const brace = t > BRACE;
+        Object.assign(bo.cmd, brace
+          ? { x: b.x, speed: 70, accel: 300, tilt: .32 + .04 * Math.sin(t * 34), crouch: .12, eye: 'squeeze', lookX: 0, lookY: 0 }
+          : { x: b.x - R - 96, speed: V, accel: 450, eye: 'happy', tilt: 0, crouch: 0, lookX: 0, lookY: 0 });
+        // ...and at the lightest touch it just goes
+        if (brace && Math.min(...bo.outline().map(p => Math.hypot(p.x - b.x, p.y - b.y))) < R + 4) S.once('flick', () => {
+          S.flickT = t; S.flickX = bo.x; S.coast = false; b.vx = 760;
+          S.sfx('boing', { pitch: 330, g: .07 }, b.x); S.sfx('whoosh', { d: .45 }, b.x); S.sfx('slip', {}, bo.x);
+        });
+      }
+      if (S.flickT) {
+        const u = t - S.flickT;
+        Object.assign(bo.cmd, u < .45
+          ? { x: S.flickX + 90, speed: 260, accel: 1500, tilt: .55, crouch: .05, eye: 'wide' }   // lurches into thin air
+          : { x: S.flickX + 90, speed: 260, accel: 1500, tilt: 0, crouch: 0, eye: u < 1 ? 'wide' : 'happy', lookX: .8 });
+        if (u > 1) S.once('lol', () => S.sfx('laugh', { n: 4 }, bo.x));
+        if (u > 1.5) bo.cmd.crouch = u < 1.75 ? .2 : 0;
+        if (u > 1.75) S.once('skip', () => bo.jump(0, -460));
+        if (t > LEAVE) { Object.assign(bo.cmd, { x: 1e6, speed: V, accel: 450, eye: 'open', lookX: 0, lookY: 0, tilt: 0, crouch: 0 }); S.once('hum', () => S.sfx('hum', { notes: [2, 4, 5, 7, 5], gap: .3, g: .04 }, bo.x)); }
+      }
 
       // camera: reveal the hill, pull back as it grows
       if (t > 4.8 && t < 6.4) { S.camGoal.x = 900; S.camGoal.z = .85; S.camGoal.kx = 3; }
       else if (t > 6.4 && t < 43.4) S.camGoal.z = t < G1 ? .92 : t < G2 ? .82 : t < 40.4 ? .74 : .9;
+      // the flick: closer on Bo, with room ahead for the ball to zip off
+      if (t > BRACE - .6 && t < LEAVE) { S.camGoal.x = bo.x + 110; S.camGoal.z = 1.08; S.camGoal.kx = 2.5; S.camGoal.kz = 1.2; }
     },
     drawSky(S, ctx, t, v) {
       for (let i = 0; i < 3; i++) {

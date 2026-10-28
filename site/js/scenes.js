@@ -313,7 +313,7 @@
   // ---------- Meet Wobbin: a big idle Wobbin who notices you ----------
   WL.meetScene = canvas => {
     const story = {
-      paper: PAPER, unit: (cw, ch) => Math.min(ch / 360, cw / 300), groundFrac: .8, warmup: 0,
+      paper: PAPER, paperFinish: false, unit: (cw, ch) => Math.min(ch / 360, cw / 300), groundFrac: .8, warmup: 0,
       init(S) { S.bo = S.addChar({ x: 0 }); S.t2 = 0; S.hop = false; },
       update(S, t, dt) {
         const bo = S.bo; S.camGoal.x = 0; S.camGoal.kx = 20; bo.cmd.x = 0;
@@ -332,7 +332,7 @@
   WL.castScene = canvases => {
     const looks = [{}, ...FRIENDS];
     const story = {
-      paper: PAPER, unit: (cw, ch) => ch / 250, groundFrac: .86, warmup: 0,
+      paper: PAPER, paperFinish: false, unit: (cw, ch) => ch / 250, groundFrac: .86, warmup: 0,
       init(S) { S.cast = looks.map((o, i) => S.addChar({ x: i * 500, ...o })); S.focus = S.cast[0]; S.fid = looks.map((_, i) => 2 + i * 1.3); },
       update(S, t, dt) {
         S.cast.forEach((c, i) => {

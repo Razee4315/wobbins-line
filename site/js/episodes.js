@@ -2,9 +2,9 @@
    poster: the moment (seconds) used as the card's still frame and where hover previews start. */
 window.WL_SEASONS = [
   { n: 7, title: 'Heavy things', episodes: [
-    { id: 'just-in-case', title: 'Just in Case', theme: 'overpacking life', accent: '#ffa300', poster: 18.0, line: 'An umbrella, a sweater, a lamp, a duck, a ladder. All on Wobbin’s head, all just in case.', quote: 'you don’t have to carry every just-in-case.' },
+    { id: 'just-in-case', title: 'Just in Case', theme: 'overpacking life', accent: '#ffa300', poster: 18.0, line: 'An umbrella, a sweater, a lamp, a duck, a ladder. All on Wobbin’s head, all just in case.', quote: 'pack light. keep one umbrella.' },
     { id: 'heavy', title: 'Heavy', theme: 'asking for help', accent: '#3b7dd8', poster: 29.6, line: 'The kite is stuck. “no no, I’ve got it!” Jump, crate, so close. Then, quietly: “could you help?”', quote: 'asking for help isn’t weak. it’s how we reach higher.' },
-    { id: 'fine', title: 'Fine', theme: 'pretending you’re okay', accent: '#ffa300', poster: 18.8, line: 'A painted smile for every friend. It slips, it cracks, and the little rain cloud comes back.', quote: 'you don’t have to be fine all the time.' },
+    { id: 'fine', title: 'Fine', theme: 'pretending you’re okay', accent: '#ffa300', poster: 18.8, line: 'A painted smile for every friend. It slips, it cracks, and the little rain cloud comes back.', quote: 'not fine? that’s fine too.' },
     { id: 'comfort-zone', title: 'Comfort Zone', theme: 'stepping out', accent: '#ffa300', poster: 22.6, line: 'A warm dome, a grey world outside, and a zone that keeps shrinking. One step out, and colour floods back.', quote: 'comfort zones grow every time you step out.' },
     { id: 'inner-voice', title: 'Inner Voice', theme: 'the inner critic', accent: '#7b5cff', poster: 16.2, line: 'A grumbly scribble mocks every bounce, and grows. Until Wobbin talks to it kindly.', quote: 'talk to yourself the way you would talk to a friend.' },
   ] },
@@ -13,17 +13,17 @@ window.WL_SEASONS = [
     { id: 'why-was-i-here', title: 'Why Was I Here?', theme: 'forgetting', accent: '#00b543', poster: 8.4, line: 'A clear idea, a determined march, and the doorway that eats it. Every time.', quote: 'it’s not just you. doorways really do make you forget.' },
     { id: 'lost', title: 'Lost', theme: 'losing things', accent: '#ffa300', poster: 18.4, line: 'Cushions fly, the drawer empties, the clock races. The keys were never far.', quote: 'slow down. it’s usually closer than you think.' },
     { id: 'small-talk', title: 'Small Talk', theme: 'awkward silence', accent: '#ff004d', poster: 21.6, line: 'A bus stop, a stranger, a silence that grows. Then rain, and one umbrella.', quote: 'every friend was a stranger once.' },
-    { id: 'cant-sleep', title: 'Can’t Sleep', theme: 'night thoughts', accent: '#7b5cff', poster: 20.0, line: 'Counting sheep, until the sheep start bringing worries. Then the window opens.', quote: 'you don’t have to solve tomorrow tonight.' },
+    { id: 'cant-sleep', title: 'Can’t Sleep', theme: 'night thoughts', accent: '#7b5cff', poster: 20.0, line: 'Counting sheep, until the sheep start bringing worries. Then the window opens.', quote: 'tomorrow is tomorrow’s problem.' },
   ] },
   { n: 5, title: 'Small courage', episodes: [
     { id: 'monday-mountain', title: 'Monday Mountain', theme: 'dread', accent: '#7b5cff', poster: 7.45, line: 'A storm mountain looms bigger the longer Wobbin stares. Up close, it’s five small steps.', quote: 'it’s never as big up close.' },
-    { id: 'imposter', title: 'Imposter', theme: 'imposter syndrome', accent: '#ffa300', poster: 19.4, line: 'Wobbin wins a crown and keeps trying to give it back. It keeps coming home.', quote: 'you’re not an imposter. you belong here.' },
+    { id: 'imposter', title: 'Imposter', theme: 'imposter syndrome', accent: '#ffa300', poster: 19.4, line: 'Wobbin wins a crown and keeps trying to give it back. It keeps coming home.', quote: 'you did earn it. you belong here.' },
     { id: 'decision', title: 'Decision', theme: 'too many choices', accent: '#29adff', poster: 17.4, line: 'The paths split into 2, 4, 8, then 16 while the sun goes down.', quote: 'pick one. you can always turn.' },
     { id: 'busy', title: 'Busy', theme: 'rushing past', accent: '#ff77a8', poster: 14.6, line: 'Wobbin rushes past a friend waving a birthday cake, faster every trip.', quote: 'slow down for the ones who wait.' },
     { id: 'rain-check', title: 'Rain Check', theme: 'cancelling plans', accent: '#ffec27', poster: 16.4, line: 'A cozy night in gets lonely. Next morning, another invite.', quote: 'not every plan needs a rain check. sometimes, go anyway.' },
   ] },
   { n: 4, title: 'Getting unstuck', episodes: [
-    { id: 'tomorrow', title: 'Tomorrow', theme: 'putting it off', accent: '#ffa300', poster: 20.6, line: 'Every morning, ready, set... sit back down. The flag runs further away.', quote: 'you don’t have to be ready. just start.' },
+    { id: 'tomorrow', title: 'Tomorrow', theme: 'putting it off', accent: '#ffa300', poster: 20.6, line: 'Every morning, ready, set... sit back down. The flag runs further away.', quote: 'ready or not... just start.' },
     { id: 'highlight-reel', title: 'Highlight Reel', theme: 'comparison', accent: '#ff77a8', poster: 18.8, line: 'Friends hold up perfect pictures. The biggest one slips.', quote: 'don’t compare your every day to their best day.' },
     { id: 'small-steps', title: 'Small Steps', theme: 'consistency', accent: '#29adff', poster: 36.4, line: 'One drop a day into a big empty jar. Nothing, nothing, nothing, then everything.', quote: 'small steps, every day. they add up.' },
     { id: 'snooze', title: 'Snooze', theme: 'five more minutes', accent: '#ff004d', poster: 19.2, line: 'One alarm bird, then two, then four, while the whole day goes by.', quote: 'the day doesn’t wait. get up for it.' },
@@ -33,7 +33,7 @@ window.WL_SEASONS = [
     { id: 'last-minute', title: 'Last Minute', theme: 'procrastination', accent: '#ff004d', poster: 31.0, line: 'A whole week to build it. Naps, butterflies, clouds. Then one frantic night.', quote: 'why is the last night always the most productive?' },
     { id: 'yes', title: 'Yes', theme: 'people-pleasing', accent: '#ff77a8', poster: 21.0, line: 'Box after box on Wobbin’s head, until the little flower is buried.', quote: 'you can say no. they’ll be okay.' },
     { id: 'perfect', title: 'Perfect', theme: 'perfectionism', accent: '#7b5cff', poster: 10.5, line: 'One wrong pixel and the whole painting gets wiped. Again.', quote: 'done is better than perfect.' },
-    { id: 'battery', title: 'Battery', theme: 'the social battery', accent: '#00e436', poster: 15.6, line: 'The party is great, and every “hey!!” costs a bar.', quote: 'it’s okay to need quiet.' },
+    { id: 'battery', title: 'Battery', theme: 'the social battery', accent: '#00e436', poster: 15.6, line: 'The party is great, and every “hey!!” costs a bar.', quote: 'it’s okay to need quiet. real friends get it.' },
     { id: 'seen', title: 'Seen', theme: 'waiting for a reply', accent: '#3b7dd8', poster: 20.2, line: 'Sent. Seen. Typing... nothing. The worry grows.', quote: 'not every silence is about you.' },
   ] },
   { n: 2, title: 'Loops', episodes: [

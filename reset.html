@@ -6,21 +6,25 @@
 <title>Reset</title>
 </head>
 <body>
-<script src="sfx.js?v=7"></script>
-<script src="engine2.js?v=7"></script>
+<script src="sfx.js?v=8"></script>
+<script src="engine2.js?v=8"></script>
 <script>
 // One of those days: trip, ice cream on the floor, a rain cloud, an umbrella that blows away,
 // a slip into the mud. Bo falls asleep, and the whole line resets to a fresh morning.
+// Button: further along the fresh line there's another rock. Bo stops, gives it a look,
+// "not today, rock.", prances neatly over it and winks.
 const { PAL, SPRITES, sprite, zzz, lerp, seg, sine, outBack, clamp, hash, spring, mix, GROUND, GRAV, BODY_H } = Shorts;
 const V = 130, ROCK = 760, UMB = 1400, MUD = 1660;
 // measured from a run (captions and the reset are timed to these)
 const TRIP = 5.55, UMB_T = 13.08, MUD_T = 19.73, RESET = MUD_T + 5.6;
+// the button, timed from the reset: a new rock ahead, a look, a neat hop over it, a wink
+const ROCK2 = 2125, SEE = 6.6, STEP = 7.85, WINK = 8.6;
 const PUFFS = [[-50, 8, 26], [-20, -8, 34], [16, -14, 38], [48, 0, 30], [66, 14, 20], [0, 14, 30]];
 
 Shorts.play({
   title: 'Reset',
   accent: PAL.violet,
-  loopAfter: RESET + 9.0,
+  loopAfter: RESET + STEP + 7.2,
   paperAt: t => {
     const gloom = sine(seg(t, TRIP + 3, TRIP + 4)) * (1 - seg(t, RESET, RESET + .9));
     const nite = sine(seg(t, MUD_T + 2, MUD_T + 4.5)) * (1 - seg(t, RESET + .8, RESET + .9));
@@ -33,7 +37,8 @@ Shorts.play({
     [UMB_T + 2.2, UMB_T + 3.8, '*seriously?!*'],
     [MUD_T + .4, MUD_T + 2.0, '...what a day.'],
     [MUD_T + 3.2, MUD_T + 4.8, 'just... sleep.'],
-    [RESET + 2.6, RESET + 7.6, 'bad days end. *tomorrow is a new line.*'],
+    [RESET + 2.6, RESET + 6.6, 'bad days end. *tomorrow is a new line.*'],
+    [RESET + SEE + .5, RESET + SEE + 1.8, 'not today, *rock.*'],
   ],
   init(S) {
     S.bo = S.addChar({ x: 0, walk: V });
@@ -83,7 +88,18 @@ Shorts.play({
       if (t > RESET + 2.6) c.eye = 'happy';
       if (t > RESET + 2.9) S.once('yay', () => bo.jump(0, -480));
       if (t > RESET + 3.6) { S.stage = 'walk4'; S.t0 = t; }
-    } else if (S.stage === 'walk4') Object.assign(c, { x: 1e6, speed: V, accel: 450, eye: 'open', lookX: 0, lookY: 0, tilt: 0 });
+    } else if (S.stage === 'walk4') {
+      S.plan(bo, t - RESET, [
+        [3.6, { x: ROCK2 - 95, speed: V, accel: 450, eye: 'open', lookX: 0, lookY: 0, tilt: 0 }],
+        [SEE, { lookX: .5, lookY: .8, eye: 'wide' }],                   // a rock. again.
+        [SEE + .5, { eye: 'flat', lookY: .6 }],                          // not falling for that
+        [STEP - .25, { crouch: .2 }], [STEP, { crouch: 0, x: 1e6, speed: V, accel: 450, eye: 'open', lookX: 0, lookY: -.2 }],
+        [WINK, { eye: 'happy', lookY: 0 }],                              // wink
+        [WINK + .8, { eye: 'open' }],
+      ]);
+      if (t > RESET + STEP) S.once('prance', () => { bo.jump(380, -620); S.sfx('boing', { pitch: 330, g: .06 }, bo.x); });
+      if (t > RESET + WINK) S.once('wink', () => S.sfx('twinkle', { pitch: 1760 }, bo.x));
+    }
 
     // the ice cream: off it goes in the trip... and back after the reset
     const f = S.creamFall;
@@ -136,6 +152,8 @@ Shorts.play({
     }
     if (S.umb === 'ground' && !wiped(UMB)) drawUmbrella(ctx, UMB, GROUND - 10, 1.2, false);
     if (!wiped(MUD)) { ctx.fillStyle = PAL.brown; ctx.beginPath(); ctx.ellipse(MUD + 40, GROUND, 80, 8, 0, 0, Math.PI * 2); ctx.fill(); }
+    // the fresh line has a rock too (it arrives with the new morning)
+    if (wiped(ROCK2)) { ctx.fillStyle = PAL.grey; ctx.lineWidth = 4; ctx.beginPath(); ctx.ellipse(ROCK2, GROUND - 4, 26, 17, 0, Math.PI, 0); ctx.fill(); ctx.stroke(); }
   },
   drawFront(S, ctx, t, v) {
     const bo = S.bo, T = bo.tuft, top = bo.top();
@@ -156,6 +174,9 @@ Shorts.play({
     for (const d of S.drops) { ctx.beginPath(); ctx.moveTo(d.x, d.y - 16); ctx.lineTo(d.x, d.y); ctx.stroke(); }
     ctx.fillStyle = '#a7abb2';
     for (const [ox, oy, r] of PUFFS) { ctx.beginPath(); ctx.arc(S.cloud.x.x + ox, S.cloud.y.x + oy + Math.sin(t * 2 + ox) * 2, r, 0, Math.PI * 2); ctx.fill(); }
+    // the wink's little glint
+    const wk = seg(t, RESET + WINK, RESET + WINK + .7);
+    if (wk > 0 && wk < 1) { const e = bo.toWorld(32 * bo.fw + 30, -50); sprite(ctx, SPRITES.sparkle, e.x, e.y, 4 * Math.sin(Math.PI * wk), { X: PAL.orange }); }
     if (S.stage === 'mud' && t > S.t0 + 2.6 && t < RESET + 1.2) zzz(ctx, top.x - 10, top.y, t, seg(t, S.t0 + 2.6, S.t0 + 3) * (1 - seg(t, RESET + .8, RESET + 1.2)));
   },
   drawOverlay(S, ctx, t, v) {

@@ -83,6 +83,26 @@
     ctx.restore();
   }
 
+  // the paper sheet for drawPaper: cream base, faint fibres, darker toward the corners
+  const paperTextures = new Map();
+  function paperTexture(w, h) {
+    const key = w + 'x' + h; if (paperTextures.has(key)) return paperTextures.get(key);
+    const cv = document.createElement('canvas'); cv.width = w; cv.height = h;
+    const g = cv.getContext('2d'), s = Math.min(w, h) / 1000;
+    g.fillStyle = '#fdf8ef'; g.fillRect(0, 0, w, h);
+    g.lineCap = 'round';
+    for (let i = 0; i < 900; i++) {
+      const x = hash(i * 1.1) * w, y = hash(i * 2.3 + 5) * h, a = hash(i * 3.7) * Math.PI, l = (6 + hash(i * 4.9) * 22) * s;
+      g.strokeStyle = `rgba(150,120,80,${(.025 + hash(i * 5.3) * .03).toFixed(3)})`; g.lineWidth = Math.max(1, s * 1.4);
+      g.beginPath(); g.moveTo(x, y); g.lineTo(x + Math.cos(a) * l, y + Math.sin(a) * l); g.stroke();
+    }
+    const r = g.createRadialGradient(w / 2, h * .45, Math.min(w, h) * .35, w / 2, h * .45, Math.hypot(w, h) * .62);
+    r.addColorStop(0, 'rgba(255,255,255,0)'); r.addColorStop(1, 'rgba(225,212,190,.22)');
+    g.fillStyle = r; g.fillRect(0, 0, w, h);
+    if (paperTextures.size > 6) paperTextures.clear();
+    paperTextures.set(key, cv); return cv;
+  }
+
   // body outline (facing right): a bean with a soft forehead bump
   const N_SHAPE = 44;
   const SHAPE = Array.from({ length: N_SHAPE }, (_, i) => {
@@ -422,10 +442,29 @@
       layer(st.drawBack);
       this.ink(ctx); for (const c of this.chars) if (!c.hidden) this.drawChar(ctx, c);
       layer(st.drawFront);
+      const finish = st.paperFinish !== false && !st.clear;   // the site's own scenes opt out
+      if (finish) { this.ink(ctx); this.drawFloor(ctx, v); }
       this.ink(ctx); this.drawFx(ctx); this.drawParts(ctx);
       ctx.setTransform(1, 0, 0, 1, 0, 0);
       layer(st.drawOverlay);
       this.ink(ctx); this.drawCaptions(ctx, cw, ch);
+      if (finish) this.drawPaper(ctx, cw, ch);
+    }
+
+    // a faint tone under the line, so the bottom of a tall frame reads as ground, not blank paper
+    drawFloor(ctx, v) {
+      const line = this.story.lineAt ? x => this.story.lineAt(x, this.t, this) : x => this.groundAt(x);
+      const a = v.left - 20, b = v.right + 20, step = this.story.ground ? 10 : 80;
+      ctx.save(); ctx.globalCompositeOperation = 'multiply'; ctx.fillStyle = '#f8f5ef';
+      ctx.beginPath(); ctx.moveTo(a, v.bottom + 20);
+      for (let x = a; x <= b + step; x += step) ctx.lineTo(x, line(x) + 7);
+      ctx.lineTo(b + step, v.bottom + 20); ctx.closePath(); ctx.fill();
+      ctx.restore();
+    }
+    // warm paper: everything is multiplied by a cream sheet with soft fibres and a gentle vignette,
+    // so whites are never screen-white and the frame feels printed rather than rendered
+    drawPaper(ctx, cw, ch) {
+      ctx.save(); ctx.globalCompositeOperation = 'multiply'; ctx.drawImage(paperTexture(cw, ch), 0, 0); ctx.restore();
     }
 
     drawGround(ctx, v) {
@@ -441,6 +480,11 @@
     }
 
     drawChar(ctx, c) {
+      // a soft contact shadow: it shrinks and fades as the character leaves the ground
+      const g = this.groundAt(c.x), up = clamp((g - STAND - c.y) / 420);
+      ctx.save(); ctx.globalAlpha = .13 * (1 - up * .75); ctx.fillStyle = INK;
+      ctx.beginPath(); ctx.ellipse(c.x + 4 * c.fw, g + 5, 54 * (1 - up * .5), 7 * (1 - up * .5), 0, 0, Math.PI * 2); ctx.fill();
+      ctx.restore();
       c.feet.forEach((F, i) => this.drawLeg(ctx, c, c.hip(i), F, i));
       const b = c.toWorld(-12 * c.fw, -BODY_H + 1), T = c.tuft;
       if (T) {
@@ -487,10 +531,15 @@
       ctx.lineWidth = 4.5;
       let state = c.cmd.eye;
       if (state === 'open' && this.canBlink() && this.blinking(c)) state = 'blink';
-      const px = clamp(1.5 + c.lookX.x * 4, -5, 5.5) * Math.abs(c.fw), py = clamp(c.lookY.x * 4.5, -5, 5);
+      // standing still, the eye makes tiny darts (saccades) at uneven moments, like a real eye does
+      const still = 1 - clamp(Math.abs(c.vx) / 30), st = c.t + (c.seed ?? 0) * 2.3, k = Math.floor(st / 1.25);
+      const dart = this.canBlink() && hash(k + .8) > .4 ? still * clamp((st - k * 1.25 - hash(k + .1) * .6) / .06) : 0;
+      const px = clamp(1.5 + c.lookX.x * 4 + dart * (hash(k + .3) - .5) * 3, -5, 5.5) * Math.abs(c.fw);
+      const py = clamp(c.lookY.x * 4.5 + dart * (hash(k + .6) - .5) * 2, -5, 5);
       const ball = (r, pr, ox, oy) => {
         ctx.fillStyle = PAPER; ctx.beginPath(); ctx.arc(0, 0, r, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
         ctx.fillStyle = INK; ctx.beginPath(); ctx.arc(ox, oy, pr, 0, Math.PI * 2); ctx.fill();
+        ctx.fillStyle = PAPER; ctx.beginPath(); ctx.arc(ox - pr * .38, oy - pr * .42, pr * .34, 0, Math.PI * 2); ctx.fill();   // catchlight
       };
       const lid = y => {
         ctx.save(); ctx.beginPath(); ctx.rect(-20, y, 40, 30); ctx.clip(); ball(11, 4.5, px, Math.max(y + 5, py)); ctx.restore();
