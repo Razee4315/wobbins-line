@@ -173,13 +173,20 @@
       }
     },
     drawBack(S, ctx, t) {
-      // the tree
+      // the tree: a big, full one (the kite is caught near the top), shaded dark underneath, light on top
+      const sw = Math.sin(t * .9) * 3;
       ctx.lineWidth = 6; ctx.strokeStyle = '#111'; ctx.fillStyle = PAL.brown;
-      ctx.beginPath(); ctx.moveTo(TREE - 22, GROUND + 4); ctx.quadraticCurveTo(TREE - 30, GROUND - 160, TREE - 12, GROUND - 290); ctx.lineTo(TREE + 14, GROUND - 290); ctx.quadraticCurveTo(TREE + 26, GROUND - 160, TREE + 22, GROUND + 4); ctx.fill(); ctx.stroke();
-      ctx.beginPath(); ctx.moveTo(TREE + 8, GROUND - 230); ctx.lineTo(TREE + 90, GROUND - 300); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(TREE - 30, GROUND + 4); ctx.quadraticCurveTo(TREE - 36, GROUND - 170, TREE - 14, GROUND - 330); ctx.lineTo(TREE + 16, GROUND - 330); ctx.quadraticCurveTo(TREE + 32, GROUND - 170, TREE + 30, GROUND + 4); ctx.fill(); ctx.stroke();
+      ctx.lineWidth = 9; ctx.beginPath(); ctx.moveTo(TREE + 6, GROUND - 250); ctx.quadraticCurveTo(TREE + 60, GROUND - 290, TREE + 110, GROUND - 360); ctx.moveTo(TREE - 8, GROUND - 230); ctx.quadraticCurveTo(TREE - 60, GROUND - 270, TREE - 120, GROUND - 330); ctx.stroke();
+      ctx.lineWidth = 6; ctx.fillStyle = PAL.green;
+      const LUMPS = [[-150, -370, 95, 78], [140, -390, 100, 80], [-70, -470, 120, 92], [80, -480, 115, 90], [0, -560, 115, 80], [-100, -320, 110, 62], [90, -320, 110, 62], [0, -400, 150, 100]];
+      for (const [dx, dy, rx, ry] of LUMPS) { ctx.beginPath(); ctx.ellipse(TREE + dx + sw * (-dy / 560) + S.J(dx) * .4, GROUND + dy, rx, ry, 0, 0, Math.PI * 2); ctx.fill(); ctx.stroke(); }
+      ctx.fillStyle = PAL.green; for (const [dx, dy, rx, ry] of LUMPS) { ctx.beginPath(); ctx.ellipse(TREE + dx + sw * (-dy / 560), GROUND + dy, rx - 3, ry - 3, 0, 0, Math.PI * 2); ctx.fill(); }
       ctx.fillStyle = PAL.lime;
-      for (const [dx, dy, rx, ry] of [[-70, -360, 110, 80], [60, -380, 120, 86], [0, -440, 120, 80], [-20, -330, 130, 70]]) { ctx.beginPath(); ctx.ellipse(TREE + dx + S.J(dx) * .4, GROUND + dy, rx, ry, 0, 0, Math.PI * 2); ctx.fill(); ctx.stroke(); }
-      ctx.fillStyle = PAL.green; for (let i = 0; i < 9; i++) sprite(ctx, ['.X.', 'XXX'], TREE - 140 + hash(i) * 280, GROUND - 470 + hash(i + .5) * 170, 4, { X: PAL.green });
+      for (const [dx, dy, rx, ry] of [[-80, -490, 70, 48], [70, -500, 64, 46], [0, -580, 70, 42], [-150, -390, 50, 36], [140, -410, 54, 38], [0, -420, 80, 50]]) { ctx.beginPath(); ctx.ellipse(TREE + dx + sw * (-dy / 560), GROUND + dy, rx, ry, -.15, 0, Math.PI * 2); ctx.fill(); }
+      ctx.fillStyle = mix(PAL.lime, '#ffffff', .45); ctx.globalAlpha = .6;
+      for (const [dx, dy] of [[-95, -510], [55, -520], [-10, -598]]) { ctx.beginPath(); ctx.ellipse(TREE + dx + sw * (-dy / 560), GROUND + dy, 22, 11, -.4, 0, Math.PI * 2); ctx.fill(); }
+      ctx.globalAlpha = 1;
       // the crate
       const cr = S.crate; ctx.save(); ctx.translate(cr.x, GROUND); ctx.rotate(cr.tip.x * .06);
       ctx.fillStyle = PAL.orange; ctx.lineWidth = 5; ctx.fillRect(-46, -80, 92, 80); ctx.strokeRect(-46, -80, 92, 80);
@@ -203,8 +210,8 @@
       if (attached && T) { ctx.beginPath(); ctx.moveTo(T.x, T.y); ctx.quadraticCurveTo((T.x + K.x) / 2 + 30, (T.y + K.y) / 2 + 60, K.x, K.y + 20); ctx.stroke(); }
       else { const sw = Math.sin(t * 1.6) * 10; ctx.beginPath(); ctx.moveTo(K.x, K.y + 20); ctx.quadraticCurveTo(K.x - 10 + sw, (K.y + STRING_END.y) / 2, STRING_END.x + sw * 1.4, STRING_END.y); ctx.stroke(); }
       // the tail of little bows
-      for (let i = 0; i < 4; i++) { const u = (i + 1) / 5, x = K.x + 8 + i * 14 + Math.sin(t * 5 + i) * 6, y = K.y + 26 + i * 18; sprite(ctx, ['X.X', '.X.', 'X.X'], x, y, 3, { X: [PAL.red, PAL.yellow, PAL.sky, PAL.pink][i] }); }
-      ctx.save(); ctx.translate(K.x, K.y); ctx.rotate(Math.sin(t * 2.2) * .12 + (t > GUST && t < SNAP + .3 ? .8 : 0)); sprite(ctx, KITE, 0, 0, 8, { X: PAL.red, Y: PAL.yellow }); ctx.restore();
+      for (let i = 0; i < 4; i++) { const u = (i + 1) / 5, x = K.x + 10 + i * 18 + Math.sin(t * 5 + i) * 7, y = K.y + 36 + i * 22; sprite(ctx, ['X.X', '.X.', 'X.X'], x, y, 4.5, { X: [PAL.red, PAL.yellow, PAL.sky, PAL.pink][i] }); }
+      ctx.save(); ctx.translate(K.x, K.y); ctx.rotate(Math.sin(t * 2.2) * .12 + (t > GUST && t < SNAP + .3 ? .8 : 0)); sprite(ctx, KITE, 0, 0, 11, { X: PAL.red, Y: PAL.yellow }); ctx.restore();
       if (t > FREE && t < FREE + 1) for (let i = 0; i < 5; i++) { const a = i / 5 * Math.PI * 2 + t * 4; sprite(ctx, SPRITES.sparkle, K.x + Math.cos(a) * 60, K.y + Math.sin(a) * 50, 3, { X: PAL.yellow }, 1 - (t - FREE)); }
     },
   });

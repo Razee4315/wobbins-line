@@ -5,7 +5,7 @@
   // while a butterfly, a friend and a whole day go by unnoticed. Then the battery dies.
   // Button: phone-free, Bo walks on and a butterfly lands on Bo's hair. Bo holds perfectly
   // still, beaming (a real "notification"), until it flutters off ahead. Bo hops and follows.
-  const { PAL, SPRITES, sprite, butterfly, cloud, lerp, seg, sine, outBack, outCubic, hash, spring, mix, clamp, GROUND } = Shorts;
+  const { PAL, SPRITES, sprite, sun, butterfly, cloud, lerp, seg, sine, outBack, outCubic, hash, spring, mix, clamp, GROUND } = Shorts;
   const PX = 900, V = 130;
   // taps: [time, hearts, size]
   const TAPS = [[7.0, 1, 34], [10.2, 2, 24], [10.55, 2, 24]];
@@ -117,12 +117,7 @@
       if (u > 0 && u < 1) {
         const sx = v.cx + lerp(330, -330, u), sy = GROUND - Math.sin(Math.PI * u) * 300, R = 110, low = 1 - Math.sin(Math.PI * u);
         ctx.save(); ctx.beginPath(); ctx.rect(v.left, v.top, v.right - v.left, GROUND - v.top); ctx.clip();
-        for (let y = -R; y < R; y += 11) {
-          const k = (y + R) / (2 * R), w = Math.sqrt(Math.max(0, R * R - (y + 5.5) ** 2));
-          if (k > .55 && (Math.floor((y + R) / 11) % 2) && low > .3) continue;  // synthwave gaps near the horizon
-          ctx.fillStyle = mix(mix(PAL.yellow, PAL.orange, k * .6), mix(PAL.orange, PAL.pink, k), low);
-          ctx.fillRect(Math.round(sx - w), sy + y, Math.round(w * 2), 11.5);
-        }
+        sun(ctx, sx, sy - 30, 15, { X: mix(PAL.yellow, mix(PAL.orange, PAL.pink, .4), low) });   // the ink sun, sinking pinker
         ctx.restore();
       }
       for (let i = 0; i < 3; i++) {

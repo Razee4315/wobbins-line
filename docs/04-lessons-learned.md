@@ -2,6 +2,25 @@
 
 A running log. Newest at the top. When something breaks, write down what happened and the fix.
 
+## 2026-10-31 · 4K exports for daily posting, and a clean-up of the early episodes
+
+- **What "didn't make sense" in the early ones:** The Seed drew the tree's roots under the ground as
+  thin lines that read as three arrows, the seed was a dot, and digging it up looked like it just popped
+  out. Now: no roots, a big inked seed, dirt spraying when Bo digs. Heavy's kite tree was small and lumpy;
+  it's a big shaded tree with a bigger kite. Snooze's friends walked through Bo's bed; they now walk on a
+  path further back (drawn smaller) and stop beside the bed to wave. The last blocky pixel suns (One More,
+  The Cloud, Last Minute) are the ink sun.
+- **The overlap checker skips pairs more than 95 apart vertically** (to allow stacking), so it missed
+  Snooze, where Bo lies raised on a bed. Look at contact sheets too.
+- **Batch export** (`tools/export.js`): one folder per video in `exports/`, numbered in posting order,
+  with the 4K MP4 (2160×3840, 60 fps, 24 Mbps target, ~90 MB for 40 s), a cover PNG and `caption.txt`.
+  About 3 minutes per video; two tabs in parallel roughly halve the total.
+- **Covers:** render without captions (a half-typed line looks broken), and put the title on a paper
+  label below the ground line so it never sits on the scene.
+- **Hidden tabs throttle timers**, so the exporter now yields with a MessageChannel instead of
+  `setTimeout`.
+- **File names:** titles with `?` or curly apostrophes (`Can’t Sleep`) need cleaning for Windows paths.
+
 ## 2026-10-30 (night) · No touching, Season 8
 
 - **"Characters look like they're kissing."** Many layouts had friends 100–150 apart (bodies are ~160

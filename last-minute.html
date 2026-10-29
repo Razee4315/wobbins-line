@@ -6,14 +6,14 @@
 <title>Last Minute</title>
 </head>
 <body>
-<script src="sfx.js?v=10"></script>
-<script src="engine2.js?v=10"></script>
+<script src="sfx.js?v=11"></script>
+<script src="engine2.js?v=11"></script>
 <script>
 // A pile of blocks, a tower to build, and a sign counting down the days. Bo naps, plays and
 // watches clouds while the days fly by, until the sign says 1. Then the whole tower goes up in one night.
 // Button: as Bo strolls off, the sign flips back to 7. Bo turns, gives it a flat look ("...one whole
 // week."), then laughs, shrugs it off with a hop, and goes.
-const { PAL, SPRITES, sprite, butterfly, cloud, zzz, lerp, seg, sine, outBack, clamp, hash, spring, mix, GROUND } = Shorts;
+const { PAL, SPRITES, sprite, sun, butterfly, cloud, zzz, lerp, seg, sine, outBack, clamp, hash, spring, mix, GROUND } = Shorts;
 const V = 130, PILE = 880, PICK = 1030, DROP = 1222, SITE = 1330, SIGN = 1410, TREE = 1490, BS = 32;
 const D = [6.0, 10.0, 13.4, 16.2, 18.6, 20.4, 21.6];        // each day starts (7 days left … 1 day left)
 const DONE = 36.13;                                      // when the last block lands (measured)
@@ -181,14 +181,13 @@ Shorts.play({
       const x = v.left + hash(i) * (v.right - v.left), y = v.top + hash(i + .5) * (GROUND - v.top) * .75;
       sprite(ctx, i % 4 ? SPRITES.dot : SPRITES.sparkle, x, y, i % 4 ? 3 : 2.2, { X: '#fff' }, (nt - .35) / .65 * (.6 + .4 * Math.sin(t * 3 + i)));
     }
-    // a little pixel sun racing across the sky, one arc per day
+    // the sun racing across the sky, one arc per day
     const days = D.map((a, k) => [a, k + 1 < D.length ? D[k + 1] : DONE + .5]);
     for (const [a, b] of days) {
       const u = seg(t, a, b); if (u <= 0 || u >= 1) continue;
       const sx = v.cx + lerp(-310, 310, u), sy = GROUND - Math.sin(Math.PI * u) * 250 - 10, R = 40, low = 1 - Math.sin(Math.PI * u);
       ctx.save(); ctx.beginPath(); ctx.rect(v.left, v.top, v.right - v.left, GROUND - v.top); ctx.clip();
-      ctx.fillStyle = mix(PAL.yellow, PAL.orange, low);
-      for (let y = -R; y < R; y += 8) { const w = Math.sqrt(Math.max(0, R * R - (y + 4) ** 2)); ctx.fillRect(Math.round(sx - w), sy + y, Math.round(w * 2), 8.5); }
+      sun(ctx, sx, sy, R / 2.7, { X: mix(PAL.yellow, PAL.orange, low) });
       ctx.restore();
     }
     for (let i = 0; i < 3; i++) {

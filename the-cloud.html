@@ -6,15 +6,15 @@
 <title>The Cloud</title>
 </head>
 <body>
-<script src="sfx.js?v=10"></script>
-<script src="engine2.js?v=10"></script>
+<script src="sfx.js?v=11"></script>
+<script src="engine2.js?v=11"></script>
 <script>
 // A little rain cloud follows Bo everywhere. Nothing shakes it off: walking away, running,
 // hiding, swatting. When Bo finally sits still in the rain, something green comes up,
 // the cloud clears, and Bo walks on. (Season 1, rebuilt on engine 2; the original is in legacy/.)
 // Button: a tiny new cloud drops in over Bo. Bo braces for rain... but it drifts over to the
 // sprout, gives it one drop, and the sprout waves its leaf. Bo laughs and hops off.
-const { PAL, SPRITES, sprite, lerp, seg, sine, outBack, clamp, hash, spring, mix, GROUND, BODY_H } = Shorts;
+const { PAL, SPRITES, sprite, sun, lerp, seg, sine, outBack, clamp, hash, spring, mix, GROUND, BODY_H } = Shorts;
 const V = 120, GREY = '#a7abb2', RAIN = '#7f94b0';
 const PUFFS = [[-62, 12, 30], [-28, -8, 40], [18, -18, 46], [58, 0, 36], [82, 18, 24], [0, 20, 36], [-40, 22, 28], [40, 22, 30]];
 const SIT = 19.8, SPROUT = 22, CLEAR = 28.2, LEAVE = 38.1;
@@ -131,11 +131,11 @@ Shorts.play({
     if (t > SPROUT - 1 && t < LEAVE) { S.camGoal.x = t > TINY ? S.sproutX + 70 : bo.x + 60; S.camGoal.z = 1.12; S.camGoal.kz = 1.5; if (t > TINY) S.camGoal.kx = 2; }
   },
   drawSky(S, ctx, t, v) {
-    // once the cloud has gone, a little pixel sun
+    // once the cloud has gone, the sun comes out
     const k = sine(seg(t, CLEAR + .4, CLEAR + 2));
     if (k > .01) {
       const x = S.sproutX + 260, y = v.top + (GROUND - v.top) * .28 + (1 - k) * 80;
-      sprite(ctx, ['..X.X..', 'X.....X', '..XXX..', '.XXXXX.', '..XXX..', 'X.....X', '..X.X..'], x, y, 9, { X: PAL.yellow }, k);
+      sun(ctx, x, y, 11, { X: PAL.orange }, k);
     }
   },
   drawBack(S, ctx, t) {

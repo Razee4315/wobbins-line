@@ -5,3 +5,4 @@ Thumbs.db
 .DS_Store
 tools/out/
 renders/
+exports/

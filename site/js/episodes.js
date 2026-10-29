@@ -16,7 +16,7 @@ window.WL_SEASONS = [
     { id: 'inner-voice', title: 'Inner Voice', theme: 'the inner critic', accent: '#7b5cff', poster: 16.2, line: 'A grumbly scribble mocks every bounce, and grows. Until Wobbin talks to it kindly.', quote: 'talk to yourself the way you would talk to a friend.' },
   ] },
   { n: 6, title: 'Little things', episodes: [
-    { id: 'the-other-line', title: 'The Other Line', theme: 'impatience', accent: '#ffa300', poster: 16.4, line: 'Two ice-cream lines. Whichever one Wobbin picks stops moving.', quote: 'the other line always looks faster. yours is moving too.' },
+    { id: 'the-other-line', title: 'The Other Line', theme: 'impatience', accent: '#ffa300', poster: 35.6, line: 'Two ice-cream lines. Whichever one Wobbin picks stops moving.', quote: 'the other line always looks faster. yours is moving too.' },
     { id: 'why-was-i-here', title: 'Why Was I Here?', theme: 'forgetting', accent: '#00b543', poster: 8.4, line: 'A clear idea, a determined march, and the doorway that eats it. Every time.', quote: 'it’s not just you. doorways really do make you forget.' },
     { id: 'lost', title: 'Lost', theme: 'losing things', accent: '#ffa300', poster: 18.4, line: 'Cushions fly, the drawer empties, the clock races. The keys were never far.', quote: 'slow down. it’s usually closer than you think.' },
     { id: 'small-talk', title: 'Small Talk', theme: 'awkward silence', accent: '#ff004d', poster: 21.6, line: 'A bus stop, a stranger, a silence that grows. Then rain, and one umbrella.', quote: 'every friend was a stranger once.' },
@@ -30,7 +30,7 @@ window.WL_SEASONS = [
     { id: 'rain-check', title: 'Rain Check', theme: 'cancelling plans', accent: '#ffec27', poster: 16.4, line: 'A cozy night in gets lonely. Next morning, another invite.', quote: 'not every plan needs a rain check. sometimes, go anyway.' },
   ] },
   { n: 4, title: 'Getting unstuck', episodes: [
-    { id: 'tomorrow', title: 'Tomorrow', theme: 'putting it off', accent: '#ffa300', poster: 20.6, line: 'Every morning, ready, set... sit back down. The flag runs further away.', quote: 'ready or not... just start.' },
+    { id: 'tomorrow', title: 'Tomorrow', theme: 'putting it off', accent: '#ffa300', poster: 28.6, line: 'Every morning, ready, set... sit back down. The flag runs further away.', quote: 'ready or not... just start.' },
     { id: 'highlight-reel', title: 'Highlight Reel', theme: 'comparison', accent: '#ff77a8', poster: 18.8, line: 'Friends hold up perfect pictures. The biggest one slips.', quote: 'don’t compare your every day to their best day.' },
     { id: 'small-steps', title: 'Small Steps', theme: 'consistency', accent: '#29adff', poster: 36.4, line: 'One drop a day into a big empty jar. Nothing, nothing, nothing, then everything.', quote: 'small steps, every day. they add up.' },
     { id: 'snooze', title: 'Snooze', theme: 'five more minutes', accent: '#ff004d', poster: 19.2, line: 'One alarm bird, then two, then four, while the whole day goes by.', quote: 'the day doesn’t wait. get up for it.' },

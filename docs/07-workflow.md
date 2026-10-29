@@ -65,6 +65,19 @@ If you change `engine2.js` or `sfx.js`, also bump the `?v=` on the episode pages
 - Check a run: `gh run list --workflow pages.yml --limit 1`.
 - Commit messages: plain, no co-author line.
 
+## Export everything for posting
+
+With `python tools/dev_server.py . tools/out` running, open any episode page and in the console:
+
+```js
+await import('/tools/export.js');
+exportAll();                        // all 38 into exports/NN - Title/ (4K MP4, cover PNG, caption.txt)
+exportAll({ from: 20, to: 38 });    // a range (run halves in two tabs to go faster)
+exportAll({ video: false });        // covers and captions only (seconds)
+```
+
+`exports/` is git-ignored. `exports/POSTING-PLAN.md` explains the daily routine and the order.
+
 ## Render MP4s
 
 - **One at a time:** open the episode on the website, then Download MP4 (1080×1920, 2160×3840 or 3840×2160). Or on the episode page itself, Export MP4.

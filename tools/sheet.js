@@ -42,3 +42,21 @@ window.render = async (w = 1080, h = 1920) => {
   await fetch('/save/renders/' + name, { method: 'POST', body: blob });
   return name + ' ' + (blob.size / 1e6).toFixed(1) + ' MB';
 };
+
+// Frames from several episodes in one image: grid('name', [['the-gap', 5.8], ['yes', 12], ...]) -> tools/out/sheets/name.png
+window.grid = async (name, shots, W = 300, H = 533, cols = 6) => {
+  const rows = Math.ceil(shots.length / cols), out = document.createElement('canvas'); out.width = W * cols; out.height = rows * (H + 20);
+  const o = out.getContext('2d'); o.fillStyle = '#888'; o.fillRect(0, 0, out.width, out.height);
+  const c = document.createElement('canvas'); c.width = W * 2; c.height = H * 2; const ctx = c.getContext('2d'), cache = {};
+  for (const [i, [id, t]] of shots.entries()) {
+    if (!cache[id]) {
+      const html = await (await fetch('/' + id + '.html', { cache: 'no-store' })).text(); let story;
+      new Function('Shorts', html.match(/<script>\n([\s\S]*?)<\/script>/)[1])(Object.assign(Object.create(Shorts), { play: s => { story = s; } }));
+      const S0 = new Shorts.Show(story); cache[id] = { story, loop: { T: S0.T, startState: S0.startState } };
+    }
+    const S = new Shorts.Show(cache[id].story, { loop: cache[id].loop }); S.advance(t); S.render(ctx, c.width, c.height);
+    const x = (i % cols) * W, y = Math.floor(i / cols) * (H + 20); o.drawImage(c, x + 2, y, W - 4, H);
+    o.fillStyle = '#fff'; o.font = '13px monospace'; o.fillText(id + ' ' + t, x + 6, y + H + 15);
+  }
+  const blob = await new Promise(r => out.toBlob(r, 'image/png')); await fetch('/save/sheets/' + name + '.png', { method: 'POST', body: blob }); return 'ok';
+};

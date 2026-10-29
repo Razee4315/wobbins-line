@@ -81,9 +81,9 @@
       if (t > BIRD + .3 && t < BIRD + 1.15) bo.cmd.tilt = .14 * Math.sin((t - BIRD - .3) * 15);   // a little waving wiggle
       if (t > FAINT + .45) S.once('faint', () => { S.sfx('tock', { f: 520 }, FOOT[0]); S.sfx('dizzy', {}, FOOT[0]); });
       if (t > STUN) S.once('stun', () => S.sfx('pop', { pitch: 1100, g: .06 }, FOOT[0]));
-      // friends go out to fly a kite... and come home at dusk
-      S.plan(mo, t, [[11.0, () => teleport(mo, S.bo.x - 760)], [11.0, { x: 1900, speed: 150, accel: 400, eye: 'happy' }], [21.4, () => teleport(mo, 1700)], [21.5, { face: -1, x: -300, speed: 160, eye: 'open' }], [26.7, () => mo.jump(0, -360)]]);
-      S.plan(ky, t, [[11.6, () => teleport(ky, S.bo.x - 780)], [11.6, { x: 1800, speed: 150, accel: 400, eye: 'happy' }], [21.6, () => teleport(ky, 1640)], [21.7, { face: -1, x: -400, speed: 160, eye: 'open' }], [26.9, () => ky.jump(0, -340)]]);
+      // friends go out to fly a kite... come back at dusk to wave goodnight, and head home
+      S.plan(mo, t, [[11.0, () => teleport(mo, S.bo.x - 760)], [11.0, { x: 1900, speed: 150, accel: 400, eye: 'happy' }], [21.4, () => teleport(mo, 1700)], [21.5, { face: -1, x: 1190, speed: 160, eye: 'open' }], [26.7, () => mo.jump(0, -360)], [28.4, { face: 1, x: 4000, speed: 170 }]]);   // stop by the bed, wave goodnight, head home
+      S.plan(ky, t, [[11.6, () => teleport(ky, S.bo.x - 1000)], [11.6, { x: 1800, speed: 150, accel: 400, eye: 'happy' }], [21.6, () => teleport(ky, 1450)], [21.7, { face: -1, x: 1380, speed: 160, eye: 'open' }], [26.9, () => ky.jump(0, -340)], [28.2, { face: 1, x: 4000, speed: 170 }]]);
 
       // the alarm rings while birds are perched; snoring otherwise
       const ringing = VISITS.some(v => t > v.at && t < v.off) || (t > DAWN_BIRD && t < STUN);
@@ -115,18 +115,20 @@
       }
     },
     drawBack(S, ctx, t) {
-      // friends (behind the bed), Mo with a kite
-      for (const f of S.friends) S.drawChar(ctx, f);
+      // friends on the path further back (drawn smaller and higher, so they pass behind the bed, not
+      // through Bo), Mo with a kite
+      const back = (f, fn) => { ctx.save(); ctx.translate(f.x, GROUND - 46); ctx.scale(.72, .72); ctx.translate(-f.x, -GROUND); fn(); ctx.restore(); };
+      for (const f of S.friends) back(f, () => S.drawChar(ctx, f));
       S.ink(ctx);
       const mo = S.friends[0], kiteOn = t > 11 && t < 21.4, top = mo.top();
-      if (kiteOn) {
+      if (kiteOn) back(mo, () => {
         const kx = top.x - 150 + Math.sin(t * 1.3) * 30, ky = top.y - 230 + Math.sin(t * 1.9) * 20;
         ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(top.x, top.y + 10); ctx.quadraticCurveTo((top.x + kx) / 2, ky + 90, kx, ky); ctx.stroke();
         ctx.save(); ctx.translate(kx, ky); ctx.rotate(Math.sin(t * 2) * .15);
         sprite(ctx, ['...X...', '..XYX..', '.XYYYX.', 'XPPYPPX', '.XPPPX.', '..XPX..', '...X...'], 0, 0, 6, { X: '#111', Y: PAL.yellow, P: PAL.pink });
         ctx.restore();
         for (let i = 1; i <= 4; i++) sprite(ctx, ['XX', 'XX'], kx + Math.sin(t * 3 + i) * 8 + i * 6, ky + 26 + i * 16, 3.5, { X: [PAL.red, PAL.sky][i % 2] });
-      }
+      });
       // the bed
       ctx.lineWidth = 6; ctx.strokeStyle = '#111';
       ctx.beginPath(); ctx.moveTo(BL, GROUND + 2); ctx.lineTo(BL, GROUND - 112); ctx.moveTo(BR, GROUND + 2); ctx.lineTo(BR, GROUND - 78); ctx.stroke();

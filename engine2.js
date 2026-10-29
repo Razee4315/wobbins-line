@@ -885,11 +885,13 @@
     document.head.appendChild(s);
   });
 
-  async function exportMP4(story, loop, { w, h, fps, loops, hook }, onProgress) {
+  // a yield that isn't a timer, so exports keep going at full speed in a background tab
+  const tick = () => new Promise(r => { const c = new MessageChannel(); c.port1.onmessage = () => r(); c.port2.postMessage(0); });
+  async function exportMP4(story, loop, { w, h, fps, loops, hook, bitrate: br }, onProgress) {
     if (!('VideoEncoder' in window)) throw new Error('This browser cannot encode MP4. Use Chrome or Edge on a laptop.');
     await loadMuxer();
     await document.fonts.load(`40px Silkscreen`).catch(() => {});
-    const bitrate = Math.round(w * h * fps * .14);
+    const bitrate = br ?? Math.round(w * h * fps * .14);
     let codec = null;
     for (const c of ['avc1.640034', 'avc1.640033', 'avc1.4d0034', 'avc1.42003e']) {
       const r = await VideoEncoder.isConfigSupported({ codec: c, width: w, height: h, bitrate, framerate: fps }).catch(() => null);
@@ -946,8 +948,8 @@
       S.render(ctx, w, h);
       const frame = new VideoFrame(cv, { timestamp: Math.round(i * 1e6 / fps), duration: Math.round(1e6 / fps) });
       enc.encode(frame, { keyFrame: i % (fps * 2) === 0 }); frame.close();
-      while (enc.encodeQueueSize > 6) await new Promise(r => setTimeout(r, 2));
-      if (i % 15 === 0) { onProgress(i / total); await new Promise(r => setTimeout(r)); }
+      while (enc.encodeQueueSize > 6) await tick();
+      if (i % 15 === 0) { onProgress(i / total); await tick(); }
     }
     await enc.flush(); muxer.finalize(); enc.close();
     onProgress(1);
