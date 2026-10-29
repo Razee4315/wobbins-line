@@ -27,7 +27,14 @@ const TAGS = {
 const W4 = 2160, H4 = 3840, FPS = 60, BITRATE = 24e6;
 window.EXP = { current: null, pct: 0, done: [], errors: [] };
 
-const post = async (path, body) => { const r = await fetch('/export/' + path.split('/').map(encodeURIComponent).join('/'), { method: 'POST', body }); if (!r.ok) throw new Error('save failed: ' + path); };
+// sent in 8 MB pieces: the browser pane drops single uploads above ~32 MB after a long run
+const post = async (path, body) => {
+  const blob = body instanceof Blob ? body : new Blob([body]), url = '/export/' + path.split('/').map(encodeURIComponent).join('/'), CH = 8e6;
+  for (let o = 0; o === 0 || o < blob.size; o += CH) {
+    const r = await fetch(url + (o ? '?append=1' : ''), { method: 'POST', body: blob.slice(o, o + CH) });
+    if (!r.ok) throw new Error('save failed: ' + path);
+  }
+};
 const clean = s => s.replace(/[’‘]/g, "'").replace(/[?:/\\*"<>|]/g, '').trim();
 
 async function episodes() {

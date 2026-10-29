@@ -24,6 +24,7 @@ class H(http.server.SimpleHTTPRequestHandler):
 
     def do_POST(self):
         # /export/<folder>/<file>: finished deliverables, written under ROOT/exports
+        # (?append=1 adds to the file, so big videos can come in pieces)
         if self.path.startswith('/export/'):
             from urllib.parse import unquote
             rel = unquote(self.path[len('/export/'):].split('?')[0])
@@ -31,7 +32,8 @@ class H(http.server.SimpleHTTPRequestHandler):
                 self.send_error(400); return
             d = ROOT / 'exports' / rel.split('/')[0]
             d.mkdir(parents=True, exist_ok=True)
-            (d / rel.split('/')[1]).write_bytes(self.rfile.read(int(self.headers['Content-Length'])))
+            with open(d / rel.split('/')[1], 'ab' if 'append=1' in self.path else 'wb') as f:
+                f.write(self.rfile.read(int(self.headers['Content-Length'])))
             self.send_response(200); self.end_headers(); self.wfile.write(b'ok'); return
         m = re.fullmatch(r'/save/(?:([\w-]+)/)?([\w.-]+\.(?:png|mp4))', self.path.split('?')[0])
         if not m:

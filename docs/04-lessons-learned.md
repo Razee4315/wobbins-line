@@ -17,6 +17,10 @@ A running log. Newest at the top. When something breaks, write down what happene
   About 3 minutes per video; two tabs in parallel roughly halve the total.
 - **Covers:** render without captions (a half-typed line looks broken), and put the title on a paper
   label below the ground line so it never sits on the scene.
+- **Big uploads from the browser pane fail after a long run:** an hour into the batch, every POST above
+  ~32 MB gave "Failed to fetch" (reloading the tab didn't help; the server and curl were fine). The
+  exporter now sends files in 8 MB pieces (`?append=1` on the dev server). Always check that every folder
+  has its MP4 at the end, not just that the batch finished.
 - **Hidden tabs throttle timers**, so the exporter now yields with a MessageChannel instead of
   `setTimeout`.
 - **File names:** titles with `?` or curly apostrophes (`Can’t Sleep`) need cleaning for Windows paths.
