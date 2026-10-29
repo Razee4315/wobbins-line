@@ -56,6 +56,20 @@ Every one opens on a small mystery (what is Bo doing?), then reveals it, escalat
 | **Comfort Zone** | Stepping out | A warm dome in a grey world that shrinks the longer Bo stays; each step out blooms colour back | "comfort zones grow every time you step out." |
 | **Inner Voice** | The inner critic | A grumbly ink scribble grows with every jab at Bo's keepy-uppy; spoken to kindly, it shrinks into a cheering buddy | "talk to yourself the way you would talk to a friend." |
 
+## Season 8 · daily routine (built 2026-10-30)
+
+Picked from research on everyday "microstressors" (small daily frustrations people say wear them down
+more than big ones): the clothes chair, the two-minute task put off for weeks, checking the lock, forgetting
+to drink water, walking behind someone slow.
+
+| Short | The struggle | The metaphor | Closing line |
+|---|---|---|---|
+| **The Chair** | Clothes on the chair instead of the wardrobe | Each day's clean laundry lands on the chair ("later."); by day four the pile is taller than Bo and blinks; one sock costs Bo an avalanche | "put it away now. future you says thanks." |
+| **Two Minutes** | The tiny task you dread for weeks | A flickering lamp, new bulbs right beside it, and an ink cloud of dread that grows each day; the fix: a stopwatch reading 0:02 | "it took two seconds. the dread took two weeks." |
+| **Did I Lock It?** | Going back to check | A red elastic of worry from the door to Bo's tuft yanks Bo home; a slow, deliberate lock and a gold star sticker let it go | "you checked. you can let it go." |
+| **Water Yourself** | Looking after everything but yourself | Bo waters a plant daily while Bo's own glass waits; the plant blooms, Bo wilts; the plant flips the glass to Bo | "you need watering too." |
+| **Slow Walker** | Stuck behind someone slow | One line means no overtaking; Bo stops pushing, looks where they look, and the slow lane has the sunset | "some days, the slow lane has the best view." |
+
 ## Backlog (fresh ideas)
 
 - **Burnout** — Bo is a candle-flame keeper, lighting everyone else's lanterns until Bo's own flame is a flicker; Bo finally lights its own first. *"you can't pour from an empty cup."*
@@ -83,6 +97,10 @@ Every one opens on a small mystery (what is Bo doing?), then reveals it, escalat
 See `docs/04-lessons-learned.md` (technical and story lessons) and `docs/06-preferences.md` (what the user likes). Add to both after every session.
 
 ## Research notes
+
+- Daily "microstressors" (2025 UK surveys): small, repeated frustrations (spills, waking late, slow walkers,
+  stubbing a toe, chores undone) are what people say wear them down; mornings are the most stressful time.
+  These became Season 8.
 
 - Last-minute productivity is a measured effect: people who procrastinate more tend to become more productive as the deadline nears (deadline effect / "student syndrome").
 - Roughly half of Americans call themselves people-pleasers, and about half say they often feel they can't say no.

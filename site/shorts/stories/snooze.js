@@ -5,7 +5,7 @@
   // swatting. The sun crosses the sky, friends fly a kite and go home. Bo wakes up to stars.
   // Button: Bo doesn't go back to bed. Next morning the alarm bird swoops in to ring... and Bo is
   // already up, waiting right there: "morning!" The bird is so shocked it faints onto the bed.
-  const { PAL, SPRITES, sprite, zzz, lerp, seg, sine, outBack, clamp, hash, spring, mix, GROUND } = Shorts;
+  const { PAL, SPRITES, sprite, sun, bird, cloud, zzz, lerp, seg, sine, outBack, clamp, hash, spring, mix, GROUND } = Shorts;
   const V = 130, BED = 900, BL = 815, BR = 985, BED_H = 44;
   const HEAD = [BL - 3, GROUND - 124], FOOT = [BR + 3, GROUND - 90], QUILT = [935, GROUND - 104];
   // alarm visits: when they land, when they're shooed, where they perch
@@ -106,13 +106,12 @@
       if (u > 0 && u < 1) {
         const sx = v.cx + lerp(-380, 380, u), sy = GROUND - Math.sin(Math.PI * u) * 330, R = 44, low = 1 - Math.sin(Math.PI * u);
         ctx.save(); ctx.beginPath(); ctx.rect(v.left, v.top, v.right - v.left, GROUND - v.top); ctx.clip();
-        ctx.fillStyle = mix(PAL.yellow, PAL.orange, low);
-        for (let y = -R; y < R; y += 8) { const w = Math.sqrt(Math.max(0, R * R - (y + 4) ** 2)); ctx.fillRect(Math.round(sx - w), sy + y, Math.round(w * 2), 8.5); }
+        sun(ctx, sx, sy, R / 2.7, { X: mix(PAL.yellow, PAL.orange, low) });
         ctx.restore();
       }
       for (let i = 0; i < 3; i++) {
         const W = v.right - v.left + 400, x = v.left - 200 + (1 - ((t / S.T * 2 + i / 3 + .45) % 1)) * W;
-        sprite(ctx, SPRITES.cloud, x, v.top + (v.bottom - v.top) * (.25 + i * .06), 9, { X: mix('#ebe8f4', '#c6bfe6', s.nite) });
+        cloud(ctx, x, v.top + (v.bottom - v.top) * (.25 + i * .06), 9, { X: mix('#ebe8f4', '#c6bfe6', s.nite) });
       }
     },
     drawBack(S, ctx, t) {
@@ -148,25 +147,25 @@
       }
       if (t > 7.8 && t < 25 && !(t > 19.7 && t < 22)) zzz(ctx, top.x - 20, top.y, t, seg(t, 7.8, 8.2) * (1 - seg(t, 24.6, 25)));
       // alarm birds: swoop in, ring, get shooed off
-      const fly = (x, y, flap) => sprite(ctx, flap ? BIRD_B : BIRD_A, x, y - 6, 7, { X: PAL.red, O: PAL.orange, K: '#111' });
+      const fly = (x, y, flap, dir = -1) => bird(ctx, x, y - 8, 7, { X: PAL.red, O: PAL.orange }, 1, flap ? 12 : 0, dir);   // flap: in the air
       VISITS.forEach(v => v.perches.forEach((p, k) => {
         if (t < v.at - .6 || t > v.off + .8) return;
         const [px, py] = p === 'bo' ? [top.x, top.y - 16] : p;
-        if (t < v.at) { const u = sine(seg(t, v.at - .6, v.at)); fly(lerp(px + 380 + k * 80, px, u), lerp(py - 360, py, u) - Math.sin(Math.PI * u) * 40, Math.floor(t * 14) % 2); }
+        if (t < v.at) { const u = sine(seg(t, v.at - .6, v.at)); fly(lerp(px + 380 + k * 80, px, u), lerp(py - 360, py, u) - Math.sin(Math.PI * u) * 40, 1); }
         else if (t < v.off) fly(px, py - Math.abs(Math.sin((t - v.at) * 18 + k)) * 6, 0);
-        else { const u = seg(t, v.off, v.off + .8); fly(px - u * 420 - k * 60, py - u * 380, Math.floor(t * 14) % 2); }
+        else { const u = seg(t, v.off, v.off + .8); fly(px - u * 420 - k * 60, py - u * 380, 1); }
       }));
       // the next morning's alarm bird: swoops in to the foot of the bed, rings, sees Bo already up... faints
       if (t > BIRD - .6) {
         const [fx, fy] = FOOT, bedY = GROUND - BED_H - 16;
-        if (t < BIRD) { const u = sine(seg(t, BIRD - .6, BIRD)); fly(lerp(fx - 420, fx, u), lerp(fy - 360, fy, u) - Math.sin(Math.PI * u) * 40, Math.floor(t * 14) % 2); }
+        if (t < BIRD) { const u = sine(seg(t, BIRD - .6, BIRD)); fly(lerp(fx - 420, fx, u), lerp(fy - 360, fy, u) - Math.sin(Math.PI * u) * 40, 1, 1); }
         else if (t < FAINT) {
-          fly(fx, fy - (t < STUN ? Math.abs(Math.sin((t - BIRD) * 18)) * 6 : 0), 0);
+          fly(fx, fy - (t < STUN ? Math.abs(Math.sin((t - BIRD) * 18)) * 6 : 0), 0, 1);
           if (t > STUN) sprite(ctx, SPRITES.bang, fx, fy - 56 - 8 * outBack(seg(t, STUN, STUN + .25)), 6, { X: PAL.red });
         } else {
           // keels over backwards onto the bed, feet up, little stars going round
           const u = seg(t, FAINT, FAINT + .45), x = lerp(fx, fx - 50, u), y = lerp(fy - 6, bedY, u * u) - Math.sin(Math.PI * u) * 24;
-          ctx.save(); ctx.translate(x, y); ctx.rotate(-Math.PI * sine(u)); sprite(ctx, BIRD_A, 0, 0, 7, { X: PAL.red, O: PAL.orange, K: '#111' }); ctx.restore();
+          ctx.save(); ctx.translate(x, y); ctx.rotate(-Math.PI * sine(u)); bird(ctx, 0, 0, 7, { X: PAL.red, O: PAL.orange }, 1, 0, 1); ctx.restore();
           if (u >= 1) for (let k = 0; k < 3; k++) { const a = t * 4 + k * 2.1; sprite(ctx, SPRITES.star, x + Math.cos(a) * 30, y - 34 + Math.sin(a) * 8, 3.4, { X: PAL.orange }); }
         }
       }

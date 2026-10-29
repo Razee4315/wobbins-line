@@ -6,14 +6,14 @@
 <title>Reset</title>
 </head>
 <body>
-<script src="sfx.js?v=8"></script>
-<script src="engine2.js?v=8"></script>
+<script src="sfx.js?v=10"></script>
+<script src="engine2.js?v=10"></script>
 <script>
 // One of those days: trip, ice cream on the floor, a rain cloud, an umbrella that blows away,
 // a slip into the mud. Bo falls asleep, and the whole line resets to a fresh morning.
 // Button: further along the fresh line there's another rock. Bo stops, gives it a look,
 // "not today, rock.", prances neatly over it and winks.
-const { PAL, SPRITES, sprite, zzz, lerp, seg, sine, outBack, clamp, hash, spring, mix, GROUND, GRAV, BODY_H } = Shorts;
+const { PAL, SPRITES, sprite, cloud, zzz, lerp, seg, sine, outBack, clamp, hash, spring, mix, GROUND, GRAV, BODY_H } = Shorts;
 const V = 130, ROCK = 760, UMB = 1400, MUD = 1660;
 // measured from a run (captions and the reset are timed to these)
 const TRIP = 5.55, UMB_T = 13.08, MUD_T = 19.73, RESET = MUD_T + 5.6;
@@ -140,7 +140,7 @@ Shorts.play({
     if (nite > .35) for (let i = 0; i < 20; i++) sprite(ctx, SPRITES.dot, v.left + hash(i) * (v.right - v.left), v.top + hash(i + .5) * (GROUND - v.top) * .7, 3, { X: '#fff' }, (nite - .35) / .65);
     for (let i = 0; i < 3; i++) {
       const W = v.right - v.left + 400, x = v.left - 200 + (1 - ((t / S.T + i / 3 + .15) % 1)) * W;
-      sprite(ctx, SPRITES.cloud, x, v.top + (v.bottom - v.top) * (.25 + i * .06), 9, { X: mix('#ebe8f4', '#c6bfe6', nite) });
+      cloud(ctx, x, v.top + (v.bottom - v.top) * (.25 + i * .06), 9, { X: mix('#ebe8f4', '#c6bfe6', nite) });
     }
   },
   drawBack(S, ctx, t, v) {

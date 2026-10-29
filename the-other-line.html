@@ -6,8 +6,8 @@
 <title>The Other Line</title>
 </head>
 <body>
-<script src="sfx.js?v=8"></script>
-<script src="engine2.js?v=8"></script>
+<script src="sfx.js?v=10"></script>
+<script src="engine2.js?v=10"></script>
 <script>
 // Bo joins the back of a line without knowing what it's for. The camera pulls back: two
 // ice-cream carts, two lines. Bo's line stops, the other one flies. Bo switches. It stops.
@@ -15,9 +15,11 @@
 // suddenly it's Bo's turn: the biggest cone of the day.
 // Button: on the bench a kid stops and stares up at Bo's giant cone. Bo looks at the kid, at the
 // cone... and the top scoops hop over onto the kid's head. They eat together, then skip off.
-const { PAL, SPRITES, sprite, lerp, seg, sine, outBack, clamp, hash, spring, mix, GROUND } = Shorts;
-const V = 170, A_X = 1960, B_X = 800, GAP = 140;
-const slotA = k => A_X - 110 - k * GAP, slotB = k => B_X + 110 + k * GAP;
+const { PAL, SPRITES, sprite, butterfly, cloud, lerp, seg, sine, outBack, clamp, hash, spring, mix, GROUND } = Shorts;
+// people in a line stand 178 apart (bodies are ~160 wide), and the carts are far enough apart that the two
+// lines never meet. The vendors are drawn behind their counters, so walking past a cart is just a prop.
+const V = 170, A_X = 2050, B_X = 700, GAP = 178;
+const slotA = k => A_X - 120 - k * GAP, slotB = k => B_X + 120 + k * GAP;
 const CONE = ['.SSS.', 'SSSSS', 'SSSSS', 'BBBBB', '.BWB.', '.BBB.', '..B..'];
 const MEGA = ['..R..', '.TTT.', 'TTTTT', '.YYY.', 'YYYYY', '.PPP.', 'PPPPP', 'BBBBB', '.BWB.', '.BBB.', '..B..'];
 const SCOOPS = [PAL.pink, PAL.yellow, PAL.sky, PAL.lime, '#ffffff', PAL.orange];
@@ -29,15 +31,21 @@ const LOOKS = [
 ];
 // queue events: [time, line, what]
 const SERVE = [
-  [11.4, 'B'], [12.7, 'B'],                        // Bo's line is stuck, the other one flies
+  [11.4, 'B'],                                     // Bo's line is stuck, the other one moves
   [15.9, 'A'], [16.9, 'A'],                        // Bo switches: now the old line flies
   [19.6, 'B'],                                     // switches back: the other one empties
   [26.2, 'A'],                                     // Bo waits it out
 ];
 const STALL_B = [15.4, 19.3], STALL_A = [18.6, 25.8];
-const BO_TURN = 27.6, BENCH = A_X + 330, KID = BENCH + 112, SHARE = 35.9, LEAVE = 38.9, LOOP = LEAVE + 6.8;
+const BO_TURN = 27.6, BENCH = A_X + 330, KID = BENCH + 182, SHARE = 35.9, LEAVE = 38.9, LOOP = LEAVE + 6.8;
 // eating, in rows bitten off the top: Bo's giant cone (after the top 5 rows hop to the kid) and the kid's share
 const boCut = t => t < SHARE ? 0 : t < 36.9 ? 5 : t < 37.5 ? 7 : MEGA.length, kidCut = t => t < 37.15 ? 0 : t < 37.7 ? 2 : 5;
+
+function teleport(c, x) {
+  const dx = x - c.x; c.x += dx; c.hx += dx; c.vx = 0; c.cmd.x = x;
+  if (c.tuft) c.tuft.x += dx;
+  for (const F of c.feet) { F.x += dx; F.fromX += dx; F.toX += dx; }
+}
 
 Shorts.play({
   title: 'The Other Line',
@@ -59,10 +67,8 @@ Shorts.play({
   init(S) {
     S.A = []; S.B = []; S.gone = [];
     for (let i = 0; i < 3; i++) S.A.push(S.addChar({ x: slotA(i), face: 1, gain: .3, ...LOOKS[i] }));
-    for (let i = 0; i < 3; i++) S.B.push(S.addChar({ x: slotB(i), face: -1, gain: .3, ...LOOKS[4 + i] }));
-    S.late = [S.addChar({ x: -800, face: 1, gain: .3, ...LOOKS[1] }), S.addChar({ x: -1000, face: 1, gain: .3, ...LOOKS[6] })];
-    S.vendA = S.addChar({ x: A_X + 10, face: -1, gain: .2, hair: 'antenna', hairColor: PAL.red, fill: '#fff' });
-    S.vendB = S.addChar({ x: B_X - 10, face: 1, gain: .2, hairColor: PAL.sky, fill: '#fff' });
+    // line B's two customers step into place out of shot, once Bo has walked past (so Bo never walks through them)
+    S.Bwait = [0, 1].map(i => { const m = S.addChar({ x: -3000 - i * 300, face: -1, gain: .3, ...LOOKS[4 + i] }); m.hidden = true; return m; });
     S.bo = S.addChar({ x: 0, walk: V }); S.focus = S.bo;
     S.kid = S.addChar({ x: 2860, face: -1, gain: .3, hair: 'antenna', hairColor: PAL.lime, blush: PAL.pink, fill: '#f4ffe0' });
     S.in = null; S.served = 0; S.mega = 0; S.bites = 0; S.fly = 0; S.hum = 0;
@@ -72,6 +78,7 @@ Shorts.play({
     const bo = S.bo, c = bo.cmd;
     // everyone in a line shuffles to their slot; Bo too, once Bo is in one
     const place = (q, slot, dir) => q.forEach((m, k) => { if (m === bo) return; Object.assign(m.cmd, { x: slot(k), speed: 120, accel: 500, face: dir }); });
+    if (t > 8.2) S.once('lineB', () => S.Bwait.forEach((m, i) => { teleport(m, slotB(i)); m.hidden = false; S.B.push(m); }));
     place(S.A, slotA, 1); place(S.B, slotB, -1);
     const serve = (name) => {
       const q = name === 'A' ? S.A : S.B, m = q[0]; if (!m || m === bo) return;
@@ -81,10 +88,6 @@ Shorts.play({
       m.jump(0, -300); S.gone.push(m);
     };
     SERVE.forEach(([at, q], i) => { if (t >= at) S.once('serve' + i, () => serve(q)); });
-    // the two late arrivals walk straight into the empty line and get served at once
-    if (t > 17.4) S.late.forEach((m, i) => { if (!m.cone && !S.B.includes(m)) { m.cmd.x = slotB(i) - 30; m.cmd.speed = 380; m.cmd.accel = 900; } });
-    if (t > 20.0) S.late.forEach((m, i) => { if (!m.cone && Math.abs(m.x - (slotB(i) - 30)) < 60) S.once('late' + i, () => { S.B.push(m); }); });
-    if (t > 21.9) S.once('lateServe0', () => serve('B')); if (t > 22.5) S.once('lateServe1', () => serve('B'));
 
     const joinA = () => { S.B = S.B.filter(m => m !== bo); S.in = 'A'; S.A.push(bo); };
     const joinB = () => { S.A = S.A.filter(m => m !== bo); S.in = 'B'; S.B.push(bo); };
@@ -150,9 +153,6 @@ Shorts.play({
     if (t > STALL_B[0]) S.once('stallB', () => { S.sfx('drain', {}, B_X); S.sfx('poof', {}, B_X); });
     if (t > STALL_A[0]) S.once('stallA', () => S.sfx('ring', {}, A_X));
     if (t > STALL_A[0] + 1.4) S.once('stallA2', () => S.sfx('ring', {}, A_X));
-    S.vendA.cmd.face = -1; S.vendB.cmd.face = 1;
-    S.vendA.cmd.lookY = t > STALL_A[0] && t < STALL_A[1] ? .6 : 0; S.vendA.cmd.eye = t > STALL_A[0] && t < STALL_A[1] ? 'flat' : 'happy';
-    S.vendB.cmd.eye = t > STALL_B[0] && t < STALL_B[1] ? 'sad' : 'happy';
     // a butterfly keeps Bo company while Bo waits
     if (t > 23.6 && t < 28) { S.fly += dt; if (S.fly > .32) { S.fly = 0; S.sfx('flap', {}); } }
     // ambience: a warm afternoon
@@ -162,7 +162,7 @@ Shorts.play({
     // then follow the action like a camera operator: whichever line is moving, plus Bo
     const shot = (x, z, k = 1.6) => { S.camGoal.x = x; S.camGoal.z = z; S.camGoal.kx = k; S.camGoal.kz = k * .8; };
     if (t < 9.0) { S.camGoal.z = 1.2; S.camGoal.kz = 2; }
-    else if (t < 11.0) shot((A_X + B_X) / 2, .47, 3.2);                 // the reveal: two carts, two lines
+    else if (t < 11.0) shot((A_X + B_X) / 2, .42, 3.2);                 // the reveal: two carts, two lines
     else if (t < 14.4) shot((B_X + bo.x) / 2 + 20, .7);                  // Bo, watching the other line fly
     else if (t < 17.9) shot((bo.x + A_X) / 2 + 20, .64);                 // now the old line flies
     else if (t < 22.2) shot((B_X + bo.x) / 2, .64);                      // ...and the other one empties
@@ -174,7 +174,7 @@ Shorts.play({
   drawSky(S, ctx, t, v) {
     for (let i = 0; i < 3; i++) {
       const W = v.right - v.left + 400, x = v.left - 200 + (1 - ((t / S.T + i / 3 + .2) % 1)) * W;
-      sprite(ctx, SPRITES.cloud, x, v.top + (v.bottom - v.top) * (.2 + i * .07), 9, { X: mix('#ebe8f4', '#ffe0c0', sine(seg(t, 22.5, 25.5)) * (1 - sine(seg(t, 29, 33)))) });
+      cloud(ctx, x, v.top + (v.bottom - v.top) * (.2 + i * .07), 9, { X: mix('#ebe8f4', '#ffe0c0', sine(seg(t, 22.5, 25.5)) * (1 - sine(seg(t, 29, 33)))) });
     }
   },
   drawBack(S, ctx, t) {
@@ -184,7 +184,7 @@ Shorts.play({
     for (const x of [BENCH - 62, BENCH + 62]) { ctx.beginPath(); ctx.moveTo(x, GROUND - 36); ctx.lineTo(x, GROUND + 2); ctx.stroke(); }
   },
   drawFront(S, ctx, t) {
-    const cart = (x, dir, stripe, body, stall) => {
+    const cart = (x, dir, stripe, body, stall, vend, hairKind, hairCol) => {
       const J = i => S.J(i + x);
       // awning on two poles
       ctx.lineWidth = 5; ctx.strokeStyle = '#111';
@@ -192,16 +192,29 @@ Shorts.play({
       for (let i = 0; i < 6; i++) { ctx.fillStyle = i % 2 ? '#fff' : stripe; ctx.fillRect(x - 78 + i * 26, GROUND - 262, 26, 34); }
       ctx.strokeRect(x - 78, GROUND - 262, 156, 34);
       for (let i = 0; i < 6; i++) { ctx.fillStyle = i % 2 ? '#fff' : stripe; ctx.beginPath(); ctx.arc(x - 65 + i * 26, GROUND - 228, 13, 0, Math.PI); ctx.fill(); }
+      // the vendor, behind the counter: a round head, one eye, a bob on every serve
+      const vx = x - dir * 6, vy = GROUND - 132 + Math.sin(t * 2.2 + x) * 2, eye = vend;
+      ctx.fillStyle = '#fff'; ctx.lineWidth = 5; ctx.beginPath(); ctx.ellipse(vx + J(3) * .3, vy, 48, 42, 0, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+      ctx.lineWidth = 4.5;
+      if (hairKind === 'antenna') { ctx.strokeStyle = hairCol; ctx.beginPath(); ctx.moveTo(vx - dir * 8, vy - 40); ctx.quadraticCurveTo(vx - dir * 14, vy - 60, vx - dir * 6, vy - 72); ctx.stroke(); ctx.fillStyle = hairCol; ctx.beginPath(); ctx.arc(vx - dir * 6, vy - 72, 7, 0, Math.PI * 2); ctx.fill(); }
+      else { ctx.strokeStyle = hairCol; for (const a of [-.4, 0, .4]) { ctx.beginPath(); ctx.moveTo(vx - dir * 8, vy - 40); ctx.lineTo(vx - dir * 8 + Math.sin(a - dir * .4) * 26, vy - 40 - Math.cos(a) * 24); ctx.stroke(); } }
+      ctx.strokeStyle = '#111'; ctx.fillStyle = '#111';
+      const ex = vx + dir * 22, ey = vy - 8;
+      if (eye === 'happy') { ctx.beginPath(); ctx.arc(ex, ey + 6, 9, Math.PI * 1.15, Math.PI * 1.85); ctx.stroke(); }
+      else { ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(ex, ey, 10, 0, Math.PI * 2); ctx.fill(); ctx.stroke(); ctx.fillStyle = '#111'; ctx.beginPath(); ctx.arc(ex + dir * 2, ey + (eye === 'flat' ? 4 : 1), 4, 0, Math.PI * 2); ctx.fill();
+        if (eye === 'flat' || eye === 'sad') { ctx.fillStyle = '#fff'; ctx.fillRect(ex - 12, ey - 12, 24, eye === 'flat' ? 11 : 8); ctx.beginPath(); ctx.moveTo(ex - 11, ey - (eye === 'flat' ? 1 : 4)); ctx.lineTo(ex + 11, ey - (eye === 'flat' ? 1 : 4)); ctx.stroke(); } }
+      ctx.strokeStyle = '#111';
       // the cart body hides the vendor's legs
       ctx.fillStyle = body; ctx.beginPath(); ctx.roundRect(x - 74 + J(2) * .3, GROUND - 112, 148, 86, 10); ctx.fill(); ctx.stroke();
       sprite(ctx, CONE, x, GROUND - 70, 6, { S: stripe, B: PAL.orange, W: PAL.peach });
       for (const wx of [x - 44, x + 44]) { ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(wx, GROUND - 16, 15, 0, Math.PI * 2); ctx.fill(); ctx.stroke(); }
       if (stall) { const k = outBack(clamp((t - stall) / .3)); sprite(ctx, SPRITES.bang, x + dir * 10, GROUND - 300 + Math.sin(t * 8) * 3, 6 * k, { X: PAL.red }); }
     };
-    cart(A_X, -1, PAL.red, PAL.peach, t > STALL_A[0] && t < STALL_A[1] ? STALL_A[0] : 0);
-    cart(B_X, 1, PAL.sky, PAL.lav, t > STALL_B[0] && t < STALL_B[1] ? STALL_B[0] : 0);
+    const stA = t > STALL_A[0] && t < STALL_A[1], stB = t > STALL_B[0] && t < STALL_B[1];
+    cart(A_X, -1, PAL.red, PAL.peach, stA ? STALL_A[0] : 0, stA ? 'flat' : 'happy', 'antenna', PAL.red);
+    cart(B_X, 1, PAL.sky, PAL.lav, stB ? STALL_B[0] : 0, stB ? 'sad' : 'happy', 'tuft', PAL.sky);
     // the phone A's vendor is busy on
-    if (t > STALL_A[0] && t < STALL_A[1]) { const top = S.vendA.top(); sprite(ctx, ['XXX', 'XBX', 'XBX', 'XXX'], top.x - 34, top.y + 30, 5, { X: '#111', B: PAL.sky }); }
+    if (t > STALL_A[0] && t < STALL_A[1]) sprite(ctx, ['XXX', 'XBX', 'XBX', 'XXX'], A_X - 52, GROUND - 140, 5, { X: '#111', B: PAL.sky });
     // B's machine puffs a little smoke while it's broken
     if (t > STALL_B[0] && t < STALL_B[1]) for (let i = 0; i < 4; i++) { const u = ((t - STALL_B[0]) * .8 + i / 4) % 1; ctx.fillStyle = PAL.grey; ctx.globalAlpha = 1 - u; ctx.beginPath(); ctx.arc(B_X + 30 + u * 20, GROUND - 130 - u * 90, 10 + u * 12, 0, Math.PI * 2); ctx.fill(); ctx.globalAlpha = 1; }
     // cones ride on heads (nobody here has hands)
@@ -223,7 +236,7 @@ Shorts.play({
     // the butterfly
     if (t > 23.6 && t < 28.4) {
       const top = S.bo.top(), u = t - 23.6, x = top.x + Math.cos(u * 1.3) * 90 + 20, y = top.y - 70 + Math.sin(u * 2.1) * 40;
-      sprite(ctx, Math.floor(t * 10) % 2 ? SPRITES.flyA : SPRITES.flyB, x, y, 4, { X: PAL.violet, B: '#111' }, seg(t, 23.6, 24) * (1 - seg(t, 28, 28.4)));
+      butterfly(ctx, x, y, 4.4, { X: PAL.violet }, seg(t, 23.6, 24) * (1 - seg(t, 28, 28.4)), 10);
     }
   },
 });

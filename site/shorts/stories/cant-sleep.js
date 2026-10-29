@@ -7,7 +7,7 @@
   // the worries float away and become stars. Bo sleeps; dawn comes; Bo walks on.
   // Button: one last sleepy sheep hops onto the foot of the bed and dozes off too. At dawn Bo gets
   // up and the sheep wriggles into the warm spot. "sleep tight, sheep." Bo tiptoes off, humming.
-  const { PAL, SPRITES, sprite, zzz, lerp, seg, sine, outBack, clamp, hash, spring, mix, ramp, GROUND } = Shorts;
+  const { PAL, SPRITES, sprite, moon, zzz, lerp, seg, sine, outBack, clamp, hash, spring, mix, ramp, GROUND } = Shorts;
   const V = 120, HOUSE_A = 700, HOUSE_B = 1500, TOP = GROUND - 420, BED = 1000, WIN = 1290, LAMP = 830;
   const DAWN = '#ffe2e2', DUSK = '#ead6f0', NIGHT = '#7f85c1', MOON = '#fff2a8';
   const SKY = [[0, DAWN], [4.6, DUSK], [7.4, NIGHT], [27.6, NIGHT], [31.2, '#f2d7ea'], [33.6, DAWN]];
@@ -111,7 +111,7 @@
       for (let i = 0; i < 18; i++) sprite(ctx, i % 3 ? SPRITES.dot : SPRITES.sparkle, v.left + hash(i) * (v.right - v.left), v.top + hash(i + .5) * (TOP - v.top + 60), i % 3 ? 3 : 2.4, { X: '#fff' }, nite * (.5 + .5 * Math.sin(t * 2 + i)));
       // the moon crosses slowly, and sets at dawn
       const mx = lerp(WIN - 300, WIN + 600, seg(t, 5, 33)), my = TOP - 140 + Math.pow(seg(t, 28, 33), 2) * 300;
-      sprite(ctx, SPRITES.moon, mx, my, 9, { X: '#fff6c8' }, nite);
+      moon(ctx, mx, my, 9, { X: '#fff6c8' }, nite);
       // the room, cut open: lamp-warm, then moonlit blue
       ctx.fillStyle = ramp(t, WALL); ctx.fillRect(HOUSE_A, TOP, HOUSE_B - HOUSE_A, GROUND - TOP);
       if (t < LAMPOFF) { ctx.fillStyle = PAL.yellow; ctx.globalAlpha = .22; ctx.beginPath(); ctx.arc(LAMP, GROUND - 150, 150, 0, Math.PI * 2); ctx.fill(); ctx.globalAlpha = 1; }

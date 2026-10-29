@@ -5,8 +5,8 @@
   // chair. Night, distant party lights, and it gets a bit lonely. Next morning, another invite. Bo goes.
   // Button: Bo hops onto the dance floor and dances terribly, loving it. The friends stare... then
   // cheer "nice moves!" and copy it. Then the whole party skips off ahead, with Bo hopping after.
-  const { PAL, SPRITES, sprite, zzz, lerp, seg, sine, outBack, clamp, hash, spring, mix, GROUND } = Shorts;
-  const V = 130, SPOT = 760, CHAIR = 735, LAMP = 860, PARTY = [1480, 1590, 1700], POLE_A = 1420, POLE_B = 1760;
+  const { PAL, SPRITES, sprite, cloud, zzz, lerp, seg, sine, outBack, clamp, hash, spring, mix, GROUND } = Shorts;
+  const V = 130, SPOT = 760, CHAIR = 735, LAMP = 860, PARTY = [1480, 1655, 1830], POLE_A = 1420, POLE_B = 1910;   // ~175 apart: no bodies overlapping
   const MAIL = ['XXXXXXX', 'XX...XX', 'X.X.X.X', 'X..X..X', 'XXXXXXX'], HAT = ['...X...', '..XYX..', '.XYXYX.', 'XYXYXYX', 'XXXXXXX'];
   const PLANE = ['X.......', 'XXX.....', 'XXXXXX..', 'XXXXXXXX', 'XXXXXX..', 'XXX.....', 'X.......'];
   const ARRIVE = 27.5;    // measured: Bo reaches the party
@@ -53,9 +53,9 @@
         [21.4, { sit: 0, lookY: 0 }],
         [21.6, { lookX: -1 }], [22.1, { lookX: 1, eye: 'open' }],
         [22.8, { crouch: .2 }], [23.05, { crouch: 0, eye: 'happy' }], [23.05, () => bo.jump(0, -460)],
-        [23.6, { x: PARTY[0] - 168, speed: 150, accel: 400, lookX: 0 }],
+        [23.6, { x: PARTY[0] - 184, speed: 150, accel: 400, lookX: 0 }],
       ]);
-      if (!S.arrived && t > 23.6 && Math.abs(bo.x - (PARTY[0] - 168)) < 5) {
+      if (!S.arrived && t > 23.6 && Math.abs(bo.x - (PARTY[0] - 184)) < 5) {
         S.arrived = t; S.sfx('arp', { notes: [0, 2, 4, 7, 9] }); S.sfx('sparkle', { n: 8 }, bo.x);
         S.burst(PARTY[1], GROUND - 200, 40, [PAL.red, PAL.orange, PAL.yellow, PAL.lime, PAL.sky, PAL.violet, PAL.pink], { speed: 520, gravity: 700, size: 10, life: 1.8 });
         S.friends.forEach((f, i) => S.once('cheer' + i, () => f.jump(0, -440 - i * 20)));
@@ -89,7 +89,7 @@
       S.friends.forEach((f, i) => { f.cmd.crouch = party ? .14 * Math.max(0, 1 - ((t - S.beatT0 + i * .1) % .5) / .2) : 0; f.cmd.eye = 'happy'; if (party && btn < BAD && S.beatN % 4 === i && t - S.beatT0 < dt * 1.5) S.once('hop' + S.beatN, () => f.jump(0, -260)); });
       // the button: make room, stare at Bo's dance, cheer, copy it, then skip off ahead
       if (btn > STEP) S.friends.forEach((f, i) => {
-        f.cmd.x = PARTY[i] + 140;
+        f.cmd.x = PARTY[i] + 180;
         if (btn > BAD + .2 && btn < CHEER) Object.assign(f.cmd, { crouch: 0, eye: 'wide', face: -1 });
         if (btn > CHEER) S.once('cheer2' + i, () => { f.jump(0, -420 - i * 20); const T = f.top(); S.burst(T.x, T.y - 30, 3, [PAL.pink], { speed: 140, gravity: -60, size: 20, life: 1.2, shape: 'heart' }); });
         if (btn > COPY && btn < RUN) Object.assign(f.cmd, { tilt: .3 * Math.sin(t * 9 + i * 1.3), face: Math.floor(t / .45 + i) % 2 ? 1 : -1, crouch: .2 * Math.max(0, 1 - ((t - S.beatT0 + i * .1) % .5) / .2) });
@@ -105,14 +105,14 @@
 
       if (t > 5 && t < 13) { S.camGoal.x = 820; S.camGoal.z = .95; }
       else if (t >= 13 && t < 23.6) { S.camGoal.x = 1060; S.camGoal.z = .72; S.camGoal.kx = 1.6; }
-      if (btn > STEP - .4 && btn < LEAVE) { S.camGoal.x = 1640; S.camGoal.z = .92; S.camGoal.kx = 2; S.camGoal.kz = 1.2; }
+      if (btn > STEP - .4 && btn < LEAVE) { S.camGoal.x = 1700; S.camGoal.z = .85; S.camGoal.kx = 2; S.camGoal.kz = 1.2; }
     },
     drawSky(S, ctx, t, v) {
       const s = sky(t);
       if (s.nite > .35) for (let i = 0; i < 24; i++) sprite(ctx, i % 4 ? SPRITES.dot : SPRITES.sparkle, v.left + hash(i) * (v.right - v.left), v.top + hash(i + .5) * (GROUND - v.top) * .7, i % 4 ? 3 : 2.2, { X: '#fff' }, (s.nite - .35) / .65);
       for (let i = 0; i < 3; i++) {
         const W = v.right - v.left + 400, x = v.left - 200 + (1 - ((t / S.T + i / 3 + .9) % 1)) * W;
-        sprite(ctx, SPRITES.cloud, x, v.top + (v.bottom - v.top) * (.25 + i * .06), 9, { X: mix('#ebe8f4', '#c6bfe6', s.nite) });
+        cloud(ctx, x, v.top + (v.bottom - v.top) * (.25 + i * .06), 9, { X: mix('#ebe8f4', '#c6bfe6', s.nite) });
       }
     },
     drawBack(S, ctx, t) {

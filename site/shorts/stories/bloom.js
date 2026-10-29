@@ -5,7 +5,7 @@
   // next one. Then three. Then the whole field. Bo walks on carrying a little of it.
   // Button: a bee finds the flower on Bo's hair. It circles, Bo freezes and braces... and the bee
   // just lands, picks the flower up and carries it off ahead (passing it on). Bo laughs and hops.
-  const { PAL, SPRITES, sprite, lerp, seg, sine, outBack, outCubic, clamp, hash, spring, mix, GROUND } = Shorts;
+  const { PAL, SPRITES, sprite, butterfly, cloud, lerp, seg, sine, outBack, outCubic, clamp, hash, spring, mix, GROUND } = Shorts;
   const V = 130, COLS = [PAL.pink, PAL.yellow, PAL.blue, PAL.orange, PAL.violet, PAL.red, PAL.lime];
   const KEY = { f1: 820, f2: 1030, f3: 1220, f4: 1330, f5: 1440, f6: 1550, f7: 1720 };
   const BIG_AT = 19.2, BX = 2000, BEE_IN = 26.0, ORBIT = 26.7, PERCH = 28.0, TAKE = 28.6, LEAVE = 30.4;
@@ -140,7 +140,7 @@
       }
       for (let i = 0; i < 3; i++) {
         const W = v.right - v.left + 400, x = v.left - 200 + (1 - ((t / S.T + i / 3 + .5) % 1)) * W;
-        sprite(ctx, SPRITES.cloud, x, v.top + (v.bottom - v.top) * (.25 + i * .06), 9, { X: '#ebe8f4' });
+        cloud(ctx, x, v.top + (v.bottom - v.top) * (.25 + i * .06), 9, { X: '#ebe8f4' });
       }
     },
     drawBack(S, ctx, t) {
@@ -194,7 +194,7 @@
       for (let i = 0; i < 4; i++) {
         const u = seg(t, 20.2 + i * .5, 26 + i * .4); if (u <= 0 || u >= 1) continue;
         const x0 = 1300 + i * 230, x = x0 + Math.sin(u * 8 + i) * 50 + u * 220, y = GROUND - 60 - u * 620 + Math.sin(u * 19) * 14;
-        sprite(ctx, Math.floor(t * 12 + i) % 2 ? SPRITES.flyA : SPRITES.flyB, x, y, 4.2, { X: COLS[(i * 3) % COLS.length], B: '#111' });
+        butterfly(ctx, x, y, 4.2, { X: COLS[(i * 3) % COLS.length] }, 1, 11 + i);
       }
     },
   });

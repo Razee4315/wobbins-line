@@ -51,7 +51,11 @@
     param.linearRampToValueAtTime(peak, t + a);
     param.exponentialRampToValueAtTime(.0001, t + a + d);
   }
+  // foley never sounds the same twice: each body/prop sound gets its own small pitch and level drift
+  let VF = 1, VG = 1;
+  const FOLEY = new Set(['step', 'jump', 'land', 'skid', 'tap', 'pop', 'tock', 'knock', 'flap', 'rustle', 'poof', 'thump', 'squish', 'boing', 'splash', 'drip', 'flip', 'catch', 'toss', 'trip', 'roll', 'crash', 'umbrella', 'zip', 'brush', 'scribble', 'erase', 'gasp']);
   function tone(ctx, out, { type = 'sine', f, f2, t, a = .003, d = .2, g = .3, glide, vib = 0, vibRate = 7 }) {
+    f *= VF; if (f2) f2 *= VF; g *= VG;
     a = Math.max(a, .007);                       // never an instant attack: that's the click that sounds "digital"
     const o = ctx.createOscillator(); o.type = type;
     o.frequency.setValueAtTime(f, t);
@@ -64,6 +68,7 @@
     o.connect(e).connect(out); o.start(t); o.stop(t + a + d + .05);
   }
   function noise(ctx, out, { t, a = .002, d = .1, g = .2, type = 'lowpass', f = 1000, f2, q = .7, brown = false, seed = 0 }) {
+    f *= VF; if (f2) f2 *= VF; g *= VG;
     a = Math.max(a, .005);
     const B = bank(ctx), s = ctx.createBufferSource(); s.buffer = brown ? B.brown : B.white;
     const fl = ctx.createBiquadFilter(); fl.type = type; fl.Q.value = q;
@@ -115,7 +120,7 @@
     },
     ding: (c, o, t, p) => bell(c, o, t, p.pitch ?? 1568, p.g ?? .13),
     twinkle: (c, o, t, p) => { const f = Math.min(p.pitch ?? 1568, 1760); bell(c, o, t, f, .045, .6); bell(c, o, t + .09, f * 1.5, .03, .6); },
-    beep: (c, o, t, p) => tone(c, o, { type: 'triangle', f: p.pitch ?? 880, t, a: .005, d: .13, g: .06 }),
+    beep: (c, o, t, p) => { const f = p.pitch ?? 880; tone(c, o, { f: f * .97, f2: f, t, a: .014, d: .15, g: .055, glide: .03 }); tone(c, o, { f: f * 2, t, a: .01, d: .05, g: .01 }); },   // a round "boop"
     powerDown: (c, o, t) => {
       tone(c, o, { type: 'triangle', f: 720, f2: 60, t, a: .01, d: .95, g: .1, glide: .9 });
       tone(c, o, { f: 360, f2: 40, t, a: .01, d: .9, g: .08, glide: .9 });
@@ -150,7 +155,7 @@
       noise(c, o, { t, d: .02, g: .07, type: 'bandpass', f, q: 4 });
       tone(c, o, { f: f * .5, t, d: .02, g: .02 });
     },
-    ring: (c, o, t) => tone(c, o, { f: 1760, t, a: .01, d: .26, g: .02, vib: 90, vibRate: 20 }),
+    ring: (c, o, t) => { for (let i = 0; i < 6; i++) bell(c, o, t + i * .055, i % 2 ? 1975.5 : 1568, .016 * (1 - i * .08), .3); },   // a soft bell trill, not a buzz
     wind: (c, o, t, p) => noise(c, o, { t, a: .06, d: .14, g: .05 * Math.min(1, p.v ?? .5), type: 'bandpass', f: 500 + 800 * (p.v ?? .5), q: .5, seed: t }),
     trip: (c, o, t) => {
       noise(c, o, { t, a: .005, d: .1, g: .1, type: 'bandpass', f: 1300, f2: 400, q: .8 });
@@ -193,7 +198,7 @@
     drain: (c, o, t) => { tone(c, o, { type: 'triangle', f: 660, f2: 300, t, a: .005, d: .32, g: .06, glide: .3 }); },
     thump: (c, o, t, p) => { const g = p.g ?? 1; tone(c, o, { f: 72, f2: 40, t, d: .17, g: .26 * g }); noise(c, o, { t, d: .05, g: .04 * g, f: 320 }); },
     plane: (c, o, t) => { noise(c, o, { t, a: .12, d: .6, g: .05, type: 'bandpass', f: 700, f2: 2600, q: .8 }); S.flap(c, o, t + .05); S.flap(c, o, t + .2); },
-    typing: (c, o, t) => { for (let i = 0; i < 3; i++) tone(c, o, { f: 1900 + i * 140, t: t + i * .14, a: .002, d: .03, g: .02 }); },
+    typing: (c, o, t) => { for (let i = 0; i < 3; i++) { const at = t + i * .13 + hash(i + t) * .03; tone(c, o, { f: 1150 + hash(i * 3 + t) * 200, t: at, d: .025, g: .022 }); noise(c, o, { t: at, d: .015, g: .012, type: 'bandpass', f: 2200, q: 1.4 }); } },
     tock: (c, o, t, p) => {                     // wooden block / box set down
       const f = p.f ?? 780;
       tone(c, o, { f, t, a: .002, d: .06, g: .1 }); tone(c, o, { f: f * 2.3, t, a: .002, d: .03, g: .03 });
@@ -217,21 +222,29 @@
     },
     splash: (c, o, t) => { noise(c, o, { t, d: .26, g: .12, f: 2400, f2: 380 }); tone(c, o, { f: 620, f2: 200, t, d: .12, g: .06 }); },
     flip: (c, o, t) => { noise(c, o, { t, d: .03, g: .045, type: 'bandpass', f: 2600, q: 2 }); tone(c, o, { f: 1200, t: t + .03, d: .02, g: .02 }); },
-    // ---- a voice: a soft murmured syllable, vowel from the letter, pitch per speaker ----
+    // ---- the caption voice: one soft sung note per word ----
+    // It used to be a buzzy formant syllable every other letter ("do-do-do-do"), which read as
+    // robotic (feedback 2026-10-30). Now each word is one warm, rounded note, like humming "mm"
+    // over a felt mallet. The notes wander the pentatonic scale in small steps, so a sentence
+    // plays as a tiny tune: a question lifts at the end, an exclamation brightens, a statement
+    // settles home and "..." trails off. Each speaker has a register (pitch).
     voice: (c, o, t, p) => {
-      const ch = (p.ch || 'a').toLowerCase(), k = p.k ?? 0;
-      const vow = 'aeiou'.includes(ch) ? ch : 'aeiouaeo'[(ch.charCodeAt(0) || 0) % 8];
-      const [f1, f2] = { a: [760, 1180], e: [470, 1700], i: [340, 2000], o: [500, 860], u: [370, 760] }[vow];
-      const wob = 1 + (hash(k * 1.31) - .5) * .14, rise = p.rise ? 1 + .22 * Math.min(1, p.rise) : 1;
-      const f0 = 236 * (p.pitch ?? 1) * wob * rise, d = p.last ? .13 : .075, g = .032 * (p.g ?? 1);
-      const osc = c.createOscillator(); osc.type = 'sawtooth';
-      osc.frequency.setValueAtTime(f0 * 1.05, t); osc.frequency.exponentialRampToValueAtTime(f0 * (p.last ? .86 : .97), t + d);
-      const soft = c.createBiquadFilter(); soft.type = 'lowpass'; soft.frequency.value = 2400; soft.Q.value = .4;
-      const e = c.createGain(); e.gain.setValueAtTime(.0001, t); e.gain.linearRampToValueAtTime(g, t + .016);
-      e.gain.setValueAtTime(g * .8, t + d * .6); e.gain.exponentialRampToValueAtTime(.0001, t + d + .03);
-      osc.connect(soft);
-      for (const [f, q, gg] of [[f1, 5, .7], [f2, 7, .32]]) { const bp = c.createBiquadFilter(); bp.type = 'bandpass'; bp.frequency.value = f; bp.Q.value = q; const bg = c.createGain(); bg.gain.value = gg; soft.connect(bp).connect(bg).connect(e); }
-      e.connect(o); osc.start(t); osc.stop(t + d + .06);
+      const w = p.w ?? 0, base = (p.k ?? 0) - w, pitch = p.pitch ?? 1, end = p.end ?? 'say';
+      let deg = 2 + Math.floor(hash(base * 3.1 + .2) * 2);
+      for (let j = 1; j <= w; j++) deg = Math.max(0, Math.min(5, deg + [-1, 1, -1, 0, 1, 2, -2, 1][Math.floor(hash(base * 1.7 + j * 2.3) * 8)]));
+      let scoop = .965, len = Math.min(8, (p.word || 'mm').replace(/\W/g, '').length);
+      if (p.last) {
+        if (end === 'ask') { deg = Math.min(6, Math.max(deg + 2, 4)); scoop = .9; }
+        else if (end === 'yay') deg = Math.min(6, deg + 1);
+        else if (end === 'trail') deg = Math.max(0, deg - 1);
+        else deg = deg > 2 ? 2 : 0;
+      }
+      const f = PENTA[deg] * .5 * pitch, g = .011 * (p.g ?? 1) * (end === 'trail' && p.last ? .7 : 1);
+      const d = (.13 + len * .014) * (p.last ? 1.7 : 1);
+      tone(c, o, { f: f * scoop, f2: f, t, a: .024, d, g, glide: .05, vib: p.last ? f * .007 : 0, vibRate: 5 });   // the hum
+      tone(c, o, { type: 'triangle', f: f * scoop, f2: f, t, a: .03, d: d * .8, g: g * .28, glide: .05 });            // a little body
+      tone(c, o, { f: f * 2, t, a: .008, d: .06, g: g * (end === 'yay' ? .32 : .2) });                                 // the soft mallet onset
+      tone(c, o, { f: f * 3, t, a: .008, d: .03, g: g * .06 });
     },
     // ---- season 6/7: ambience, voices and props ----
     // Ambience is made of sparse little sounds only, never a held noise bed: the steady hiss and
@@ -276,7 +289,17 @@
         tone(c, o, { type: 'triangle', f: f0, f2: f, t: t + i * gap, a: .06, d: gap * 1.1, g, glide: .06, vib: 3, vibRate: 5.5 });
       });
     },
-    laugh: (c, o, t, p) => { const k = p.k ?? 1; for (let i = 0; i < (p.n ?? 3); i++) tone(c, o, { type: 'triangle', f: (560 - i * 30) * k, f2: (480 - i * 30) * k, t: t + i * .15, a: .015, d: .1, g: .045 * (p.g ?? 1), vib: 14, vibRate: 30 }); },
+    // a giggle: each "he" is a puff of breath and a soft voiced note that falls a little, uneven in
+    // timing and pitch like a real laugh (it used to be a buzzy 30 Hz vibrato, which sounded robotic)
+    laugh: (c, o, t, p) => {
+      const k = p.k ?? 1, g = .042 * (p.g ?? 1);
+      for (let i = 0, at = t; i < (p.n ?? 3); i++, at += .12 + hash(i * 1.3 + t) * .05) {
+        const f = (540 - i * 32) * k * (1 + (hash(i * 2.1 + t) - .5) * .05), gi = g * (1 - i * .12);
+        noise(c, o, { t: at, a: .01, d: .06, g: gi * .45, type: 'bandpass', f: 1500 * k, q: 1.1, seed: at });
+        tone(c, o, { type: 'triangle', f: f * 1.05, f2: f * .92, t: at + .012, a: .016, d: .09, g: gi * .85, glide: .1 });
+        tone(c, o, { f: f * 2.02, f2: f * 1.86, t: at + .012, a: .016, d: .055, g: gi * .18, glide: .08 });
+      }
+    },
     gasp: (c, o, t) => noise(c, o, { t, a: .06, d: .16, g: .06, type: 'bandpass', f: 900, f2: 1700, q: .7 }),
     knock: (c, o, t, p) => { for (let i = 0; i < (p.n ?? 3); i++) { tone(c, o, { f: 190, f2: 120, t: t + i * .17, a: .006, d: .09, g: .16 }); noise(c, o, { t: t + i * .17, d: .03, g: .05, type: 'bandpass', f: 700, q: 1.2 }); } },
     door: (c, o, t) => { tone(c, o, { f: 230, f2: 300, t, a: .2, d: .5, g: .025, vib: 20, vibRate: 11 }); S.knock(c, o, t + .6, { n: 1 }); },
@@ -304,12 +327,13 @@
     s.connect(fl).connect(e).connect(out); s.start(t, hash(t) * 2); s.stop(t + d + .05);
   }
   // reverb send per sound
-  const SEND = { voice: .12, room: 0, birds: .3, tweet: .35, night: .2, rainbed: .1, windbed: .1, pad: .5, pluck: .3, musicbox: .45, hum: .25, laugh: .2, gasp: .1, knock: .12, door: .15, jingle: .3, zip: .05, rustle: .08, creak: .1, baa: .2, umbrella: .1, bus: .05, hiss: .1, honk: .2, bulb: .4, toss: .15, catch: .1, charge: .4, dab: .2, tock: .1, thump: .03, snore: .05, ding: .4, twinkle: .45, swell: .55, chime: .4, arp: .4, sparkle: .5, whistle: .45, chirp: .35, boing: .2, pop: .25, powerDown: .25, dizzy: .3, shatter: .3, blip: .1, step: .05, land: .07, roll: .03, heart: .02 };
+  const SEND = { voice: .22, room: 0, birds: .3, tweet: .35, night: .2, rainbed: .1, windbed: .1, pad: .5, pluck: .3, musicbox: .45, hum: .25, laugh: .2, gasp: .1, knock: .12, door: .15, jingle: .3, zip: .05, rustle: .08, creak: .1, baa: .2, umbrella: .1, bus: .05, hiss: .1, honk: .2, bulb: .4, toss: .15, catch: .1, charge: .4, dab: .2, tock: .1, thump: .03, snore: .05, ding: .4, twinkle: .45, swell: .55, chime: .4, arp: .4, sparkle: .5, whistle: .45, chirp: .35, boing: .2, pop: .25, powerDown: .25, dizzy: .3, shatter: .3, blip: .1, step: .05, land: .07, roll: .03, heart: .02 };
 
   function play(ctx, ev, when) {
     const fn = S[ev.name]; if (!fn) return;
     const out = voice(ctx, { pan: ev.pan ?? 0, send: SEND[ev.name] ?? .15, gain: ev.p.gain ?? 1 });
-    fn(ctx, out, Math.max(when, ctx.currentTime ?? 0), ev.p || {});
+    if (FOLEY.has(ev.name)) { const k = ev.t ?? when; VF = 1 + (hash(k * 7.3 + ev.name.length) - .5) * .08; VG = 1 + (hash(k * 3.1 + .5) - .5) * .24; }
+    try { fn(ctx, out, Math.max(when, ctx.currentTime ?? 0), ev.p || {}); } finally { VF = VG = 1; }
   }
 
   // render a loop's events into one seamless buffer: tails past the end wrap to the start

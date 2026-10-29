@@ -5,7 +5,7 @@
   // imagines the worst, until the plane flies back with a heart. They were just busy.
   // Button: Bo writes back, with a heart, and another, and another... ten hearts piled on one little
   // plane. It takes off, sags under the weight, nearly scrapes the ground, and wobbles off. Bo laughs.
-  const { PAL, SPRITES, sprite, lerp, seg, sine, outBack, clamp, hash, spring, mix, GROUND } = Shorts;
+  const { PAL, SPRITES, sprite, cloud, lerp, seg, sine, outBack, clamp, hash, spring, mix, GROUND } = Shorts;
   const V = 130, SPOT = 700, HEART_AT = 23.3;
   // the button: write back, pile on the hearts, launch the overloaded plane, walk on
   const WRITE = 27.6, LOAD = 28.0, LOAD_EVERY = .14, FOLD = 29.6, LAUNCH = 29.85, LEAVE = 32.3;
@@ -114,7 +114,7 @@
     drawSky(S, ctx, t, v) {
       for (let i = 0; i < 3; i++) {
         const W = v.right - v.left + 400, x = v.left - 200 + (1 - ((t / S.T + i / 3 + .7) % 1)) * W;
-        sprite(ctx, SPRITES.cloud, x, v.top + (v.bottom - v.top) * (.25 + i * .06), 9, { X: '#ebe8f4' });
+        cloud(ctx, x, v.top + (v.bottom - v.top) * (.25 + i * .06), 9, { X: '#ebe8f4' });
       }
     },
     drawFront(S, ctx, t, v) {

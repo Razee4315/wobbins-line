@@ -6,16 +6,20 @@
   // Button: two friends notice, tiptoe over and sit quietly beside Bo. "shh..." "quiet party?"
   // Bo, fully charged: "yes." Then the three of them skip off together.
   const { PAL, SPRITES, sprite, lerp, seg, sine, outBack, clamp, hash, spring, mix, GROUND } = Shorts;
-  const V = 130, POLE_A = 820, POLE_B = 1300, BOOM = 1090, TREE = 1720, SEAT = 1610;
+  // Staging keeps everyone ~175 apart (bodies are ~160 wide) and nobody walks through anybody: Bo
+  // hurries to the far end of the party first, the friends run in behind, and at the end the two
+  // sitters leapfrog over Bo to lead the way.
+  const V = 130, BO_X = 1620, POLE_A = 850, POLE_B = 1800, BOOM = 1735, TREE = 2200, SEAT = 2090;
   const QUIET = 24.0, WAKE = 29.4, LEAVE = 33.6;
   // the two friends who come over: [friend, seat x]
-  const SITTERS = [[0, 1350], [3, 1478]];
-  const SPOTS = [940, 1040, 1140, 1240];
+  const SITTERS = [[0, 1915], [1, 1740]];
+  const SPOTS = [1445, 1270, 1095, 920], ARRIVE = 2.0;
   // battery level changes: [time, bars]
   const LEVELS = [[0, 4], [9.9, 3], [12.6, 2], [15.2, 1], [17.4, 0], [25.6, 1], [26.8, 2], [28.0, 3], [29.2, 4]];
   const level = t => LEVELS.filter(([a]) => t >= a).pop()[1];
   // friends coming over to Bo: [friend, from, to, x]
-  const VISITS = [[0, 9.4, 10.9, 975], [1, 12.0, 13.4, 975], [2, 12.1, 13.4, 1080], [0, 14.6, 16.2, 975], [1, 14.6, 16.2, 1060], [2, 14.6, 16.2, 1140], [3, 14.6, 16.2, 1220], [0, 16.8, 17.8, 975]];
+  // (each friend bounces over at its own spot; everyone at once is the rush)
+  const VISITS = [[0, 9.4, 10.9, 1445], [1, 12.0, 13.4, 1270], [2, 12.1, 13.4, 1095], [0, 14.6, 16.2, 1445], [1, 14.6, 16.2, 1270], [2, 14.6, 16.2, 1095], [3, 14.6, 16.2, 920], [0, 16.8, 17.8, 1445]];
   const BUBBLES = ['heart', 'note', 'bang'];
   // the battery rides above Bo, swinging back with speed and bouncing with the squash
   const batteryPos = bo => { const top = bo.top(); return { x: top.x - clamp(bo.vx * .07 + bo.axs * .012, -30, 30), y: top.y - 54 + clamp(bo.q.v * 3, -14, 14) }; };
@@ -43,7 +47,7 @@
         { hair: 'curl', blush: PAL.pink, fill: '#ffe9f2' }, { hair: 'antenna', hairColor: PAL.blue, fill: '#e6f0ff' },
         { hairColor: PAL.orange, blush: '#ffb08a', fill: '#fff4d6' }, { hair: 'curl', hairColor: PAL.green, fill: '#e3fbef' },
       ];
-      S.friends = SPOTS.map((x, i) => S.addChar({ x, face: -1, gain: .3, ...look[i] }));
+      S.friends = SPOTS.map((x, i) => S.addChar({ x: -680 - i * 210, face: 1, gain: .3, ...look[i] }));   // off screen behind Bo
       S.bo = S.addChar({ x: 0, walk: V }); S.focus = S.bo;
       S.beat = 0; S.beatN = 0; S.beatT0 = 0; S.notes = []; S.bubble = []; S.lastLevel = 4; S.blink = 0; S.breath = 0;
     },
@@ -61,12 +65,13 @@
       const pulse = Math.max(0, 1 - (t - S.beatT0) / .18);
 
       S.plan(bo, t, [
-        [0, { x: 830, speed: V, accel: 450 }],
+        [0, { x: BO_X, speed: 260, accel: 400 }],                               // can't wait
         [5.0, { lookX: .7, lookY: -.3, eye: 'happy' }],
         [7.2, { crouch: .2 }], [7.45, { crouch: 0 }], [7.45, () => bo.jump(0, -520)],    // yay!
         [8.2, { eye: 'happy', lookX: .6, lookY: 0 }],
         [15.3, { eye: 'happy' }],
         [17.4, { eye: 'flat', sit: .6, tilt: .16, lookX: 0 }],                   // empty
+        [17.9, { face: 1, lookX: 0 }],
         [18.6, { sit: 0, tilt: .08, x: SEAT, speed: 135, accel: 300, eye: 'flat' }],   // slipping away
         [23.9, { sit: 1.1, tilt: .05, eye: 'closed', crouch: .05 }],
         [WAKE, { eye: 'open', crouch: 0 }],
@@ -99,7 +104,9 @@
             [32.7 + k * .12, { crouch: .2 }], [32.95 + k * .12, { crouch: 0 }], [32.95 + k * .12, () => f.jump(0, -420)],
             [LEAVE - .2 + k * .3, { x: 1e6, speed: 290, accel: 700, eye: 'happy' }],
           ]);
-          if (t > LEAVE + .4 && f.mode === 'ground' && hash(Math.floor(t * 2.5) + i) > .7) S.once(`skip${i}:${Math.floor(t * 2.5)}`, () => f.jump(f.vx, -300));
+          // leapfrog over Bo to lead the way (never through)
+          if (t > LEAVE - .2 && f.mode === 'ground' && bo.x - f.x > 0 && bo.x - f.x < 205) S.once('frog' + i, () => { f.jump(640, -1050); S.sfx('whoosh', { d: .4, v: .5 }, f.x); });
+          if (t > LEAVE + .4 && f.mode === 'ground' && f.x > bo.x + 150 && hash(Math.floor(t * 2.5) + i) > .7) S.once(`skip${i}:${Math.floor(t * 2.5)}`, () => f.jump(f.vx, -300));
           return;
         }
         if (v) {
@@ -107,11 +114,14 @@
           const k = `v${i}-${v[1]}`;
           if (t > v[1] + .45 && Math.abs(f.x - v[3]) < 20) S.once(k, () => { f.jump(0, -380); S.sfx('pop', { pitch: 760 + i * 110, g: .1 }, f.x); S.bubble = S.bubble || []; S.bubble.push({ f: i, t0: t, kind: BUBBLES[(i + S.beatN) % 3] }); });
           if (t > v[1] + 1.05 && Math.abs(f.x - v[3]) < 20) S.once(k + 'b', () => f.jump(0, -320));
+        } else if (t < ARRIVE || Math.abs(f.x - SPOTS[i]) > 60 && t < 9) {
+          Object.assign(f.cmd, { x: t < ARRIVE ? f.x : SPOTS[i], speed: 420, accel: 700, face: 1, eye: 'happy', crouch: 0, tilt: 0 });   // running in
+          if (t > ARRIVE && f.mode === 'ground' && hash(Math.floor(t * 3) + i * 7) > .82) S.once(`run${i}:${Math.floor(t * 3)}`, () => f.jump(f.vx, -260));
         } else {
           Object.assign(f.cmd, { x: SPOTS[i], speed: 200, accel: 600, face: i % 2 ? 1 : -1, eye: 'happy' });
           f.cmd.crouch = .16 * Math.max(0, 1 - ((t - S.beatT0 + i * .09) % beatLen(t)) / .2);
           f.cmd.tilt = .1 * Math.sin(t * Math.PI * 2 / (beatLen(t) * 2) + i);
-          if (S.beatN % 4 === i && t - S.beatT0 < dt * 1.5 && t > 2) S.once('hop' + S.beatN, () => f.jump(0, -280));
+          if (S.beatN % 4 === i && t - S.beatT0 < dt * 1.5 && t > 9) S.once('hop' + S.beatN, () => f.jump(0, -280));
         }
       });
 
@@ -126,8 +136,8 @@
       if (t > 29.2) S.once('full', () => { S.sfx('swell', { root: 523.25 }); S.sfx('sparkle', { n: 6 }, bo.x); });
       if (t > 24.6) S.once('ff', () => S.sfx('twinkle', { pitch: 2093, gain: .6 }, TREE));
 
-      if (t > 5 && t < 18.6) { S.camGoal.x = 1040; S.camGoal.z = .9; S.camGoal.kx = 2.5; }
-      if (t > 23 && t < LEAVE) { S.camGoal.x = t > 25.4 ? 1500 : 1540; S.camGoal.z = 1.05; S.camGoal.kx = 2; }
+      if (t > 5.5 && t < 18.6) { S.camGoal.x = 1330; S.camGoal.z = .8; S.camGoal.kx = 2.5; }
+      if (t > 23 && t < LEAVE) { S.camGoal.x = t > 25.4 ? 1965 : 2000; S.camGoal.z = 1; S.camGoal.kx = 2; }
     },
     drawSky(S, ctx, t, v) {
       const w = 2 * Math.PI * Math.round(S.T / Math.PI) / S.T;              // ~2 rad/s, a whole number of twinkles per loop
@@ -164,8 +174,13 @@
         sprite(ctx, SPRITES.note, n.x + Math.sin(u * 7 + n.x) * 30, GROUND - 70 - u * 230, 5, { X: n.c }, 1 - u);
       }
       // the quiet tree, with fireflies while Bo recharges
-      ctx.lineWidth = 6; ctx.beginPath(); ctx.moveTo(TREE, GROUND + 2); ctx.lineTo(TREE, GROUND - 210); ctx.stroke();
-      sprite(ctx, ['...XXXX...', '.XXXXXXXX.', 'XXXXXXXXXX', 'XXXXXXXXXX', '.XXXXXXXX.', '...XXXX...'], TREE - 30 + Math.sin(t * .8) * 2, GROUND - 260, 15, { X: PAL.green });
+      // an ink tree (trunk, three leafy lumps that sway a little)
+      const sw = Math.sin(t * .8) * 3;
+      ctx.fillStyle = PAL.brown; ctx.lineWidth = 6; ctx.beginPath(); ctx.moveTo(TREE - 13, GROUND + 4); ctx.lineTo(TREE - 7, GROUND - 190); ctx.lineTo(TREE + 7, GROUND - 190); ctx.lineTo(TREE + 13, GROUND + 4); ctx.fill(); ctx.stroke();
+      ctx.fillStyle = PAL.green;
+      for (const [dx, dy, rx, ry] of [[-52, -222, 70, 56], [50, -226, 72, 58], [0, -278, 84, 66]]) { ctx.beginPath(); ctx.ellipse(TREE + dx + sw * (1 + dy / -300), GROUND + dy, rx, ry, 0, 0, Math.PI * 2); ctx.fill(); ctx.stroke(); }
+      ctx.fillStyle = mix(PAL.green, '#ffffff', .35); ctx.globalAlpha = .5;
+      ctx.beginPath(); ctx.ellipse(TREE - 22 + sw, GROUND - 300, 26, 14, -.4, 0, Math.PI * 2); ctx.fill(); ctx.globalAlpha = 1;
       const ff = sine(seg(t, 24, 25.5)) * (1 - sine(seg(t, 30, 31.5)));
       if (ff > 0) for (let i = 0; i < 7; i++) {
         const x = TREE - 120 + hash(i) * 240 + Math.sin(t * .9 + i * 2) * 30, y = GROUND - 60 - hash(i + .3) * 160 + Math.cos(t * 1.3 + i) * 20;

@@ -19,11 +19,12 @@ ENGINE2 = ['one-more', 'the-hill', 'bloom', 'hurry', 'what-if',
            'monday-mountain', 'imposter', 'decision', 'busy', 'rain-check',
            'the-cloud', 'the-seed', 'the-gap',
            'the-other-line', 'why-was-i-here', 'lost', 'small-talk', 'cant-sleep',
-           'just-in-case', 'heavy', 'fine', 'comfort-zone', 'inner-voice']
+           'just-in-case', 'heavy', 'fine', 'comfort-zone', 'inner-voice',
+           'the-chair', 'two-minutes', 'did-i-lock-it', 'water-yourself', 'slow-walker']
 
-VIEW_OLD = """      const unit = Math.min(cw / (portrait ? 640 : 1200), ch / 600) * this.cam.z.x;
+VIEW_OLD = """      const unit = Math.min(cw / (portrait ? 640 : 1200), ch / (portrait ? 640 * 16 / 9 : 600)) * this.cam.z.x;
       const gy = ch * (portrait ? .64 : .7);"""
-VIEW_NEW = """      const unit = (this.story.unit ? this.story.unit(cw, ch) : Math.min(cw / (portrait ? 640 : 1200), ch / 600)) * this.cam.z.x;
+VIEW_NEW = """      const unit = (this.story.unit ? this.story.unit(cw, ch) : Math.min(cw / (portrait ? 640 : 1200), ch / (portrait ? 640 * 16 / 9 : 600))) * this.cam.z.x;
       const gy = ch * (this.story.groundFrac ?? (portrait ? .64 : .7));"""
 
 # the band's Wobbin is asked to walk fast, so the site may cap how far a foot reaches ahead

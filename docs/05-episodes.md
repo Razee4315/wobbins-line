@@ -1,6 +1,6 @@
 # 05 · Episodes
 
-All 33 episodes in release order. ★ = one of the user's favourites. Seasons on the site are listed newest first.
+All 38 episodes in release order. ★ = one of the user's favourites. Seasons on the site are listed newest first.
 
 | EP | Season | Episode | Theme | Quote | Notes |
 |---|---|---|---|---|---|
@@ -37,6 +37,11 @@ All 33 episodes in release order. ★ = one of the user's favourites. Seasons on
 | 31 | 7 | [Fine](../fine.html) | pretending you’re okay | not fine? that’s fine too. |  |
 | 32 | 7 | [Comfort Zone](../comfort-zone.html) | stepping out | comfort zones grow every time you step out. |  |
 | 33 | 7 | [Inner Voice](../inner-voice.html) | the inner critic | talk to yourself the way you would talk to a friend. |  |
+| 34 | 8 | [The Chair](../the-chair.html) | putting it away | put it away now. future you says thanks. | New 2026-10-30 |
+| 35 | 8 | [Two Minutes](../two-minutes.html) | the tiny task you dread | it took two seconds. the dread took two weeks. | New 2026-10-30 |
+| 36 | 8 | [Did I Lock It?](../did-i-lock-it.html) | checking again | you checked. you can let it go. | New 2026-10-30 |
+| 37 | 8 | [Water Yourself](../water-yourself.html) | looking after yourself | you need watering too. | New 2026-10-30 |
+| 38 | 8 | [Slow Walker](../slow-walker.html) | slowing down for others | some days, the slow lane has the best view. | New 2026-10-30 |
 
 ## Seasons
 
@@ -49,6 +54,7 @@ All 33 episodes in release order. ★ = one of the user's favourites. Seasons on
 | 5 | Small courage | 19–23 |
 | 6 | Little things | 24–28 |
 | 7 | Heavy things | 29–33 |
+| 8 | Daily routine | 34–38 |
 
 ## Posting log
 

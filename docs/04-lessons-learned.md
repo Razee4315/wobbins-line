@@ -2,6 +2,57 @@
 
 A running log. Newest at the top. When something breaks, write down what happened and the fix.
 
+## 2026-10-30 (night) · No touching, Season 8
+
+- **"Characters look like they're kissing."** Many layouts had friends 100–150 apart (bodies are ~160
+  wide), queues 140 apart, and endings where a friend walked straight through Bo. A checker now finds them
+  (`node tools/overlap.js`, add `--wide` for the 16:9 frame), and the engine gives everyone **personal
+  space**: a character never stops within 180 of another; two that start too close step apart. Stories
+  that need closeness can opt out (`space: false`, or `c.space = 0`).
+- **Personal space can break gags** that wait for someone to reach an exact spot. `node tools/events.js
+  save` records every episode's sound beats; `diff` shows any beat that vanished or moved. Run it before
+  and after engine changes.
+- **Passing someone on one line looks like walking through them.** Use `S.leapfrog(a, b)`: `a` hops clean
+  over `b` (who ducks). It became a little running joke: friends leapfrog Bo to lead the walk-off.
+- **Restage instead of squeezing:** Battery (friends run in behind Bo), Busy (the friend waits by the desk,
+  not on the path), The Other Line (vendors behind the counters, line B steps in out of shot), Just in Case
+  (a wider hilltop and a bigger umbrella), Comfort Zone (headers aimed head to head).
+- **Story state must be reset in `init()`.** A `S.stubT` set during the film survived into the next loop
+  and broke the seam (Two Minutes). Every field a story sets in `update` needs a value in `init`.
+- **Python edits on Windows:** open files with `newline='
+'`, or the CRLF breaks `loopcheck.js`.
+- **Palette softened** a touch: red `#f53b57`, yellow `#ffe03d`, green `#1fa84a`, lime `#3ad65c`.
+
+## 2026-10-30 · Animation principles, a new caption voice, ink side characters
+
+- **Anticipation without moving the beats.** A crouch before every jump would delay the jumps and
+  break timed gags (headers, catches). Instead the engine logs each jump during the loop pass and,
+  on later runs, crouches into it during the 0.14 s before. Timing stays the same; the crouch is
+  free. A jump straight off a landing is skipped (no time to crouch, and it fed back on itself and
+  made Hurry's seam flip between two answers). Trips pass `antic = false`: you don't wind up to trip.
+- **The loop pass can need more than three runs** once jump times depend on the simulation; it now
+  repeats (up to four more) until the seam is 0.00.
+- **Squash and stretch, follow-through and takes are cheap in the springs.** Stronger stretch in the
+  air, a firmer landing squash, a tiny squash on every footfall, a squash when turning round, a
+  stretch-up "take" with three ink lines when the eye goes wide (and a small camera lean-in), and
+  an eye that overshoots a little when it snaps to a new look. Seams stayed at 0.00 in all 33.
+- **A brow that only shows for feelings.** Hidden on the calm face, it springs in for wide, sad,
+  flat, happy, squeeze, closed, heart and dizzy. Reads at phone size and keeps the simple look.
+- **The "do-do-do" caption voice.** A sawtooth through vowel formants every other letter sounded
+  robotic. One soft sung note per word (a hum over a felt mallet, wandering the pentatonic scale)
+  plays a sentence as a tiny tune and is much easier on the ear. Measure it: the first try was
+  −40 dB; −48 to −50 dB is the faint level we want.
+- **Repeats sound programmed.** Every foley sound (steps, lands, pops, tocks...) now drifts a few
+  percent in pitch and level per event. Musical sounds stay in tune.
+- **Open on the hook.** Players and MP4s now start just before the first caption (`show.hook`), so
+  the first frame already has the odd thing in it; the walk-in plays at the end, into the loop.
+- **Short phone screens cropped the scene.** A portrait frame shorter than 9:16 now keeps the full
+  9:16 height and shows more at the sides. 9:16 itself is unchanged.
+- **Python on Windows writes CRLF** in text mode, which breaks `loopcheck.js` (it looks for
+  `<script>
+`). Open files with `newline='
+'` when editing them from Python.
+
 ## 2026-10-28 · Full audit (see 08-audit.md)
 
 - **"Every ending feels sad."** The cause is the pattern, not one episode: the friend leaves, Wobbin

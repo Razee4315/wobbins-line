@@ -1,19 +1,19 @@
 /* busy: extracted from ../busy.html by scripts/sync-shorts.py. Do not edit here. */
 (function () {
   const Shorts = Object.assign(Object.create(window.Shorts), { play: story => { (window.WL_STORIES ||= {})['busy'] = story; } });
-  // Bo rushes parcels from the pile to the desk, faster every trip, straight past a friend waving
-  // with a birthday cake. The friend waves, then waits, then starts to leave. Bo notices, just in time.
+  // Bo rushes parcels from the pile to the desk, faster every trip, right up to a friend waiting
+  // by the desk with a birthday cake, and straight back again without a look. The friend waves, then waits, then starts to leave. Bo notices, just in time.
   // Button: Bo leans in to blow out the candle, the friend hops "happy birthday!" and the cake bounces
   // up into Bo's face. Splat. Deadpan, then both laugh; Bo shakes it off and they skip away together.
-  const { PAL, SPRITES, sprite, lerp, seg, sine, outBack, clamp, hash, spring, mix, GROUND } = Shorts;
-  const V = 130, PILE = 760, PICK = 845, DROP = 1290, DESK = 1385, MO = 1070, TRIPS = 4, SPEEDS = [300, 380, 460, 530];
+  const { PAL, SPRITES, sprite, cloud, lerp, seg, sine, outBack, clamp, hash, spring, mix, GROUND } = Shorts;
+  const V = 130, PILE = 760, PICK = 845, DROP = 1290, DESK = 1385, MO = 1560, TRIPS = 4, SPEEDS = [300, 380, 460, 530];
   const CAKE = ['...Y...', '...R...', 'PPPPPPP', 'WPWPWPW', 'WWWWWWW', 'PPPPPPP'];
   const SQUASHED = ['P.....P', 'PP.P.PP', 'WPWPWPW', 'WWWWWWW', 'PPPPPPP'];
   // the button, in seconds after Bo reaches the friend
   const LEAN = 6.4, BDAY = 6.9, SPLAT = 7.45, SHAKE = 9.3, UP = 9.9, LEAVE = 11.5;
   const PARCEL = ['XXXXXX', 'XXTTXX', 'XXTTXX', 'XXXXXX'];
   // measured: when Bo drops the last parcel, and when Bo reaches the friend
-  const DONE = 19.36, MEET = 21.74;
+  const DONE = 19.36, MEET = 21.93;
 
   Shorts.play({
     title: 'Busy',
@@ -65,14 +65,14 @@
         const d = t - S.doneT;
         if (d < 1.2) Object.assign(c, { eye: 'happy', crouch: .1 * Math.sin(d * 6), lookX: 0 });
         else if (S.meetT === null) {
-          Object.assign(c, { face: -1, eye: 'wide', lookX: .6, crouch: 0 });                         // ...where's
-          if (d > 1.8) { Object.assign(c, { x: mo.x + 178, speed: 320, accel: 1400, eye: 'sad' }); S.once('notice', () => S.sfx('heart', { g: .25 }, bo.x)); }
-          if (d > 1.8 && Math.abs(bo.x - (mo.x + 178)) < 8) { S.meetT = t; }
+          Object.assign(c, { face: 1, eye: 'wide', lookX: .6, crouch: 0 });                          // ...where's
+          if (d > 1.8) { Object.assign(c, { x: mo.x - 178, speed: 320, accel: 1400, eye: 'sad' }); S.once('notice', () => S.sfx('heart', { g: .25 }, bo.x)); }
+          if (d > 1.8 && Math.abs(bo.x - (mo.x - 178)) < 8) { S.meetT = t; }
         }
       }
       if (S.meetT !== null) {
         const d = t - S.meetT;
-        Object.assign(c, { x: S.meetSpot ?? (S.meetSpot = bo.x), face: -1, eye: 'happy', lookX: .3 });
+        Object.assign(c, { x: S.meetSpot ?? (S.meetSpot = bo.x), face: 1, eye: 'happy', lookX: .3 });
         if (d > .2) S.once('meet', () => { S.sfx('swell', { root: 440 }); S.sfx('chime', { n: 7, g: .12 }); bo.jump(0, -400); });
         if (d > 1.0) c.sit = 1;
         if (d > LEAN && d < SPLAT) Object.assign(c, { tilt: .5, eye: 'open', lookX: -.2, lookY: .6 });   // leaning in to blow the candle
@@ -91,21 +91,21 @@
       }
 
       // the friend: waves every time Bo zooms past, sadder each time, then starts to go home
-      const near = Math.abs(bo.x - MO) < 90 && S.stage && S.stage !== 'done';
+      const near = Math.abs(bo.x - MO) < 330 && S.stage && S.stage !== 'done';   // Bo dashes up to the desk beside them
       if (near && !S.near) {
         S.passes++; const k = S.passes;
         mo.jump(0, -300 - Math.min(5, k) * 30); S.bubbles.push({ t0: t, kind: k % 2 ? 'cake' : 'heart', big: Math.min(1.6, .8 + k * .1) });
         S.sfx('pop', { pitch: 980 + k * 30, g: .1 }, MO);
       }
       S.near = near;
-      const moods = S.passes < 3 ? 'happy' : S.passes < 6 ? 'open' : 'sad';
+      const moods = S.passes < 2 ? 'happy' : S.passes < 4 ? 'open' : 'sad';
       if (S.meetT === null) {
         Object.assign(mo.cmd, { eye: moods, face: -1, lookX: .4 });
-        if (S.passes >= 7 && S.stage !== 'done') mo.cmd.sit = .8;
-        if (S.stage === 'done') { mo.cmd.sit = 0; Object.assign(mo.cmd, { x: 600, speed: 45, accel: 200, face: -1, eye: 'sad', tilt: .1 }); S.once('moSad', () => S.sfx('drain', {}, mo.x)); }
+        if (S.passes >= 4 && S.stage !== 'done') mo.cmd.sit = .8;
+        if (S.stage === 'done') { mo.cmd.sit = 0; Object.assign(mo.cmd, { x: 2000, speed: 45, accel: 200, face: 1, eye: 'sad', tilt: .1 }); S.once('moSad', () => S.sfx('drain', {}, mo.x)); }
       } else {
         const d = t - S.meetT;
-        Object.assign(mo.cmd, { x: mo.x, face: 1, eye: d > .4 ? 'happy' : 'wide', tilt: 0, lookX: .3 });
+        Object.assign(mo.cmd, { x: mo.x, face: -1, eye: d > .4 ? 'happy' : 'wide', tilt: 0, lookX: .3 });
         if (d > .5) S.once('moHop', () => mo.jump(0, -420));
         if (d > 1.1) { mo.cmd.sit = 1; S.once('cakeDown', () => S.cakeX = (mo.x + bo.x) / 2); }
         if (d > BDAY) S.once('bday', () => mo.jump(0, -360));
@@ -119,13 +119,13 @@
       S.bubbles = S.bubbles.filter(b => t - b.t0 < 1);
       // the busy clock
       if (S.stage && S.stage !== 'done') { S.tick += dt; if (S.tick >= .3 - S.trip * .04) { S.tick = 0; S.sfx('tick', { tock: S.tickN++ % 2, gain: .6 }); } }
-      if (t > 5.4 && (S.meetT === null || t < S.meetT + 6)) { S.camGoal.x = S.meetT === null ? 1070 : bo.x - 60; S.camGoal.z = .78; S.camGoal.kx = 2.2; }
-      if (S.meetT !== null && t > S.meetT + 6 && t < S.meetT + LEAVE) { S.camGoal.x = S.meetSpot - 80; S.camGoal.z = 1.05; S.camGoal.kx = 2.2; S.camGoal.kz = 1.2; }
+      if (t > 5.4 && (S.meetT === null || t < S.meetT + 6)) { S.camGoal.x = S.meetT === null ? (S.stage === 'done' ? (bo.x + mo.x) / 2 : 1190) : bo.x + 60; S.camGoal.z = .7; S.camGoal.kx = 2.2; }
+      if (S.meetT !== null && t > S.meetT + 6 && t < S.meetT + LEAVE) { S.camGoal.x = S.meetSpot + 80; S.camGoal.z = 1.05; S.camGoal.kx = 2.2; S.camGoal.kz = 1.2; }
     },
     drawSky(S, ctx, t, v) {
       for (let i = 0; i < 3; i++) {
         const W = v.right - v.left + 400, x = v.left - 200 + (1 - ((t / S.T * 2 + i / 3 + .8) % 1)) * W;
-        sprite(ctx, SPRITES.cloud, x, v.top + (v.bottom - v.top) * (.25 + i * .06), 9, { X: '#ebe8f4' });
+        cloud(ctx, x, v.top + (v.bottom - v.top) * (.25 + i * .06), 9, { X: '#ebe8f4' });
       }
     },
     drawBack(S, ctx, t) {
@@ -163,7 +163,7 @@
       // "hey!!" bubbles
       for (const b of S.bubbles) {
         const u = (t - b.t0) / 1, k = outBack(clamp(u / .2)) * (1 - seg(u, .7, 1)) * b.big;
-        ctx.save(); ctx.translate(mt.x + 40, mt.y - 90); ctx.scale(k, k);
+        ctx.save(); ctx.translate(mt.x - 40, mt.y - 90); ctx.scale(k, k);
         ctx.fillStyle = '#fff'; ctx.lineWidth = 4; ctx.beginPath(); ctx.roundRect(-26, -22, 52, 42, 10); ctx.fill(); ctx.stroke();
         if (b.kind === 'heart') sprite(ctx, SPRITES.heart, 0, -1, 3.6, { X: PAL.pink }); else sprite(ctx, CAKE, 0, 0, 3.6, { Y: PAL.yellow, R: PAL.red, P: PAL.pink, W: '#ddd' });
         ctx.restore();

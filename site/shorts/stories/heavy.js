@@ -6,7 +6,7 @@
   // "...could you help me?" Two friends make a tower, Bo climbs to the top, and the kite flies again.
   // Button: a stranger hops under the same tree for a stuck balloon (it's been there since frame 0).
   // Bo: "need a hand?" "yes please!" The stranger stands on Bo's head, gets it, and everyone skips on.
-  const { PAL, SPRITES, sprite, lerp, seg, sine, outBack, clamp, hash, spring, mix, GROUND, STAND } = Shorts;
+  const { PAL, SPRITES, sprite, cloud, lerp, seg, sine, outBack, clamp, hash, spring, mix, GROUND, STAND } = Shorts;
   const V = 130, TREE = 1180, UNDER = 1150, CRATE0 = 880, BRANCH = { x: 1210, y: GROUND - 440 }, STRING_END = { x: 1170, y: GROUND - 350 };
   const GUST = 4.2, SNAP = 5.0, ASK = 23.8, BUILD = 26.6, FREE = 29.3, TUMBLE = 30.1, LEAVE = 40.0, LOOP = LEAVE + 8.3;   // the tree is out of view at the seam
   const BAL = { x: 985, y: GROUND - 370 }, HELP = 37.2, GOT = 37.9, DOWN = 38.4;   // the stuck balloon; the second tower
@@ -110,6 +110,8 @@
         [DOWN + .6, { eye: 'happy' }],
         [LEAVE - .3, { x: 1e6, speed: 290, accel: 700, face: 1, eye: 'happy', lookX: 0, lookY: 0 }],
       ]);
+      if (t > DOWN && t < LEAVE - .3) kid.cmd.x = bo.x - 185;   // stays beside Bo after hopping down
+      if (t > LEAVE - .3) S.leapfrog(kid, bo);                    // and leapfrogs Bo to lead the way
       // ...and everyone skips off ahead together (hops keep their run speed)
       [pink, blue, kid].forEach((f, i) => { if (t > LEAVE + .3 && f.mode === 'ground' && hash(Math.floor(t * 2.5) + i * 3) > .72) S.once(`skip${i}:${Math.floor(t * 2.5)}`, () => f.jump(f.vx, -300)); });
       // the crate: Bo nudges it along, it's a step to stand on; it tips when Bo falls off
@@ -138,7 +140,8 @@
       if (t > TUMBLE + .3 && t < LEAVE - .4) { blue.cmd.x = UNDER + 240; pink.cmd.x = UNDER + 120; }
       // the second tower: the stranger stands on Bo's head and gets the balloon back
       if (t > HELP && t < DOWN) { onHead(kid, bo, HELP); if (t > HELP + .1) S.once('climb3', () => S.sfx('toss', { pitch: 470 }, bo.x)); }
-      if (t >= DOWN) S.once('down', () => { kid.release(150, -420); kid.towerFrom = null; kid.towered = false; kid.heldFeet = null; });
+      // hops down behind Bo, well clear (the friends stand in front)
+      if (t >= DOWN) S.once('down', () => { kid.release(-560, -480); kid.towerFrom = null; kid.towered = false; kid.heldFeet = null; });
       if (t > GOT) S.once('got', () => { S.sfx('catch', { pitch: 720 }, BAL.x); S.sfx('sparkle', { n: 5 }, BAL.x); });
       if (t > DOWN + .4) S.once('yay', () => { const k = kid.top(); S.burst((k.x + bo.x) / 2, k.y - 30, 6, [PAL.pink, PAL.violet], { speed: 160, gravity: -60, size: 20, life: 1.3, shape: 'heart' }); S.sfx('laugh', { n: 3 }, bo.x); S.sfx('laugh', { n: 3, k: 1.35 }, kid.x); });
       // the balloon: stuck on the tree's edge, then back on the stranger's tuft, floating above
@@ -166,7 +169,7 @@
     drawSky(S, ctx, t, v) {
       for (let i = 0; i < 3; i++) {
         const W = v.right - v.left + 400, x = v.left - 200 + (1 - ((t / 40 + i / 3 + .7) % 1)) * W;
-        sprite(ctx, SPRITES.cloud, x, v.top + (v.bottom - v.top) * (.12 + i * .06), 9, { X: '#ebe8f4' });
+        cloud(ctx, x, v.top + (v.bottom - v.top) * (.12 + i * .06), 9, { X: '#ebe8f4' });
       }
     },
     drawBack(S, ctx, t) {

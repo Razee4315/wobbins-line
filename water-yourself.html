@@ -1,0 +1,211 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Water Yourself</title>
+</head>
+<body>
+<script src="sfx.js?v=10"></script>
+<script src="engine2.js?v=10"></script>
+<script>
+// Every morning Bo fills the watering can at the tap and waters the little plant: "grow, little one!"
+// Bo's own glass of water waits on the table, full, every day: "later." The plant grows, sprouts leaves,
+// blooms, and opens two happy eyes. Bo, meanwhile, fades and droops and sits down, too tired to go on.
+// Then the plant reaches out a long leaf and flips the glass over onto Bo: "psst. you too." Bo drinks,
+// fills back up with a boing, and the colour comes back.
+// Button: Bo and the plant clink a cheers (glass to leaf), both laugh, and Bo strolls off humming
+// while the plant waves goodbye.
+const { PAL, SPRITES, sprite, sun, moon, cloud, lerp, seg, sine, outBack, outCubic, clamp, hash, spring, mix, ramp, GROUND, PAPER } = Shorts;
+const V = 140, TAP = 880, POUR = 1035, PLANT = 1185, TABLE = 1340;
+// each morning: fill under the tap, then water the plant
+const DAYS = [{ fill: 4.9, go: 5.9, pour: 7.3 }, { fill: 12.3, go: 12.85, pour: 14.35 }, { fill: 17.4, go: 17.9, pour: 19.6 }];
+const NIGHTS = [[10.5, 12.0], [15.6, 17.1]];
+const SITDOWN = 21.0, NUDGE = 23.4, FLIP = 24.6, DRINK = 25.3, FULL = 26.6, CHEERS = 33.2, LEAVE = 36.4, LOOP = LEAVE + 7.4;
+// how much the plant has grown, and how dried-out Bo is
+const growAt = t => ramp1(t, [[7.6, 0], [8.6, .33], [14.6, .33], [15.5, .62], [19.9, .62], [21.0, 1]]);
+const dryAt = t => t > DRINK ? .85 * (1 - seg(t, DRINK + .3, FULL)) : ramp1(t, [[9, 0], [12.2, .3], [17.2, .62], [21, .85]]);
+const nightAt = t => NIGHTS.reduce((m, [a, b]) => Math.max(m, Math.sin(Math.PI * seg(t, a, b))), 0);
+function ramp1(t, s) { if (t <= s[0][0]) return s[0][1]; for (let i = 1; i < s.length; i++) if (t <= s[i][0]) return lerp(s[i - 1][1], s[i][1], sine(seg(t, s[i - 1][0], s[i][0]))); return s[s.length - 1][1]; }
+
+Shorts.play({
+  title: 'Water Yourself',
+  accent: PAL.sky,
+  voice: { pitch: 1 },
+  loopAfter: LOOP,
+  paperAt: t => mix('#ffffff', '#d9dcf4', nightAt(t) * .9),
+  captions: [
+    [7.9, 9.1, 'grow, little one!'],
+    [9.6, 10.4, 'later.'],
+    [14.2, 15.5, "you're doing *so well!*"],
+    [21.4, 22.6, '...so *tired.*'],
+    [24.0, 25.2, 'psst. *you too.*', PAL.green, { pitch: 1.45 }],
+    [26.9, 27.9, 'oh. *ahh.*'],
+    [28.4, 32.6, 'you need watering *too.*'],
+    [CHEERS + .3, CHEERS + 1.2, '*cheers!*', null, { pitch: 1.2 }],
+  ],
+  init(S) {
+    S.bo = S.addChar({ x: 0, walk: V });
+    S.can = { mode: 'ground', x: TAP + 70, y: GROUND - 22, rot: 0, t0: 0 };
+    S.glass = { mode: 'table', x: TABLE, y: GROUND - 102, rot: 0, t0: 0, level: 1 };
+    S.drops = []; S.dropT = 0; S.leaf = { x: 0, v: 0 }; S.wave = { x: 0, v: 0 };
+  },
+  update(S, t, dt) {
+    const bo = S.bo, top = bo.top(), d = dryAt(t), can = S.can, gl = S.glass;
+    const steps = [
+      [0, { x: TAP, speed: 210, accel: 320 }],                                   // a fresh morning in the garden
+      [21.0, { x: POUR }],
+    ];
+    DAYS.forEach((D, i) => {
+      const slow = i * .1;
+      steps.push(
+        [D.fill - .25, { crouch: .2 + slow, x: TAP, face: 1, lookY: -.3, eye: 'open', tilt: 0 }],
+        [D.fill, { crouch: slow }], [D.fill, () => { bo.jump(0, -300); can.mode = 'lift'; can.t0 = t; can.fx = can.x; can.fy = can.y; S.sfx('tock', { f: 600, gain: .7 }, TAP); }],
+        [D.fill + .5, () => { S.filling = t; S.sfx('stream', { v: .8 }, TAP); S.sfx('stream', { v: .7 }, TAP); }],
+        [D.go, { x: POUR, speed: 150 - i * 25, accel: 400, lookY: 0, eye: i ? 'open' : 'happy' }],
+        [D.pour, { tilt: .42, eye: 'happy', lookX: .6, lookY: .6 }], [D.pour, () => { S.pouring = t; }],
+        [D.pour + 1.1, { tilt: 0, lookY: 0, eye: i === 2 ? 'sad' : 'open' }],
+      );
+      if (i < 2) steps.push([D.pour + 1.5, { x: TAP, speed: 140 - i * 25, accel: 400 }]);   // back to the tap for tomorrow
+    });
+    steps.push(
+      [9.4, { lookX: 1, lookY: -.2, eye: 'open' }], [9.9, { eye: 'flat', lookX: .3 }],     // the glass... later
+      [11.0, { eye: 'closed', crouch: .06 }], [11.8, { eye: 'open', crouch: 0 }],
+      [16.0, { eye: 'closed', crouch: .12 }], [16.9, { eye: 'open', crouch: .1 }],
+      [20.4, { eye: 'dizzy', tilt: .14 }],                                        // it's catching up with Bo
+      [SITDOWN, { sit: 1, eye: 'sad', tilt: .08, crouch: .14, lookY: .4, lookX: 0 }], [SITDOWN, () => S.sfx('breathOut', { d: 1.4 }, bo.x)],
+      [NUDGE + .4, { lookX: .8, lookY: -.3, eye: 'open' }],
+      [FLIP + .5, { eye: 'wide', lookY: -1 }],
+      [DRINK, { tilt: -.3, eye: 'closed', lookY: -1, crouch: 0 }],                // glug glug
+      [FULL, { tilt: 0, eye: 'wide', lookY: 0, sit: 0 }], [FULL, () => { bo.jump(0, -520); S.sfx('boing', { pitch: 230, g: .09 }, bo.x); S.sfx('charge', { n: 6 }, bo.x); S.sfx('sparkle', { n: 6 }, bo.x); }],
+      [27.3, { eye: 'happy', lookX: .7 }],
+      [CHEERS - .3, { crouch: .2, lookX: .8, lookY: -.2 }], [CHEERS, { crouch: 0 }], [CHEERS, () => bo.jump(70, -380)],   // clink!
+      [34.4, { lookX: 0, lookY: 0 }],
+      [35.6, { crouch: .2 }], [35.85, { crouch: 0 }], [35.85, () => { bo.jump(0, -440); gl.mode = 'back'; gl.t0 = t; gl.fx = top.x; gl.fy = top.y - 24; S.sfx('toss', { pitch: 380 }, bo.x); }],
+      [LEAVE, { x: 1e6, speed: V, accel: 450, eye: 'open', lookX: 0, lookY: 0, tilt: 0, crouch: 0 }],
+      [LEAVE + .1, () => S.sfx('hum', { notes: [2, 4, 5, 7, 5], gap: .3, g: .04 }, bo.x)],
+    );
+    S.plan(bo, t, steps.sort((a, b) => a[0] - b[0]));
+    // the longer Bo goes without, the lower and paler Bo gets (until the glass)
+    bo.fill = mix(PAPER, '#e8d6ad', d);
+    if (t < DRINK) bo.cmd.crouch = Math.max(bo.cmd.crouch, d * .16);
+    // the watering can rides on Bo's head and tips with Bo
+    if (can.mode === 'lift') { const u = clamp((t - can.t0) / .3); can.x = lerp(can.fx, top.x, sine(u)); can.y = lerp(can.fy, top.y - 22, sine(u)) - Math.sin(Math.PI * u) * 60; if (u >= 1) can.mode = 'head'; }
+    if (can.mode === 'head') { can.x = top.x; can.y = top.y - 22; can.rot = bo.rot.x * 1.4; }
+    // pouring: drops from the spout to the pot; each day's pour ends with the can hopped back by the tap
+    if (S.pouring && t - S.pouring < 1.0) {
+      S.dropT += dt; while (S.dropT > .05) { S.dropT -= .05; S.drops.push({ x: can.x + 46, y: can.y - 2, vx: 150 + hash(S.drops.length) * 40, vy: -40 }); }
+      if (t - S.pouring < dt * 1.5) S.sfx('stream', { v: .9 }, PLANT);
+    }
+    if (S.pouring && t - S.pouring > .2 && t - S.pouring < .25) S.once('pour' + Math.round(S.pouring), () => { S.sfx('stream', { v: 1 }, PLANT); S.sfx('drip', { k: .9 }, PLANT); });
+    if (S.pouring && t - S.pouring > 1.3) S.once('canBack' + Math.round(S.pouring), () => { can.mode = 'back'; can.t0 = t; can.fx = can.x; can.fy = can.y; S.sfx('toss', { pitch: 320 }, bo.x); });
+    if (can.mode === 'back') { const u = clamp((t - can.t0) / .45); can.x = lerp(can.fx, TAP + 70, sine(u)); can.y = lerp(can.fy, GROUND - 22, sine(u)) - Math.sin(Math.PI * u) * 90; can.rot = 0; if (u >= 1) { can.mode = 'ground'; S.sfx('tock', { f: 560, gain: .6 }, TAP); } }
+    S.drops = S.drops.filter(p => { p.vy += 1400 * dt; p.x += p.vx * dt; p.y += p.vy * dt; return p.y < GROUND - 60 && p.x < PLANT + 40; });
+    // the plant grows a stage after each watering
+    DAYS.forEach((D, i) => { if (t > D.pour + 1.1) S.once('grow' + i, () => { S.sfx('chime', { n: 2 + i * 2, g: .08 }, PLANT); S.sfx('sparkle', { n: 3 + i * 2 }, PLANT); }); });
+    if (t > 20.9) S.once('eyes', () => { S.sfx('pop', { pitch: 1000, g: .06 }, PLANT); S.sfx('pop', { pitch: 1180, g: .05 }, PLANT + 1); });
+    // nights
+    NIGHTS.forEach(([a], i) => { if (t > a) S.once('night' + i, () => { S.sfx('night', { d: 1.4, g: 1.5 }); }); if (t > a + 1.3) S.once('dawn' + i, () => S.sfx('tweet', { k: 1.1, g: .7 })); });
+    if (t > 11 && t < 12) S.once('yawn', () => S.sfx('yawn', {}, bo.x));
+    // the turn: the plant reaches a leaf to the table and flips the glass over to Bo
+    spring(S.leaf, t > NUDGE && t < FLIP + .3 ? 1 : 0, 40, .55, dt);
+    if (t > NUDGE) S.once('reach', () => S.sfx('rustle', { n: 3 }, PLANT));
+    if (t > FLIP) S.once('flip', () => { gl.mode = 'fly'; gl.t0 = t; gl.fx = gl.x; gl.fy = gl.y; S.sfx('toss', { pitch: 460 }, TABLE); S.sfx('whoosh', { d: .4 }, TABLE); });
+    if (gl.mode === 'fly') { const u = clamp((t - gl.t0) / .6); gl.x = lerp(gl.fx, top.x, sine(u)); gl.y = lerp(gl.fy, top.y - 24, sine(u)) - Math.sin(Math.PI * u) * 150; gl.rot = Math.sin(Math.PI * u) * 2; if (u >= 1) { gl.mode = 'head'; S.sfx('catch', { pitch: 600 }, bo.x); } }
+    if (gl.mode === 'head') { gl.x = top.x + 4; gl.y = top.y - 24; gl.rot = t > DRINK && t < FULL ? -.9 : bo.rot.x; }
+    if (t > DRINK && t < FULL) { gl.level = 1 - seg(t, DRINK, FULL - .2); const k = Math.floor((t - DRINK) / .32); S.once('glug' + k, () => S.sfx('drip', { k: .6 + k * .05, gain: .8 }, bo.x)); }
+    if (t > FULL + .4) gl.level = Math.min(1, gl.level + dt * .8);                   // the plant tops it up (shh)
+    if (gl.mode === 'back') { const u = clamp((t - gl.t0) / .5); gl.x = lerp(gl.fx, TABLE, sine(u)); gl.y = lerp(gl.fy, GROUND - 102, sine(u)) - Math.sin(Math.PI * u) * 110; gl.rot = 0; if (u >= 1) { gl.mode = 'table'; S.sfx('tock', { f: 900, gain: .6 }, TABLE); } }
+    if (t > CHEERS + .25) S.once('clink', () => { S.sfx('ding', { pitch: 2093, g: .08 }, PLANT); S.sfx('ding', { pitch: 2637, g: .05 }, PLANT); S.sfx('laugh', { n: 3 }, bo.x); S.sfx('laugh', { n: 3, k: 1.45, g: .7 }, PLANT); });
+    spring(S.wave, t > LEAVE - .2 && t < LEAVE + 3 ? 1 : 0, 30, .4, dt);
+    if (t > 28) S.once('swell', () => S.sfx('swell', { root: 392 }));
+    S.once('amb', () => S.sfx('birds', { d: LOOP, g: .9 }));
+
+    if (t > 3.6 && t < LEAVE + .5) { S.camGoal.x = t > NUDGE - .5 && t < 28 ? 1140 : 1105; S.camGoal.z = t > NUDGE - .5 && t < 28 ? .9 : .92; S.camGoal.kx = 1.6; S.camGoal.kz = 1.3; }
+  },
+  drawSky(S, ctx, t, v) {
+    const n = nightAt(t), ph = NIGHTS.reduce((m, [a, b]) => t > a - .6 && t < b + .4 ? seg(t, a - .6, b + .4) : m, -1);
+    // the sun: up in the morning; on the nights it sets and comes back up round the other side
+    const sy = v.top + (GROUND - v.top) * .2, sx = v.left + (v.right - v.left) * .8;
+    // the sun sinks away and a moon takes its place for the night
+    sun(ctx, sx, sy + n * 60, 9, { X: PAL.orange }, 1 - n);
+    if (n > .02) moon(ctx, v.left + (v.right - v.left) * .3, sy + (1 - n) * 50, 8, { X: '#fff6c8' }, n);
+    if (n > .3) for (let i = 0; i < 16; i++) sprite(ctx, SPRITES.dot, v.left + hash(i) * (v.right - v.left), v.top + hash(i + .5) * (GROUND - v.top) * .6, 3, { X: '#fff' }, (n - .3) / .7);
+    for (let i = 0; i < 3; i++) {
+      const W = v.right - v.left + 400, x = v.left - 200 + (1 - ((t / S.T + i / 3 + .45) % 1)) * W;
+      cloud(ctx, x, v.top + (v.bottom - v.top) * (.24 + i * .06), 9, { X: mix('#ebe8f4', '#c6bfe6', n) });
+    }
+  },
+  drawBack(S, ctx, t) {
+    const J = i => S.J(i);
+    // the garden tap on its post
+    ctx.strokeStyle = '#111'; ctx.lineWidth = 6; ctx.fillStyle = PAL.grey;
+    ctx.beginPath(); ctx.moveTo(TAP + 60, GROUND + 2); ctx.lineTo(TAP + 60 + J(1) * .3, GROUND - 250); ctx.stroke();
+    ctx.lineWidth = 7; ctx.beginPath(); ctx.moveTo(TAP + 60, GROUND - 240); ctx.lineTo(TAP + 12, GROUND - 240); ctx.lineTo(TAP + 12, GROUND - 222); ctx.stroke();
+    ctx.lineWidth = 5; ctx.fillStyle = PAL.red; ctx.beginPath(); ctx.arc(TAP + 40, GROUND - 254, 10, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+    if (S.filling && t - S.filling < .9) { const k = Math.sin(Math.PI * seg(t, S.filling, S.filling + .9)); for (let i = 0; i < 6; i++) sprite(ctx, ['X', 'X'], TAP + 12, GROUND - 216 + ((t * 600 + i * 7) % 42), 4.5, { X: PAL.sky }, k); }
+    // the table with Bo's glass of water (full, every single day)
+    ctx.lineWidth = 5; ctx.fillStyle = PAL.brown;
+    ctx.beginPath(); ctx.ellipse(TABLE, GROUND - 78, 60, 10, 0, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(TABLE, GROUND - 70); ctx.lineTo(TABLE, GROUND + 2); ctx.moveTo(TABLE - 30, GROUND + 2); ctx.lineTo(TABLE + 30, GROUND + 2); ctx.stroke();
+    // the plant: a sprout that becomes a leafy stem, then a flower with a face
+    const G = growAt(t), sw = Math.sin(t * 1.5) * .05 + S.wave.x * Math.sin(t * 9) * .18, h = 30 + G * 210;
+    const bob = S.wave.x * 4;
+    ctx.fillStyle = PAL.orange; ctx.lineWidth = 5;
+    ctx.beginPath(); ctx.moveTo(PLANT - 46, GROUND - 64); ctx.lineTo(PLANT + 46, GROUND - 64); ctx.lineTo(PLANT + 34, GROUND + 2); ctx.lineTo(PLANT - 34, GROUND + 2); ctx.closePath(); ctx.fill(); ctx.stroke();
+    ctx.fillRect(PLANT - 52, GROUND - 76, 104, 14); ctx.strokeRect(PLANT - 52, GROUND - 76, 104, 14);
+    const tx = PLANT + Math.sin(sw) * h, ty = GROUND - 76 - Math.cos(sw) * h - bob;
+    ctx.strokeStyle = PAL.green; ctx.lineWidth = 6;
+    ctx.beginPath(); ctx.moveTo(PLANT, GROUND - 76); ctx.quadraticCurveTo(PLANT - 8, GROUND - 76 - h * .55, tx, ty); ctx.stroke();
+    ctx.fillStyle = PAL.green; ctx.strokeStyle = '#111'; ctx.lineWidth = 4;
+    const leaves = Math.floor(1 + G * 5);
+    for (let i = 0; i < leaves; i++) {
+      const k = (i + 1) / (leaves + 1), lx = lerp(PLANT, tx, k) - 4 * (1 - k), ly = lerp(GROUND - 76, ty, k), s = i % 2 ? 1 : -1, L = 26 + 18 * G;
+      const flap = Math.sin(t * 2 + i) * 4 + (S.wave.x * Math.sin(t * 9 + i) * 10);
+      ctx.beginPath(); ctx.moveTo(lx, ly); ctx.quadraticCurveTo(lx + s * L * .6, ly - 18 + flap, lx + s * L, ly - 6 + flap); ctx.quadraticCurveTo(lx + s * L * .5, ly + 6, lx, ly); ctx.fill(); ctx.stroke();
+    }
+    // the reaching leaf: it stretches over to the table and flicks the glass across
+    const R = S.leaf.x;
+    if (R > .02) {
+      const bx = lerp(PLANT, tx, .55), by = lerp(GROUND - 76, ty, .55), ex = lerp(bx + 30, TABLE - 20, R), ey = lerp(by, GROUND - 110, R);
+      ctx.strokeStyle = PAL.green; ctx.lineWidth = 5; ctx.beginPath(); ctx.moveTo(bx, by); ctx.quadraticCurveTo((bx + ex) / 2, Math.min(by, ey) - 60 * R, ex, ey); ctx.stroke();
+      ctx.strokeStyle = '#111'; ctx.lineWidth = 4; ctx.fillStyle = PAL.green;
+      ctx.beginPath(); ctx.moveTo(ex, ey); ctx.quadraticCurveTo(ex + 18, ey - 20, ex + 34, ey - 6); ctx.quadraticCurveTo(ex + 18, ey + 8, ex, ey); ctx.fill(); ctx.stroke();
+    }
+    // the flower, with a face once it's grown
+    if (G > .55) {
+      const fk = outBack(seg(G, .55, .8)), r = 30 * fk;
+      ctx.fillStyle = PAL.pink;
+      for (let i = 0; i < 6; i++) { const a = i / 6 * Math.PI * 2 + t * .3; ctx.beginPath(); ctx.ellipse(tx + Math.cos(a) * r * .95, ty + Math.sin(a) * r * .95, r * .55, r * .4, a, 0, Math.PI * 2); ctx.fill(); ctx.stroke(); }
+      ctx.fillStyle = PAL.yellow; ctx.beginPath(); ctx.arc(tx, ty, r * .78, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+      if (G > .9) {
+        const e = outBack(seg(G, .9, 1)), look = clamp((S.bo.x - tx) / 150, -1, 1) * 2.5 + (R > .1 ? 3 : 0), blink = (t % 3.3) > 3.18;
+        ctx.fillStyle = '#111';
+        for (const s of [-1, 1]) { if (blink) ctx.fillRect(tx + s * 8 - 4 + look, ty - 5, 8, 2.5); else { ctx.beginPath(); ctx.arc(tx + s * 8 + look, ty - 4, 3.2 * e, 0, Math.PI * 2); ctx.fill(); } }
+        ctx.lineWidth = 3; ctx.beginPath(); ctx.arc(tx + look, ty + 3, 7 * e, Math.PI * .15, Math.PI * .85); ctx.stroke();
+      }
+    } else { ctx.fillStyle = PAL.lime; ctx.beginPath(); ctx.ellipse(tx, ty, 8 + G * 12, 6 + G * 8, 0, 0, Math.PI * 2); ctx.fill(); ctx.stroke(); }
+  },
+  drawFront(S, ctx, t) {
+    const can = S.can, gl = S.glass;
+    // water drops from the can
+    for (const p of S.drops) sprite(ctx, ['X', 'X'], p.x, p.y, 4.5, { X: PAL.sky });
+    // the watering can (spout to the right; it tips with Bo)
+    ctx.save(); ctx.translate(can.x, can.y); ctx.rotate(can.rot);
+    ctx.fillStyle = PAL.green; ctx.strokeStyle = '#111'; ctx.lineWidth = 4;
+    ctx.beginPath(); ctx.moveTo(18, 4); ctx.lineTo(48, -16); ctx.lineTo(52, -10); ctx.lineTo(22, 14); ctx.closePath(); ctx.fill(); ctx.stroke();
+    ctx.beginPath(); ctx.roundRect(-26, -18, 48, 40, 6); ctx.fill(); ctx.stroke();
+    ctx.beginPath(); ctx.arc(-6, -18, 14, Math.PI, 0); ctx.stroke();
+    ctx.restore();
+    // the glass of water
+    ctx.save(); ctx.translate(gl.x, gl.y); ctx.rotate(gl.rot);
+    ctx.fillStyle = 'rgba(191,230,255,.55)'; ctx.fillRect(-15, -26, 30, 50);
+    const lv = gl.level; if (lv > .02) { ctx.fillStyle = PAL.sky; ctx.fillRect(-13, 22 - 44 * lv, 26, 44 * lv); }
+    ctx.strokeStyle = '#111'; ctx.lineWidth = 4; ctx.beginPath(); ctx.moveTo(-16, -26); ctx.lineTo(-13, 24); ctx.lineTo(13, 24); ctx.lineTo(16, -26); ctx.stroke();
+    ctx.restore();
+    if (gl.mode === 'table' && t < 22) { const k = Math.max(0, Math.sin(t * 2.2)); sprite(ctx, SPRITES.sparkle, TABLE + 22, GROUND - 140, 2.4, { X: PAL.sky }, k); }
+  },
+});
+</script>
+</body>
+</html>

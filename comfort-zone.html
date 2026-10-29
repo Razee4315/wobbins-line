@@ -6,8 +6,8 @@
 <title>Comfort Zone</title>
 </head>
 <body>
-<script src="sfx.js?v=8"></script>
-<script src="engine2.js?v=8"></script>
+<script src="sfx.js?v=10"></script>
+<script src="engine2.js?v=10"></script>
 <script>
 // Bo walks into a warm, glowing dome. Inside it's cosy; outside, the world goes grey. A butterfly
 // flies out; Bo follows and bounces off the edge. Friends call: "come play!" "maybe later." The
@@ -15,12 +15,12 @@
 // lands. Another step, and the zone grows to fit the whole world.
 // Button: Bo heads the ball sky-high. Everyone looks up... and waits... and it drops back down and
 // lands balanced on Bo's head. Cheers! Bo pops it over to a friend and the three skip off together.
-const { PAL, SPRITES, sprite, lerp, seg, sine, outBack, clamp, hash, spring, mix, GROUND } = Shorts;
+const { PAL, SPRITES, sprite, butterfly, sun, cloud, lerp, seg, sine, outBack, clamp, hash, spring, mix, GROUND } = Shorts;
 const V = 150, C = 900, R0 = 230;
 const ENTER = 4.4, BONK = 10.0, SHRINK = [16.6, 18.6], STEP1 = 22.0, STEP2 = 23.8, FREE = 27.4, LEAVE = 36.0, LOOP = LEAVE + 7.0;
 // the button: the ball is scripted from here on: in to Bo's head, sky-high, back down, balanced, passed on
 const HEADER = 32.2, SKY_V = 2000, SKY_G = 2600, LANDS = HEADER + 2 * SKY_V / SKY_G, PASS = 35.2;
-const FRIENDS_X = [1330, 1500];
+const FRIENDS_X = [1300, 1520];   // far enough apart that nobody's body overlaps
 
 Shorts.play({
   title: 'Comfort Zone',
@@ -40,7 +40,7 @@ Shorts.play({
   init(S) {
     S.fr = FRIENDS_X.map((x, i) => S.addChar({ x, face: i ? -1 : 1, gain: .4, ...[{ hair: 'curl', blush: PAL.pink, fill: '#ffe9f2' }, { hairColor: PAL.orange, blush: '#ffb08a', fill: '#fff4d6' }][i] }));
     S.bo = S.addChar({ x: 0, walk: V }); S.focus = S.bo;
-    S.R = { x: R0, v: 0 }; S.bulge = { x: 0, v: 0 }; S.ball = { x: FRIENDS_X[0] + 60, y: GROUND - 260, vx: 160, vy: 0 }; S.blooms = []; S.bounceT = 0; S.ballFrom = null;
+    S.R = { x: R0, v: 0 }; S.bulge = { x: 0, v: 0 }; S.ball = { x: FRIENDS_X[0], y: GROUND - 420, vx: 0, vy: 0 }; S.hits = 0; S.blooms = []; S.bounceT = 0; S.ballFrom = null;
   },
   update(S, t, dt) {
     const bo = S.bo, c = bo.cmd, [f1, f2] = S.fr;
@@ -62,7 +62,7 @@ Shorts.play({
       [STEP1 + .3, { eye: 'wide' }],
       [STEP2, { x: C + 330, speed: 120, accel: 400, eye: 'open' }],
       [24.3, { eye: 'happy' }],
-      [25.4, { x: FRIENDS_X[0] - 110, speed: 200, accel: 600 }],
+      [25.4, { x: FRIENDS_X[0] - 180, speed: 200, accel: 600 }],
       [26.6, { crouch: .2 }], [26.85, { crouch: 0 }], [26.85, () => bo.jump(0, -460)],
       [HEADER - .25, { crouch: .2, lookY: -.8 }], [HEADER, { crouch: 0, eye: 'happy' }],      // big header
       [HEADER + .3, { lookY: -1, eye: 'open' }],                                // ...up... and up...
@@ -87,10 +87,18 @@ Shorts.play({
     const b = S.ball;
     if (t < HEADER - .6) {
       b.vy += 1500 * dt; b.x += b.vx * dt; b.y += b.vy * dt;
-      const heads = [f1, f2, ...(t > 25.8 ? [bo] : [])].map(m => m.top());
-      for (const h of heads) if (b.vy > 0 && Math.abs(b.x - h.x) < 46 && Math.abs(b.y - (h.y - 18)) < 18) { b.vy = -760; b.vx = (h.x < (f1.x + f2.x) / 2 ? 1 : -1) * 120 * (.8 + hash(t) * .4); S.sfx('boing', { pitch: 300, g: t > STEP2 ? .08 : .03 }, b.x); }
+      // each player keeps to its own spot; every header is aimed at the next head (airtime ~1 s)
+      const players = [f1, f2, ...(t > 25.8 ? [bo] : [])];
+      for (const m of players) {
+        const h = m.top();
+        if (b.vy > 0 && Math.abs(b.x - h.x) < 46 && Math.abs(b.y - (h.y - 18)) < 18) {
+          const next = m === f1 ? f2 : m === f2 ? (t > 25.8 && S.hits % 2 ? bo : f1) : f1;
+          S.hits++; b.vy = -760; b.vx = (next.top().x - h.x) / (2 * 760 / 1500);
+          S.sfx('boing', { pitch: 300, g: t > STEP2 ? .08 : .03 }, b.x);
+        }
+      }
       if (b.y > GROUND - 22) { b.y = GROUND - 22; b.vy = -700; b.vx = (FRIENDS_X[0] + FRIENDS_X[1]) / 2 > b.x ? 140 : -140; }
-      [f1, f2].forEach((f, i) => { f.cmd.x = clamp(b.x + (i ? 40 : -40), FRIENDS_X[0] - 60, FRIENDS_X[1] + 60); f.cmd.speed = 160; f.cmd.accel = 600; f.cmd.eye = 'happy'; f.cmd.face = b.x > f.x ? 1 : -1; f.cmd.lookY = -.8; });
+      [f1, f2].forEach((f, i) => { f.cmd.x = clamp(b.vy > 0 && Math.abs(b.x - FRIENDS_X[i]) < 90 ? b.x : FRIENDS_X[i], FRIENDS_X[i] - 50, FRIENDS_X[i] + 50); f.cmd.speed = 160; f.cmd.accel = 600; f.cmd.eye = 'happy'; f.cmd.face = b.x > f.x ? 1 : -1; f.cmd.lookY = -.8; });
     } else {
       // the button, scripted: the last pass arcs in to Bo's head; the header sends it sky-high (out of
       // frame); it drops straight back onto Bo's head and sits there; then Bo pops it to the first friend,
@@ -103,7 +111,7 @@ Shorts.play({
       else if (t < PASS + .5) { const u = seg(t, PASS, PASS + .5); b.x = lerp(head.x, ft.x, sine(u)); b.y = lerp(head.y, ft.y - 20, u) - Math.sin(Math.PI * u) * 140; }
       else { b.x = ft.x; b.y = ft.y - 20 - Math.abs(Math.sin((t - PASS - .5) * 4.4)) * 90; }
       [f1, f2].forEach((f, i) => S.plan(f, t, [
-        [HEADER - .6, { x: [1330, 1470][i], speed: 160, accel: 600, face: -1, eye: 'happy', lookY: -.3 }],
+        [HEADER - .6, { x: FRIENDS_X[i], speed: 160, accel: 600, face: -1, eye: 'happy', lookY: -.3 }],
         [HEADER + .2, { lookY: -1, eye: 'open' }],
         [LANDS, { eye: 'wide', lookY: -.3 }],
         [LANDS + .4, { eye: 'happy', lookY: 0 }], [LANDS + .45 + i * .1, { crouch: .2 }], [LANDS + .7 + i * .1, { crouch: 0 }], [LANDS + .7 + i * .1, () => f.jump(0, -400)],   // cheer
@@ -128,10 +136,10 @@ Shorts.play({
     else if (t >= STEP2 && t < LEAVE) { S.camGoal.x = (bo.x + FRIENDS_X[1]) / 2; S.camGoal.z = .82; S.camGoal.kx = 1.4; }
   },
   drawSky(S, ctx, t, v) {
-    sprite(ctx, SPRITES.sun, C + 560, v.top + (GROUND - v.top) * .32, 10, { X: PAL.orange });
+    sun(ctx, C + 560, v.top + (GROUND - v.top) * .32, 10, { X: PAL.orange });
     for (let i = 0; i < 3; i++) {
       const W = v.right - v.left + 400, x = v.left - 200 + (1 - ((t / 39 + i / 3 + .5) % 1)) * W;
-      sprite(ctx, SPRITES.cloud, x, v.top + (v.bottom - v.top) * (.15 + i * .06), 9, { X: '#ebe8f4' });
+      cloud(ctx, x, v.top + (v.bottom - v.top) * (.15 + i * .06), 9, { X: '#ebe8f4' });
     }
   },
   drawBack(S, ctx, t) {
@@ -152,7 +160,7 @@ Shorts.play({
     sprite(ctx, ['.XXX.', 'XXWXX', 'XXXXX', 'XXXXX', '.XXX.'], S.ball.x, S.ball.y, 10, { X: PAL.red, W: '#fff' });
     if (t > 7.0 && t < 12) {
       const u = t - 7, x = u < 2 ? lerp(C + 600, C - 40, sine(u / 2)) + Math.sin(u * 3) * 30 : lerp(C - 40, C + 700, sine(clamp((u - 2) / 3))), y = GROUND - 240 + Math.sin(u * 2.6) * 40;
-      sprite(ctx, Math.floor(t * 10) % 2 ? SPRITES.flyA : SPRITES.flyB, x, y, 5, { X: PAL.violet, B: '#111' });
+      butterfly(ctx, x, y, 5, { X: PAL.violet }, 1, 10);
     }
     // the veil: outside the dome the world is greyed and faded
     const R = S.R.x, veil = sine(seg(t, ENTER, ENTER + 1)) * (1 - seg(R, 1300, 3600));

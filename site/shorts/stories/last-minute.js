@@ -5,7 +5,7 @@
   // watches clouds while the days fly by, until the sign says 1. Then the whole tower goes up in one night.
   // Button: as Bo strolls off, the sign flips back to 7. Bo turns, gives it a flat look ("...one whole
   // week."), then laughs, shrugs it off with a hop, and goes.
-  const { PAL, SPRITES, sprite, zzz, lerp, seg, sine, outBack, clamp, hash, spring, mix, GROUND } = Shorts;
+  const { PAL, SPRITES, sprite, butterfly, cloud, zzz, lerp, seg, sine, outBack, clamp, hash, spring, mix, GROUND } = Shorts;
   const V = 130, PILE = 880, PICK = 1030, DROP = 1222, SITE = 1330, SIGN = 1410, TREE = 1490, BS = 32;
   const D = [6.0, 10.0, 13.4, 16.2, 18.6, 20.4, 21.6];        // each day starts (7 days left … 1 day left)
   const DONE = 36.13;                                      // when the last block lands (measured)
@@ -185,7 +185,7 @@
       }
       for (let i = 0; i < 3; i++) {
         const W = v.right - v.left + 400, x = v.left - 200 + (1 - ((t / S.T * 3 + i / 3 + .2) % 1)) * W;
-        sprite(ctx, SPRITES.cloud, x, v.top + (v.bottom - v.top) * (.25 + i * .06), 9, { X: mix('#ebe8f4', '#c6bfe6', nt) });
+        cloud(ctx, x, v.top + (v.bottom - v.top) * (.25 + i * .06), 9, { X: mix('#ebe8f4', '#c6bfe6', nt) });
       }
     },
     drawBack(S, ctx, t) {
@@ -211,8 +211,8 @@
       for (const b of S.blocks) if (b.state === 'head' || b.state === 'fly') drawBlock(ctx, b, t);
       // the butterfly Bo chases
       const p = seg(t, 10.2, 13.2);
-      if (p > 0 && p < 1) sprite(ctx, Math.floor(t * 12) % 2 ? SPRITES.flyA : SPRITES.flyB,
-        lerp(760, 360, p) + Math.sin(p * 10) * 40, GROUND - 170 - Math.sin(p * Math.PI) * 60 - Math.max(0, p - .6) * 900, 4.2, { X: PAL.yellow, B: '#111' });
+      if (p > 0 && p < 1) butterfly(ctx,
+        lerp(760, 360, p) + Math.sin(p * 10) * 40, GROUND - 170 - Math.sin(p * Math.PI) * 60 - Math.max(0, p - .6) * 900, 4.2, { X: PAL.yellow }, 1, 12);
       const bo = S.bo, top = bo.top();
       if (t > 8.2 && t < 10) zzz(ctx, top.x, top.y, t, seg(t, 8.2, 8.6));
       if (S.doneT !== null && t > S.doneT + 2.3 && t < S.doneT + 5.3) zzz(ctx, top.x, top.y, t, 1 - seg(t, S.doneT + 5, S.doneT + 5.3));

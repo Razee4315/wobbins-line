@@ -5,7 +5,7 @@
   // while a butterfly, a friend and a whole day go by unnoticed. Then the battery dies.
   // Button: phone-free, Bo walks on and a butterfly lands on Bo's hair. Bo holds perfectly
   // still, beaming (a real "notification"), until it flutters off ahead. Bo hops and follows.
-  const { PAL, SPRITES, sprite, lerp, seg, sine, outBack, outCubic, hash, spring, mix, clamp, GROUND } = Shorts;
+  const { PAL, SPRITES, sprite, butterfly, cloud, lerp, seg, sine, outBack, outCubic, hash, spring, mix, clamp, GROUND } = Shorts;
   const PX = 900, V = 130;
   // taps: [time, hearts, size]
   const TAPS = [[7.0, 1, 34], [10.2, 2, 24], [10.55, 2, 24]];
@@ -127,7 +127,7 @@
       }
       for (let i = 0; i < 3; i++) {
         const W = v.right - v.left + 400, x = v.left - 200 + (1 - ((t / S.T + i / 3 + .1) % 1)) * W;
-        sprite(ctx, SPRITES.cloud, x, v.top + (v.bottom - v.top) * (.25 + i * .06), 9, { X: '#ebe8f4' });
+        cloud(ctx, x, v.top + (v.bottom - v.top) * (.25 + i * .06), 9, { X: '#ebe8f4' });
       }
     },
     drawBack(S, ctx, t) {
@@ -173,7 +173,7 @@
         ctx.globalAlpha = 1;
       }
       // butterflies: one ignored, one that tags along at the end
-      const fly = (x, y, col, a = 1) => sprite(ctx, Math.floor(t * 12) % 2 ? SPRITES.flyA : SPRITES.flyB, x, y, 4.2, { X: col, B: '#111' }, a);
+      const fly = (x, y, col, a = 1) => butterfly(ctx, x, y, 4.2, { X: col }, a, 12);
       const p = seg(t, 8.4, 12.8);
       if (p > 0 && p < 1) fly(lerp(1250, 250, p) + Math.sin(p * 9) * 60, GROUND - 210 - Math.sin(p * Math.PI) * 70 + Math.sin(p * 23) * 12, PAL.yellow);
       // the second one flutters round Bo, lands on the tuft, rests there, then flies off ahead
@@ -182,8 +182,8 @@
         const land = sine(seg(t, LAND - .7, LAND)), lift = Math.max(0, t - LIFT);
         const x = lerp(fx, T.x, land) + lift * 220 + Math.sin(lift * 7) * 14 * clamp(lift * 3);
         const y = lerp(fy, T.y - 22, land) - lift * 110 - Math.sin(lift * 5) * 26;
-        const resting = t > LAND && t < LIFT, wing = resting ? Math.floor(t * 2.2) % 2 : Math.floor(t * 12) % 2;
-        sprite(ctx, wing ? SPRITES.flyA : SPRITES.flyB, x, y, 6, { X: PAL.violet, B: '#111' }, clamp((t - 27.6) * 2) * (1 - seg(t, LIFT + 2.2, LIFT + 3)));
+        const resting = t > LAND && t < LIFT;
+        butterfly(ctx, x, y, 6, { X: PAL.violet }, clamp((t - 27.6) * 2) * (1 - seg(t, LIFT + 2.2, LIFT + 3)), resting ? 1.1 : 12);
       }
     },
   });

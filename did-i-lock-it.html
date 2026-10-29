@@ -1,0 +1,166 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Did I Lock It?</title>
+</head>
+<body>
+<script src="sfx.js?v=10"></script>
+<script src="engine2.js?v=10"></script>
+<script>
+// Bo locks the front door and sets off. A few steps on, Bo freezes: a thought bubble, the door, a "?".
+// Back Bo runs: locked. Further this time, and a red elastic of worry stretches from the door to Bo's
+// tuft until it yanks Bo all the way home: still locked. The third time the bubble fills with doors,
+// a stove, a window, and the elastic flings Bo back. So Bo locks it slowly, on purpose, says it out
+// loud, and sticks a gold star on the door. The elastic goes slack. Walking away, the bubble shows
+// the star, and pops.
+// Button: at the bus stop the "?" tries once more. Bo just smiles: "nope." Off Bo goes, humming.
+const { PAL, SPRITES, sprite, sun, cloud, lerp, seg, sine, outBack, clamp, hash, spring, mix, GROUND } = Shorts;
+const V = 140, HOUSE_A = 700, HOUSE_B = 980, DOOR = 840, STOP = 2330, SIGN = 2440;
+const LOCK0 = 4.6, ASK1 = 7.0, BACK1 = 8.3, RATTLE1 = 10.1, BAND = 13.4, YANK1 = 14.8, RATTLE2 = 16.6;
+const ASK3 = 21.4, YANK2 = 22.7, CALM = 24.6, LOCK = 25.9, GOGO = 28.1, POPOK = 30.0, NOPE = 36.2, LEAVE = 38.0, LOOP = LEAVE + 7.0;
+const STOVE = ['XXXXXXX', 'X.X.X.X', 'XXXXXXX', 'X.....X', 'X.XXX.X', 'XXXXXXX'], WINDOW = ['XXXXXX', 'X.XX.X', 'XXXXXX', 'X.XX.X', 'XXXXXX'];
+
+Shorts.play({
+  title: 'Did I Lock It?',
+  accent: PAL.red,
+  voice: { pitch: 1 },
+  loopAfter: LOOP,
+  captions: [
+    [7.2, 8.4, 'did i lock it?'],
+    [10.4, 11.4, 'locked.'],
+    [16.9, 18.0, '...still *locked.*'],
+    [21.6, 22.9, 'what if... *what if...*'],
+    [26.2, 27.8, 'locked. *i saw it.*'],
+    [30.6, 34.8, 'you checked. *you can let it go.*'],
+    [NOPE + .2, NOPE + 1.0, '*nope.*'],
+  ],
+  init(S) {
+    S.bo = S.addChar({ x: 0, walk: V });
+    S.bubble = null; S.pad = 0; S.padOk = 0; S.star = 0; S.bandK = { x: 0, v: 0 }; S.yank = 0; S.rattle = 0;
+  },
+  update(S, t, dt) {
+    const bo = S.bo;
+    const ask = (kind, big = 1) => () => { S.bubble = { kind, t0: t, big }; S.sfx('pop', { pitch: 700, g: .07 }, bo.x); S.sfx('pluck', { n: 4, oct: .5, g: .06 }, bo.x); S.sfx('pluck', { n: 2, oct: .5, g: .06 }, bo.x + 1); };
+    const lockIt = (sure) => () => { S.pad = t; S.padOk = sure; S.rattle = t; S.bubble = null; S.sfx('knock', { n: 2 }, DOOR); S.sfx('tock', { f: 1300, gain: .7 }, DOOR); S.sfx('ding', { pitch: sure ? 1760 : 1318.5, g: .08 }, DOOR); };
+    S.plan(bo, t, [
+      [0, { x: DOOR, speed: 220, accel: 360 }],                                    // heading out for the day
+      [LOCK0 - .25, { crouch: .2, lookY: -.4 }], [LOCK0, { crouch: 0 }], [LOCK0, () => { bo.jump(0, -300); lockIt(false)(); }],
+      [LOCK0 + .5, { x: 1270, speed: 170, accel: 400, lookY: 0, eye: 'happy' }],
+      [ASK1 - .1, { x: 1110, speed: 0, accel: 2000, eye: 'wide', tilt: -.12 }], [ASK1, ask('door')],   // ...wait.
+      [7.9, { face: -1, tilt: 0 }],
+      [BACK1, { x: DOOR + 10, speed: 400, accel: 1300, eye: 'squeeze' }],
+      [RATTLE1 - .25, { crouch: .2, face: 1 }], [RATTLE1, { crouch: 0, eye: 'happy' }], [RATTLE1, () => { bo.jump(0, -320); lockIt(true)(); }],
+      [11.4, { x: 1720, speed: 230, accel: 450, eye: 'open' }],
+      [BAND, ask('door', 1.2)], [BAND + .1, { eye: 'flat', speed: 120 }],            // it's back
+      [YANK1 - .3, { eye: 'wide', tilt: .2 }],
+      [YANK1, { x: DOOR + 10, speed: 640, accel: 1600, tilt: -.25, eye: 'wide' }],  // and pulls Bo all the way home
+      [RATTLE2 - .25, { crouch: .2, tilt: 0 }], [RATTLE2, { crouch: 0, eye: 'flat' }], [RATTLE2, () => { bo.jump(0, -300); lockIt(true)(); }],
+      [18.1, { x: STOP, speed: 280, accel: 600, eye: 'squeeze', tilt: .1 }],          // marching off, not looking back
+      [ASK3 - .1, { speed: 0, accel: 1600, eye: 'wide', tilt: -.15 }], [ASK3, ask('many', 1.5)],
+      [YANK2, { x: DOOR + 10, speed: 900, accel: 2600, tilt: -.3 }], [YANK2, () => { bo.jump(0, -420, -9); S.sfx('boing', { pitch: 150, g: .1 }, bo.x); }],
+      [CALM - .4, { tilt: 0, eye: 'closed', crouch: .1 }], [CALM, () => S.sfx('breathIn', { d: 1.1 }, bo.x)],
+      [CALM + 1.1, () => S.sfx('breathOut', { d: 1.1 }, bo.x)],
+      [LOCK - .3, { crouch: .25, eye: 'open', lookY: -.4 }], [LOCK, { crouch: 0 }], [LOCK, () => { bo.jump(0, -360); lockIt(true)(); }],
+      [LOCK + .9, () => { S.star = t; S.sfx('sparkle', { n: 6 }, DOOR); S.sfx('swell', { root: 392 }); }],   // a gold star: I saw it
+      [LOCK + 1.0, { eye: 'happy', lookY: -.3 }],
+      [GOGO, { x: STOP, speed: V, accel: 400, eye: 'open', lookY: 0, face: 1 }],
+      [POPOK - .4, ask('star')],
+      [33.0, { eye: 'happy' }],
+      [35.2, { eye: 'wide', lookY: -.6 }], [35.2, ask('door', .7)],               // ...one more time?
+      [35.9, { eye: 'flat' }], [NOPE, { eye: 'happy', lookY: 0 }], [NOPE, () => { S.bubble.pop = t; S.sfx('pop', { pitch: 900, g: .08 }, bo.x); S.sfx('laugh', { n: 3 }, bo.x); }],
+      [37.2, { crouch: .2 }], [37.45, { crouch: 0 }], [37.45, () => bo.jump(0, -430)],
+      [LEAVE, { x: 1e6, speed: V, accel: 450, eye: 'open', lookX: 0, lookY: 0 }],
+      [LEAVE + .1, () => S.sfx('hum', { notes: [2, 4, 5, 7, 5], gap: .3, g: .04 }, bo.x)],
+    ]);
+    // the elastic of worry: tied to the door handle and Bo's tuft; it tightens, then yanks
+    const on = t > BAND && t < LOCK + .4, tight = on ? clamp((bo.x - DOOR - 380) / 500) : 0;
+    spring(S.bandK, on ? 1 : 0, 60, .5, dt);
+    if (t > YANK1 - .1) S.once('yank1', () => { S.sfx('boing', { pitch: 130, g: .1 }, bo.x); S.sfx('whoosh', { d: .7 }, bo.x); S.shake(2); });
+    if (t > YANK2 - .1) S.once('yank2', () => { S.sfx('whoosh', { d: .8, v: 1 }, bo.x); S.shake(3); });
+    if (t > LOCK + .3) S.once('slack', () => S.sfx('drain', {}, DOOR));
+    S.tight = tight;
+    // the "?" bubble: the door (and, the third time, everything else) — the star one pops into a tick
+    if (S.bubble && S.bubble.kind === 'star' && t > POPOK) S.once('ok', () => { S.bubble.pop = t; S.sfx('ding', { pitch: 1568, g: .08 }, bo.x); S.sfx('pop', { pitch: 900, g: .07 }, bo.x); });
+    if (S.bubble && S.bubble.pop && t > S.bubble.pop + .5) S.bubble = null;
+    if (t > ASK3 + .4) S.once('worry', () => S.sfx('scribble', { v: .8 }, bo.x));
+    S.once('amb', () => S.sfx('birds', { d: LOOP, g: .8 }));
+
+    // camera: follows Bo; for the yanks it keeps the door and Bo in frame
+    if (t > 3) {
+      S.camGoal.x = (t > YANK1 - .5 && t < RATTLE2 + .5) || (t > YANK2 - .5 && t < GOGO) ? lerp(DOOR + 160, bo.x, .5) : bo.x + 60;
+      S.camGoal.z = (t > YANK1 - .5 && t < 16) || (t > YANK2 - .5 && t < 23.6) ? .74 : .95; S.camGoal.kx = 2.2; S.camGoal.kz = 1.6;
+    }
+  },
+  drawSky(S, ctx, t, v) {
+    sun(ctx, v.left + (v.right - v.left) * .78, v.top + (GROUND - v.top) * .22, 9, { X: PAL.orange });
+    for (let i = 0; i < 3; i++) {
+      const W = v.right - v.left + 400, x = v.left - 200 + (1 - ((t / S.T + i / 3 + .15) % 1)) * W;
+      cloud(ctx, x, v.top + (v.bottom - v.top) * (.2 + i * .06), 9, { X: '#ebe8f4' });
+    }
+  },
+  drawBack(S, ctx, t) {
+    const J = i => S.J(i);
+    // home: a little house with a front door (it rattles when checked)
+    ctx.lineWidth = 6; ctx.strokeStyle = '#111'; ctx.fillStyle = '#fff4e2';
+    ctx.beginPath(); ctx.rect(HOUSE_A, GROUND - 280, HOUSE_B - HOUSE_A, 280); ctx.fill(); ctx.stroke();
+    ctx.fillStyle = PAL.red; ctx.beginPath(); ctx.moveTo(HOUSE_A - 30, GROUND - 278); ctx.lineTo((HOUSE_A + HOUSE_B) / 2, GROUND - 400 + J(1) * .3); ctx.lineTo(HOUSE_B + 30, GROUND - 278); ctx.closePath(); ctx.fill(); ctx.stroke();
+    ctx.fillStyle = '#bfe6ff'; ctx.lineWidth = 5; ctx.fillRect(HOUSE_A + 26, GROUND - 230, 70, 60); ctx.strokeRect(HOUSE_A + 26, GROUND - 230, 70, 60);
+    ctx.beginPath(); ctx.moveTo(HOUSE_A + 61, GROUND - 230); ctx.lineTo(HOUSE_A + 61, GROUND - 170); ctx.stroke();
+    const rk = S.rattle ? Math.sin((t - S.rattle) * 50) * 3 * Math.max(0, 1 - (t - S.rattle) / .4) : 0;
+    ctx.fillStyle = PAL.blue; ctx.lineWidth = 6; ctx.beginPath(); ctx.roundRect(DOOR - 46 + rk, GROUND - 200, 92, 200, [12, 12, 0, 0]); ctx.fill(); ctx.stroke();
+    ctx.fillStyle = PAL.yellow; ctx.lineWidth = 4; ctx.beginPath(); ctx.arc(DOOR + 28 + rk, GROUND - 100, 8, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+    // the gold star sticker
+    if (S.star) { const k = outBack(clamp((t - S.star) / .35)); sprite(ctx, SPRITES.star, DOOR - 8 + rk, GROUND - 150, 6.5 * k, { X: PAL.orange }); }
+    // a path of flowers, then the bus stop
+    for (let i = 0; i < 14; i++) {
+      const x = 1080 + i * 95 + hash(i) * 40, h = 22 + hash(i + .4) * 18;
+      ctx.strokeStyle = PAL.green; ctx.lineWidth = 4; ctx.beginPath(); ctx.moveTo(x, GROUND + 2); ctx.quadraticCurveTo(x + Math.sin(t * 1.4 + i) * 4, GROUND - h / 2, x + Math.sin(t * 1.4 + i) * 6, GROUND - h); ctx.stroke();
+      sprite(ctx, ['.X.', 'XCX', '.X.'], x + Math.sin(t * 1.4 + i) * 6, GROUND - h - 4, 4.5, { X: [PAL.pink, PAL.sky, PAL.violet, PAL.orange][i % 4], C: PAL.yellow });
+    }
+    ctx.strokeStyle = '#111'; ctx.lineWidth = 6; ctx.beginPath(); ctx.moveTo(SIGN, GROUND + 2); ctx.lineTo(SIGN + J(2) * .3, GROUND - 250); ctx.stroke();
+    ctx.fillStyle = PAL.sky; ctx.lineWidth = 5; ctx.beginPath(); ctx.arc(SIGN, GROUND - 270, 32, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+    ctx.fillStyle = '#fff'; ctx.font = '28px Silkscreen, monospace'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText('B', SIGN, GROUND - 268);
+  },
+  drawFront(S, ctx, t) {
+    const bo = S.bo, top = bo.top(), T = bo.tuft;
+    // the elastic: a wobbly red line, slack and droopy until it pulls tight
+    const k = S.bandK.x;
+    if (k > .02 && T) {
+      const hx = DOOR + 28, hy = GROUND - 100, mx = (hx + T.x) / 2, sag = (1 - S.tight) * 90 * k + Math.sin(t * 6) * 6 * (1 - S.tight);
+      ctx.save(); ctx.globalAlpha = Math.min(1, k * 1.5); ctx.strokeStyle = PAL.red; ctx.lineWidth = 5 - 2.5 * S.tight; ctx.lineCap = 'round';
+      ctx.beginPath(); ctx.moveTo(hx, hy); ctx.quadraticCurveTo(mx, Math.max(hy, T.y) + sag, T.x, T.y); ctx.stroke(); ctx.restore();
+    }
+    // the padlock over the door: a tick when Bo's sure, a plain one the first time
+    if (S.pad && t - S.pad < 1.6) {
+      const u = (t - S.pad) / 1.6, pk = outBack(clamp(u * 5)) * (1 - seg(u, .8, 1));
+      ctx.save(); ctx.translate(DOOR, GROUND - 270 - u * 20); ctx.scale(pk, pk);
+      ctx.strokeStyle = '#111'; ctx.lineWidth = 6; ctx.beginPath(); ctx.arc(0, -16, 16, Math.PI, 0); ctx.stroke();
+      ctx.fillStyle = PAL.yellow; ctx.lineWidth = 5; ctx.beginPath(); ctx.roundRect(-24, -16, 48, 38, 6); ctx.fill(); ctx.stroke();
+      if (S.padOk) sprite(ctx, SPRITES.check, 0, 3, 5, { X: PAL.green }); else { ctx.fillStyle = '#111'; ctx.fillRect(-3, -2, 6, 12); }
+      ctx.restore();
+    }
+    // the thought bubble
+    const B = S.bubble;
+    if (B) {
+      const e = outBack(clamp((t - B.t0) / .35)) * (B.pop ? 1 - seg(t, B.pop, B.pop + .3) : 1), s = e * B.big;
+      const shake = B.kind === 'many' ? Math.sin(t * 30) * 3 : 0, bx = top.x + 40 * s + shake, by = top.y - 115 * Math.max(.6, s) + Math.sin(t * 2.4) * 4;
+      ctx.fillStyle = '#fff'; ctx.strokeStyle = '#111'; ctx.lineWidth = 4;
+      for (const [dx, dy, r] of [[-44, 60, 6], [-28, 36, 10]]) { ctx.beginPath(); ctx.arc(bx + dx * s, by + dy * s, r * s, 0, Math.PI * 2); ctx.fill(); ctx.stroke(); }
+      ctx.beginPath(); ctx.ellipse(bx, by, 64 * s, 48 * s, 0, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+      const door = (x, y, z) => { ctx.fillStyle = PAL.blue; ctx.lineWidth = 3; ctx.beginPath(); ctx.roundRect(x - 13 * z, y - 26 * z, 26 * z, 52 * z, [4 * z, 4 * z, 0, 0]); ctx.fill(); ctx.stroke(); ctx.fillStyle = PAL.yellow; ctx.beginPath(); ctx.arc(x + 7 * z, y, 2.6 * z, 0, Math.PI * 2); ctx.fill(); };
+      if (B.kind === 'door') { door(bx - 14 * s, by, s); sprite(ctx, SPRITES.ask, bx + 22 * s, by, 4.6 * s, { X: PAL.red }); }
+      else if (B.kind === 'star') {
+        door(bx - 14 * s, by, s);
+        if (B.pop) sprite(ctx, SPRITES.check, bx + 22 * s, by, 6 * s, { X: PAL.green }); else sprite(ctx, SPRITES.star, bx + 22 * s, by, 5 * s, { X: PAL.orange });
+      } else {
+        door(bx - 36 * s, by + 4 * s, s * .8); sprite(ctx, STOVE, bx + 2 * s, by - 10 * s, 4 * s, { X: '#111' }); sprite(ctx, WINDOW, bx + 36 * s, by + 10 * s, 4 * s, { X: PAL.sky });
+        for (let i = 0; i < 3; i++) sprite(ctx, SPRITES.ask, bx + (-30 + i * 30) * s, by - 40 * s + Math.sin(t * 6 + i) * 4, 3 * s, { X: PAL.red });
+      }
+    }
+  },
+});
+</script>
+</body>
+</html>

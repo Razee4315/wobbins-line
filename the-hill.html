@@ -6,14 +6,14 @@
 <title>The Hill</title>
 </head>
 <body>
-<script src="sfx.js?v=8"></script>
-<script src="engine2.js?v=8"></script>
+<script src="sfx.js?v=10"></script>
+<script src="engine2.js?v=10"></script>
 <script>
 // Bo pushes a ball up a hill. It rolls back. The hill gets bigger. Again.
 // The third time Bo makes it, and the other side turns out to be the fun part.
 // Button: on the flat, the ball rolls to a stop. Bo braces for one more huge push... and the
 // ball zips off at a touch. Bo stumbles after it, laughs, and skips off the same way.
-const { PAL, SPRITES, sprite, lerp, seg, sine, outBack, clamp, hash, spring, GROUND, STAND } = Shorts;
+const { PAL, SPRITES, sprite, cloud, lerp, seg, sine, outBack, clamp, hash, spring, GROUND, STAND } = Shorts;
 const V = 130, HX = 1300, HW = 560, R = 56, FLAG_X = 1400, G1 = 13.4, G2 = 26.6;
 // the flick lands at ~49.8 s (it fires when Bo's leaning head touches the ball); Bo leaves 2.3 s later
 const BRACE = 49.0, FLICK = 49.8, LEAVE = FLICK + 2.4;
@@ -178,7 +178,7 @@ Shorts.play({
   drawSky(S, ctx, t, v) {
     for (let i = 0; i < 3; i++) {
       const W = v.right - v.left + 400, x = v.left - 200 + (1 - ((t / S.T + i / 3 + .25) % 1)) * W;
-      sprite(ctx, SPRITES.cloud, x, v.top + (v.bottom - v.top) * (.25 + i * .06), 9, { X: '#ebe8f4' });
+      cloud(ctx, x, v.top + (v.bottom - v.top) * (.25 + i * .06), 9, { X: '#ebe8f4' });
     }
   },
   drawBack(S, ctx, t) {

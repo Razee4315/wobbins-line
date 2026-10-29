@@ -6,8 +6,9 @@
   // hill under all that, slides back, sits, and lets it all go. Light again, Bo bounds to the top.
   // Button: Bo kept just one thing, the umbrella. A little cloud rains on the picnic, the umbrella
   // pops open over everyone ("just in case!"), then Bo pops it onto a friend's head as a gift.
-  const { PAL, SPRITES, sprite, lerp, seg, sine, outBack, clamp, hash, spring, mix, GROUND, GRAV } = Shorts;
-  const V = 140, HILL_A = 1560, HILL_TOP = 1900, HILL_B = 2160, HILL_END = 2520, HILL_H = 160, PICNIC = 2030;
+  const { PAL, SPRITES, sprite, sun, cloud, lerp, seg, sine, outBack, clamp, hash, spring, mix, GROUND, GRAV } = Shorts;
+  // a wide hilltop, so Bo and the three friends can stand ~175 apart (no one overlapping anyone)
+  const V = 140, HILL_A = 1560, HILL_TOP = 1900, HILL_B = 2400, HILL_END = 2700, HILL_H = 160, PICNIC = 2180, BO_TOP = 1920;
   const s3 = k => k * k * (3 - 2 * k);
   const groundAt = x => GROUND - HILL_H * (x < HILL_A ? 0 : x < HILL_TOP ? s3((x - HILL_A) / (HILL_TOP - HILL_A)) : x < HILL_B ? 1 : x < HILL_END ? 1 - s3((x - HILL_B) / (HILL_END - HILL_B)) : 0);
   const ITEMS = [
@@ -18,11 +19,11 @@
     { k: 'ladder', x: 1320, h: 236, rows: ['X.X', 'XXX', 'X.X', 'X.X', 'XXX', 'X.X', 'X.X', 'XXX', 'X.X', 'X.X', 'XXX', 'X.X', 'X.X', 'XXX', 'X.X'], px: 16, c: { X: PAL.brown } },
   ];
   const GRAB = [4.9, 7.6, 10.3, 13.0, 15.7];         // when Bo hops each one up
-  const SLIDE = 22.6, SIT = 23.8, DROP = 27.8, LIGHT = 30.0, UPHILL = 31.0, LEAVE = 42.2, LOOP = LEAVE + 9.1;   // long walk-off: hill, tree and sun out of view at the seam
+  const SLIDE = 22.6, SIT = 23.8, DROP = 27.8, LIGHT = 30.0, UPHILL = 31.0, LEAVE = 42.2, LOOP = LEAVE + 10.0;   // long walk-off: hill, tree and sun out of view at the seam
   const CLOUD_IN = 36.4, RAIN = [37.6, 40.6], POP = 38.2, HUDDLE = 38.4, HEARTS = 39.7, CLOSE = 40.8, GIVE = 41.2;
-  const HUDDLE_X = [1985, 2070, 2150];
+  const HUDDLE_X = [2095, 2270, 2445];
   // the open umbrella, leaning over the friends: canopy centre, half-width and tilt, from Bo's head top
-  const canopy = (top, k) => ({ x: top.x + 105 * k, y: top.y - 18 - 77 * k, rx: 210 * k, ry: 80 * k, rot: .12 * k });
+  const canopy = (top, k) => ({ x: top.x + 275 * k, y: top.y - 18 - 92 * k, rx: 335 * k, ry: 96 * k, rot: .07 * k });   // big enough for everyone
 
   Shorts.play({
     title: 'Just in Case',
@@ -46,7 +47,7 @@
     ],
     init(S) {
       const look = [{ hair: 'curl', blush: PAL.pink, fill: '#ffe9f2' }, { hair: 'antenna', hairColor: PAL.blue, fill: '#e6f0ff' }, { hairColor: PAL.orange, blush: '#ffb08a', fill: '#fff4d6' }];
-      S.friends = look.map((o, i) => S.addChar({ x: -900 - i * 150, face: 1, gain: .4, ...o }));
+      S.friends = look.map((o, i) => S.addChar({ x: 3300 + i * 190, face: -1, gain: .4, ...o }));   // they come over the hill from the far side
       S.bo = S.addChar({ x: 0, walk: V }); S.focus = S.bo;
       S.stack = []; S.loose = []; S.sway = { x: 0, v: 0 }; S.creak = 0; S.gift = null;
     },
@@ -69,7 +70,7 @@
         [29.3, { lookY: -1, lookX: .2 }], [29.8, { lookY: 0, lookX: 0 }],                // ...but keeps the umbrella
         [LIGHT, { eye: 'happy', sit: 0 }], [LIGHT, () => { S.sfx('swell', { root: 392 }); S.sfx('laugh', { n: 3 }, bo.x); }],
         [LIGHT + .4, { crouch: .2 }], [LIGHT + .65, { crouch: 0 }], [LIGHT + .65, () => bo.jump(120, -560)],
-        [UPHILL, { x: PICNIC - 110, speed: 230, accel: 700, eye: 'happy' }],
+        [UPHILL, { x: BO_TOP, speed: 230, accel: 700, eye: 'happy' }],
         [33.0, () => { S.sfx('arp', { notes: [0, 2, 4, 7, 9] }); S.sfx('sparkle', { n: 8 }, PICNIC); }],
         [33.2, { crouch: .2 }], [33.45, { crouch: 0 }], [33.45, () => bo.jump(0, -520)],
         [RAIN[0] + .1, { eye: 'wide', lookY: -.8 }],
@@ -104,12 +105,12 @@
       // friends: skip past with nothing, picnic at the top, cheer when Bo makes it
       // ...then huddle under Bo's umbrella in the rain, and skip off ahead (one of them wearing it)
       S.friends.forEach((f, i) => {
-        S.plan(f, t, [[13.6 + i * .25, { x: PICNIC - 40 + i * 90, speed: 520, accel: 900, eye: 'happy' }], [24.0, { face: -1, eye: 'open', lookX: .6, lookY: .4 }], [LIGHT + .6, { eye: 'happy' }],
+        S.plan(f, t, [[13.6 + i * .25, { x: HUDDLE_X[i], speed: 520, accel: 900, face: -1, eye: 'happy' }], [24.0, { face: -1, eye: 'open', lookX: .6, lookY: .4 }], [LIGHT + .6, { eye: 'happy' }],
           [RAIN[0] + .1 + i * .08, { eye: 'squeeze', crouch: .15, lookY: -.6, lookX: 0 }],
           [HUDDLE + i * .1, { x: HUDDLE_X[i], speed: 120, accel: 600, crouch: 0, eye: 'happy', lookY: -.5 }],
           [HEARTS + .2, { lookY: 0, lookX: .5 }],
           ...(i === 2 ? [[GIVE + .5, { eye: 'heart', lookY: -.6 }], [GIVE + .7, { crouch: .2 }], [GIVE + .9, { crouch: 0 }], [GIVE + .9, () => f.jump(0, -360)]] : []),
-          [LEAVE - .3 + (2 - i) * .15, { x: 1e6, speed: 280 + i * 12, accel: 700, face: 1, eye: 'happy', lookX: 0, lookY: 0 }]]);
+          [LEAVE - .3 + (2 - i) * .35, { x: 1e6, speed: 280 + i * 12, accel: 700, face: 1, eye: 'happy', lookX: 0, lookY: 0 }]]);
         if (t > 33.0) S.once('cheer' + i, () => f.jump(0, -420 - i * 30));
         if (t > 24 && t < LIGHT && i === 1) f.cmd.tilt = .1 * Math.sin(t * 2);
         if (t > LEAVE + .4 && f.mode === 'ground' && hash(Math.floor(t * 2.5) + i) > .7) S.once(`skip${i}:${Math.floor(t * 2.5)}`, () => f.jump(f.vx, -300));
@@ -130,10 +131,10 @@
       else if (t >= UPHILL && t < LEAVE + 1) { S.camGoal.x = PICNIC - 60; S.camGoal.z = .82; S.camGoal.kx = 1.6; }
     },
     drawSky(S, ctx, t, v) {
-      sprite(ctx, SPRITES.sun, HILL_TOP + 420, v.top + (GROUND - HILL_H - v.top) * .35, 10, { X: PAL.orange });
+      sun(ctx, HILL_TOP + 420, v.top + (GROUND - HILL_H - v.top) * .35, 10, { X: PAL.orange });
       for (let i = 0; i < 3; i++) {
         const W = v.right - v.left + 400, x = v.left - 200 + (1 - ((t / 44 + i / 3 + .4) % 1)) * W;
-        sprite(ctx, SPRITES.cloud, x, v.top + (v.bottom - v.top) * (.18 + i * .06), 9, { X: '#ebe8f4' });
+        cloud(ctx, x, v.top + (v.bottom - v.top) * (.18 + i * .06), 9, { X: '#ebe8f4' });
       }
     },
     drawBack(S, ctx, t) {
@@ -141,7 +142,7 @@
       ctx.strokeStyle = PAL.green; ctx.lineWidth = 4;
       for (let i = 0; i < 24; i++) { const x = HILL_A - 40 + i * 40 + hash(i) * 20, g = groundAt(x); for (let k = -1; k <= 1; k++) { ctx.beginPath(); ctx.moveTo(x + k * 4, g + 2); ctx.lineTo(x + k * 4 + Math.sin(t * 1.3 + i + k) * 3, g - 12 - (k === 0 ? 4 : 0)); ctx.stroke(); } }
       ctx.strokeStyle = '#111';
-      const tx = HILL_B + 40, tg = groundAt(tx); ctx.lineWidth = 6; ctx.fillStyle = PAL.brown;
+      const tx = HILL_B + 130, tg = groundAt(tx); ctx.lineWidth = 6; ctx.fillStyle = PAL.brown;
       ctx.beginPath(); ctx.moveTo(tx - 12, tg + 4); ctx.lineTo(tx - 7, tg - 160); ctx.lineTo(tx + 7, tg - 160); ctx.lineTo(tx + 12, tg + 4); ctx.fill(); ctx.stroke();
       ctx.fillStyle = PAL.lime; ctx.beginPath(); ctx.ellipse(tx, tg - 210, 90, 72, 0, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
       const pg = groundAt(PICNIC); for (let c2 = 0; c2 < 12; c2++) { ctx.fillStyle = c2 % 2 ? '#fff' : PAL.red; ctx.fillRect(PICNIC - 84 + c2 * 14, pg - 5, 14, 6); }
@@ -168,14 +169,14 @@
         const rk = seg(t, RAIN[0], RAIN[0] + .3) * (1 - seg(t, RAIN[1] - .3, RAIN[1]));
         if (rk > 0) {
           ctx.strokeStyle = '#7f94b0'; ctx.lineWidth = 3; ctx.globalAlpha = rk;
-          for (let i = 0; i < 26; i++) {
-            const x = cx + (hash(i) - .5) * 250, y = cy + 20 + ((t * 700 + hash(i + .3) * 400) % 400);
+          for (let i = 0; i < 46; i++) {
+            const x = cx + (hash(i) - .5) * 640, y = cy + 20 + ((t * 700 + hash(i + .3) * 400) % 400);
             const dx = (x - U.x) / (U.rx || 1), stop = open > .3 && Math.abs(dx) < 1 ? U.y + (x - U.x) * Math.tan(U.rot) - U.ry * Math.sqrt(1 - dx * dx) : groundAt(x);
             if (y < stop) { ctx.beginPath(); ctx.moveTo(x, Math.max(cy + 20, y - 18)); ctx.lineTo(x, y); ctx.stroke(); }
           }
           ctx.globalAlpha = 1; ctx.strokeStyle = '#111';
         }
-        sprite(ctx, SPRITES.cloud, cx, cy, 16, { X: '#a7abb2' }, 1 - seg(t, RAIN[1] + .8, RAIN[1] + 1.6));
+        cloud(ctx, cx, cy, 30, { X: '#a7abb2' }, 1 - seg(t, RAIN[1] + .8, RAIN[1] + 1.6));
       }
       // the umbrella opens over everyone (in place of the folded one on Bo's head)
       if (open > .02) {

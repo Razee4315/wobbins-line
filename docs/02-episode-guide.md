@@ -55,6 +55,10 @@ Shorts.play({
 - **Eyes:** `open, wide, sad, flat, blink, closed, happy, squeeze, heart, dizzy`.
 - **Actions:** `c.jump(vx, vy, spin)`, `c.hold(x, y)` + `c.heldFeet = i => ({ x, y, rot })` (stand on someone's head), `c.release(vx, vy)`, `c.top()` (top of the head), `c.tuft` (hair tip, good for hanging things), `c.hidden`.
 - **Show:** `S.plan(c, t, list)`, `S.once(key, fn)`, `S.sfx(name, params, x)`, `S.burst(x, y, n, colours, { speed, gravity, size, life, angle, spread })`, `S.shake(a)`, `S.camGoal = { x, y, z, kx, kz }`, `S.focus`, `S.J(i)` (boil jitter for your own drawings).
+- **Acting is automatic:** a crouch before every jump (anticipation, from the loop pass), stretch in the air, squash on landing, every step and every turn, a "take" when the eye goes `wide`, an eye that overshoots its look, and a brow for every expression except `open`. Pass `c.jump(vx, vy, spin, false)` for a jump that shouldn't wind up (a trip).
+- **Personal space is automatic:** nobody stops within 180 of anyone (`space: false` or `c.space = 0` to opt out). To get past someone, `S.leapfrog(a, b, key, vx)` (call every frame while it may happen). Lay out groups ~180 apart.
+- **Ink side characters:** `sun(ctx, x, y, px, { X })`, `moon(...)`, `cloud(...)` take the same arguments as `sprite()`; `butterfly(ctx, x, y, px, { X }, alpha, rate)` (rate ~12 flying, ~1 resting) and `bird(ctx, x, y, px, { X, O }, alpha, rate, dir)` (rate 0 = perched, dir -1 faces left). They breathe, blink and flap on their own. Keep pixel sprites for icons.
+- **Opening frame:** playback and MP4s start at `show.hook`, 0.7 s before the first caption. Set `hook: seconds` in the story if the odd thing appears at another moment.
 - **Helpers:** `PAL`, `SPRITES` (heart, sparkle, dot, cloud, flyA/flyB, birdA/birdB, check, note, star, moon, sun, bang, ask, bulb, d0–d7), `sprite(ctx, rows, x, y, px, colours, alpha)`, `zzz()`, `ramp()`, `mix()`, `lerp, seg, sine, outBack, outCubic, inCubic, clamp, hash, spring`, `GROUND = 620`, `STAND`, `BODY_H`, `GRAV`, `INK`, `PAPER`.
 
 ## Rules that bit us (read these)
@@ -71,6 +75,8 @@ Shorts.play({
 - [ ] Hook in the first 5 seconds; it reads with the sound off.
 - [ ] Three escalations, a turn, a quote.
 - [ ] `seam error 0.00`; contact sheet checked (see `07-workflow.md`).
+- [ ] `node tools/overlap.js <id> --wide` says ok: nobody overlapping or face to face.
+- [ ] Every field set in `update` is reset in `init` (or the second loop differs).
 - [ ] No props or friends in view at the start or end; colours match.
 - [ ] Every beat has a soft sound; ambience bed for the place (room, birds, night, rain).
 - [ ] Captions readable on the background (accent colour contrast).

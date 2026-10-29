@@ -1,0 +1,270 @@
+/* the-chair: extracted from ../the-chair.html by scripts/sync-shorts.py. Do not edit here. */
+(function () {
+  const Shorts = Object.assign(Object.create(window.Shorts), { play: story => { (window.WL_STORIES ||= {})['the-chair'] = story; } });
+  // Everyone has the chair. Bo takes clean laundry out of the basket, glances at the wardrobe (right
+  // there), and drops it on the chair instead: "later." Night, day, later, later. By the fourth day the
+  // pile is taller than Bo and blinks. Bo needs one sock, dives in, and the pile comes down on top.
+  // Bo pops out (sock on the tuft), puts things away one at a time, each with a rising note, and finds
+  // something underneath: "oh! a chair." Bo sits on it for the first time.
+  // Button: walking out, Bo notices the sock still on the tuft. A flat look, a flick, and it sails
+  // into the wardrobe, which snaps shut on it. "nice." Off Bo goes, humming.
+  const { PAL, SPRITES, sprite, sun, moon, cloud, lerp, seg, sine, outBack, outCubic, clamp, hash, spring, mix, GROUND, GRAV } = Shorts;
+  const V = 140, HOUSE_A = 760, HOUSE_B = 1700, TOP = GROUND - 400;
+  const BASKET = 880, SPOT = 1010, CHAIR = 1200, WARD = 1450, SEAT = GROUND - 70, WIN = 1010, CAL = 1290;
+  // the clean laundry, in the order it comes out of the basket
+  const CLOTHES = [
+    { k: 'shirt', c: PAL.sky, w: 128, h: 42 }, { k: 'sock', c: PAL.pink, w: 78, h: 38 }, { k: 'scarf', c: PAL.green, w: 140, h: 32 },
+    { k: 'hoodie', c: PAL.orange, w: 134, h: 50 }, { k: 'jeans', c: PAL.blue, w: 126, h: 42 }, { k: 'towel', c: PAL.yellow, w: 122, h: 38 },
+    { k: 'sweater', c: PAL.violet, w: 136, h: 46 }, { k: 'hat', c: PAL.red, w: 92, h: 44 },
+  ];
+  const TOSS = [7.9, 11.1, 12.0, 14.5, 15.15, 15.7, 16.2, 16.65];          // each one lands on the chair
+  const NIGHTS = [[9.1, 10.5], [12.6, 14.0], [18.6, 20.0]];
+  const EYES = 17.5, DIVE = 22.1, BURY = 22.55, POP = 25.1, OPEN = 26.6, PUT0 = 27.1, PUT_EVERY = .42, SHUT = 30.3;
+  const SIT = 32.7, OFF = 38.3, SOCK = 39.9, LEAVE = 41.6, LOOP = LEAVE + 7.5;
+  const nightAt = t => NIGHTS.reduce((m, [a, b]) => Math.max(m, sine(seg(t, a, a + .4)) * (1 - sine(seg(t, b - .4, b)))), 0);
+  const dayAt = t => 1 + NIGHTS.filter(([a, b]) => t > (a + b) / 2).length;
+  const onSeat = t => t > SIT - .2 && t < OFF + .05;
+
+  function drawCloth(ctx, it, x, y, rot, k = 1) {
+    if (k <= .01) return;
+    const { w, h, c } = it, dark = mix(c, '#2a2238', .28);
+    ctx.save(); ctx.translate(x, y); ctx.rotate(rot); ctx.scale(k, k);
+    ctx.fillStyle = c; ctx.strokeStyle = '#111'; ctx.lineWidth = 4; ctx.lineJoin = 'round';
+    ctx.beginPath();
+    if (it.k === 'sock') { ctx.moveTo(-w / 2 + 12, -h / 2); ctx.lineTo(w / 2 - 22, -h / 2); ctx.lineTo(w / 2 - 22, h / 2 - 12); ctx.quadraticCurveTo(w / 2, h / 2 - 12, w / 2, h / 2); ctx.lineTo(-w / 2, h / 2); ctx.quadraticCurveTo(-w / 2, -h / 2, -w / 2 + 12, -h / 2); }
+    else if (it.k === 'hat') { ctx.moveTo(-w / 2, h / 2); ctx.lineTo(w / 2, h / 2); ctx.quadraticCurveTo(w / 2 - 8, -h / 2, 0, -h / 2); ctx.quadraticCurveTo(-w / 2 + 8, -h / 2, -w / 2, h / 2); }
+    else ctx.roundRect(-w / 2, -h / 2, w, h, Math.min(14, h / 2.2));
+    ctx.fill(); ctx.stroke();
+    ctx.strokeStyle = dark; ctx.lineWidth = 3.5; ctx.beginPath();
+    if (it.k === 'shirt' || it.k === 'hoodie' || it.k === 'sweater') { ctx.moveTo(-12, -h / 2 + 3); ctx.lineTo(0, -h / 2 + 12); ctx.lineTo(12, -h / 2 + 3); }
+    else if (it.k === 'jeans') { ctx.moveTo(0, -h / 2 + 6); ctx.lineTo(0, h / 2 - 3); }
+    else if (it.k === 'scarf' || it.k === 'towel') { for (const sx of [-w / 2 + 14, w / 2 - 14]) { ctx.moveTo(sx, -h / 2 + 4); ctx.lineTo(sx, h / 2 - 4); } }
+    else if (it.k === 'hat') { ctx.moveTo(-w / 2 + 8, h / 2 - 7); ctx.lineTo(w / 2 - 8, h / 2 - 7); }
+    else { ctx.moveTo(-w / 2 + 8, -h / 2 + 8); ctx.lineTo(w / 2 - 30, -h / 2 + 8); }
+    ctx.stroke(); ctx.restore();
+  }
+
+  Shorts.play({
+    title: 'The Chair',
+    accent: PAL.blue,
+    voice: { pitch: 1 },
+    loopAfter: LOOP,
+    // the line flat under the chair, even while Bo stands on its seat
+    ground: (x, t) => onSeat(t) && Math.abs(x - CHAIR) < 62 ? SEAT : GROUND,
+    lineAt: () => GROUND,
+    captions: [
+      [7.5, 8.7, 'later.'],
+      [11.2, 12.4, 'later...'],
+      [15.4, 17.3, 'later. later. *later.*'],
+      [20.8, 22.1, 'where is my *sock?*'],
+      [23.6, 24.8, '...'],
+      [27.4, 29.2, 'one thing *at a time.*'],
+      [30.9, 32.2, 'oh! *a chair.*'],
+      [33.8, 38.0, 'put it away now. *future you says thanks.*'],
+      [40.3, 41.1, '*nice.*'],
+    ],
+    init(S) {
+      S.bo = S.addChar({ x: 0, walk: V });
+      // every piece of laundry: where it is (basket, head, toss, pile, loose, mound, put, tuft, gone)
+      S.items = CLOTHES.map((c, i) => ({ ...c, i, state: 'basket', x: BASKET, y: GROUND - 40, rot: 0, t0: 0 }));
+      S.pile = []; S.sway = { x: 0, v: 0 }; S.doors = { x: 0, v: 0 }; S.eyes = 0; S.lastDay = 1; S.calT = 0;
+    },
+    update(S, t, dt) {
+      const bo = S.bo, top = bo.top(), its = S.items;
+      const pick = i => () => { const it = its[i]; Object.assign(it, { state: 'lift', t0: t, fx: BASKET, fy: GROUND - 40 }); S.sfx('pop', { pitch: 560 + i * 40, g: .08 }, BASKET); };
+      const toss = i => () => { const it = its[i]; Object.assign(it, { state: 'toss', t0: t, fx: top.x, fy: top.y - 20, slot: S.pile.length }); S.pile.push(it); S.sfx('toss', { pitch: 300 + i * 25 }, bo.x); };
+      const steps = [
+        [0, { x: SPOT, speed: 210, accel: 300 }],                               // home with an armful of clean laundry
+        [5.6, { lookX: -.6, lookY: .5 }],
+        [OPEN, { x: CHAIR - 92, speed: 90, accel: 300 }],
+        [EYES + .1, { eye: 'wide', lookX: .8, lookY: -.6, tilt: -.1 }],          // ...did that pile just blink?
+        [EYES + .9, { eye: 'flat', tilt: 0, lookY: -.3 }],
+        [20.2, { eye: 'open', lookX: -.8, lookY: .6 }],                         // the basket is empty
+        [20.8, { lookX: .8, lookY: -.4 }],                                       // so the sock is... in there
+        [21.6, { crouch: .25, eye: 'squeeze' }], [DIVE, { crouch: 0 }], [DIVE, { x: 1122 }], [DIVE, () => { bo.jump(230, -640); S.sfx('whoosh', { d: .4 }, bo.x); }],
+        [BURY + .5, { eye: 'squeeze' }], [23.4, { eye: 'flat' }], [24.3, { eye: 'open', lookX: 0, lookY: 0 }],
+        [POP - .2, { crouch: .3 }], [POP, { crouch: 0, eye: 'wide' }], [POP, () => { bo.jump(0, -600); S.sfx('boing', { pitch: 240, g: .08 }, bo.x); }],
+        [25.9, { eye: 'flat', lookX: -.4, lookY: .5 }], [25.9, () => S.sfx('breathIn', { d: 1.0 }, bo.x)],
+        [26.6, { eye: 'squeeze', lookY: 0 }], [27.0, { eye: 'happy', lookX: .6 }],
+        [SHUT + .2, { eye: 'open', lookX: .4, lookY: .2 }],
+        [30.8, { eye: 'wide', lookX: .6, lookY: .4 }], [31.4, { eye: 'happy' }],
+        [SIT - .55, { crouch: .2 }], [SIT - .3, { crouch: 0 }], [SIT - .3, { x: CHAIR, speed: 60 }], [SIT - .3, () => bo.jump(205, -620)],   // up onto the seat
+        [SIT + .5, { sit: 1, eye: 'happy', lookX: 0, lookY: 0, tilt: .04 }],
+        [OFF - .4, { sit: 0, tilt: 0, crouch: .2 }], [OFF, { crouch: 0, x: 1335, speed: 100 }], [OFF, () => bo.jump(250, -480)],
+        [39.0, { eye: 'wide', lookY: -1, lookX: -.3 }],                          // ...the sock is still up there
+        [39.4, { eye: 'flat', lookY: -.6 }],
+        [SOCK - .3, { crouch: .25, eye: 'squeeze' }], [SOCK, { crouch: 0, eye: 'happy', lookX: .5, lookY: 0 }],
+        [SOCK, () => { bo.jump(0, -300); const it = its[1]; Object.assign(it, { state: 'flick', t0: t, fx: bo.tuft.x, fy: bo.tuft.y }); S.sfx('toss', { pitch: 420 }, bo.x); }],
+        [41.1, { crouch: .2 }], [41.35, { crouch: 0 }], [41.35, () => bo.jump(0, -430)],
+        [LEAVE, { x: 1e6, speed: V, accel: 450, eye: 'open', lookX: 0, lookY: 0 }],
+        [LEAVE + .1, () => S.sfx('hum', { notes: [2, 4, 5, 7, 5], gap: .3, g: .04 }, bo.x)],
+      ];
+      // every piece: hop it up out of the basket, eye the wardrobe (day one only), then drop it on the chair
+      TOSS.forEach((at, i) => {
+        const lead = i === 0 ? 1.7 : .5;
+        steps.push([at - lead - .25, { crouch: .2, eye: 'open', lookX: -.6, lookY: .4 }], [at - lead, { crouch: 0 }], [at - lead, () => { bo.jump(0, -300); pick(i)(); }]);
+        if (i === 0) steps.push([at - 1.0, { lookX: 1, lookY: -.1, eye: 'open' }], [at - .45, { eye: 'flat', lookX: .5 }]);   // the wardrobe... nah
+        steps.push([at - .2, { crouch: .15, lookX: .6, lookY: 0 }], [at, { crouch: 0, eye: 'happy' }], [at, toss(i)], [at + .35, { eye: 'open' }]);
+      });
+      NIGHTS.forEach(([a, b]) => steps.push([a + .1, { eye: 'closed', crouch: .06, lookX: 0, lookY: 0 }], [b - .3, { eye: 'open', crouch: 0 }]));
+      S.plan(bo, t, steps.sort((p, q) => p[0] - q[0]));
+
+      // nights: the lamp clicks off, crickets, a calendar page in the morning
+      NIGHTS.forEach(([a, b], k) => {
+        if (t > a) S.once('off' + k, () => { S.sfx('tock', { f: 1500, gain: .5 }, WIN); S.sfx('night', { d: b - a - .3, g: 1.6 }); });
+        if (t > b - .45) S.once('on' + k, () => { S.sfx('tock', { f: 1500, gain: .5 }, WIN); S.sfx('tweet', { k: 1.05, g: .7 }, WIN); });
+      });
+      const day = dayAt(t); if (day !== S.lastDay) { S.lastDay = day; S.calT = t; S.sfx('flip', {}, CAL); }
+
+      // the laundry
+      for (const it of its) {
+        if (it.state === 'lift' || it.state === 'toss') {
+          const u = clamp((t - it.t0) / (it.state === 'lift' ? .3 : .45)), sl = it.state === 'toss' ? pileXY(it.slot, t) : { x: top.x, y: top.y - 24 };
+          it.x = lerp(it.fx, sl.x, sine(u)); it.y = lerp(it.fy, sl.y, sine(u)) - Math.sin(Math.PI * u) * (it.state === 'toss' ? 120 : 70); it.rot = it.state === 'toss' ? sl.rot * u + Math.sin(Math.PI * u) * .6 : 0;
+          if (u >= 1) {
+            if (it.state === 'lift') it.state = 'head';
+            else { it.state = 'pile'; S.sway.v += 14 + it.slot * 4; S.sfx('rustle', { n: 2 }, CHAIR); S.sfx('flip', { gain: .7 }, CHAIR); }
+          }
+        } else if (it.state === 'head') { it.x = top.x; it.y = top.y - 24; it.rot = bo.rot.x; }
+        else if (it.state === 'pile') { const p = pileXY(it.slot, t); it.x = p.x; it.y = p.y; it.rot = p.rot; }
+      }
+      const n = S.pile.length;
+      spring(S.sway, n > 5 ? Math.sin(t * 2.1) * (n - 5) * 3 : 0, 30, .3, dt);
+      // folded things squash down onto each other a little, so the pile stacks a bit lower than their heights
+      function pileXY(j, tt) { let y = SEAT - 4; for (let k = 0; k < j; k++) y -= S.pile[k].h * .82; return { x: CHAIR - 8 + (hash(j * 2.7) - .5) * 26 + S.sway.x * (j + 1) * .22, y: y - S.pile[j].h / 2, rot: (hash(j * 1.3) - .5) * .26 + S.sway.x * .004 * (j + 1) }; }
+      // the pile wakes up: two eyes blink out of the clothes
+      if (t > EYES) { S.once('eyes', () => { S.sfx('pop', { pitch: 300, g: .07 }, CHAIR); S.sfx('pop', { pitch: 340, g: .06 }, CHAIR + 1); }); S.eyes = Math.min(1, S.eyes + dt * 5); }
+      // the dive: the whole pile comes down; four pieces bury Bo, the rest land on the floor
+      if (t > BURY) S.once('avalanche', () => {
+        S.eyes = 0; S.shake(4); bo.q.v += 3;
+        S.sfx('rustle', { n: 8 }, CHAIR); S.sfx('thump', { g: .6 }, CHAIR); S.sfx('poof', {}, CHAIR); S.sfx('squish', {}, bo.x);
+        let m = 0;
+        S.pile.forEach((it, j) => {
+          if (it.i === 1) { Object.assign(it, { state: 'mound', mx: 4, my: -6 }); return; }        // the sock lands right on top
+          if (m < 4) { const o = [[-46, 30], [26, 2], [-12, 62], [52, 70]][m++]; Object.assign(it, { state: 'fall', mx: o[0], my: o[1], vx: (hash(j) - .5) * 300, vy: -300 - hash(j + .5) * 200, spin: (hash(j + .2) - .5) * 9, toMound: true }); }
+          else Object.assign(it, { state: 'fall', vx: (j % 2 ? 1 : -1) * (180 + hash(j) * 220), vy: -420 - hash(j + .3) * 260, spin: (hash(j + .7) - .5) * 12 });
+        });
+        S.pile = [];
+      });
+      for (const it of its) {
+        if (it.state === 'fall') {
+          it.vy += GRAV * .8 * dt; it.x += it.vx * dt; it.y += it.vy * dt; it.rot += it.spin * dt;
+          if (it.toMound && it.vy > 0 && it.y > top.y + it.my) { it.state = 'mound'; S.sfx('flip', { gain: .5 }, it.x); }
+          else if (it.y > GROUND - it.h / 2) { it.y = GROUND - it.h / 2; it.state = 'floor'; it.rot = (hash(it.i * 4.1) - .5) * .25; S.sfx('flip', { gain: .5 }, it.x); }
+        } else if (it.state === 'mound') { it.x = top.x + it.mx; it.y = top.y + it.my; it.rot = (hash(it.i) - .5) * .5; }
+      }
+      // Bo pops out: the mound flies off (the sock catches on the tuft)
+      if (t > POP) S.once('popout', () => {
+        S.sfx('rustle', { n: 5 }, bo.x); S.sfx('whoosh', { d: .4 }, bo.x);
+        its.forEach((it, j) => { if (it.state !== 'mound') return; if (it.i === 1) { it.state = 'tuft'; return; } Object.assign(it, { state: 'fall', toMound: false, vx: (it.mx < 0 ? -1 : 1) * (170 + hash(j) * 140), vy: -460, spin: (hash(j) - .5) * 10 }); });
+      });
+      if (its[1].state === 'tuft') { const T = bo.tuft; its[1].x = T.x - 4; its[1].y = T.y - 6; its[1].rot = -.4 + bo.rot.x; }
+      // one thing at a time: each piece hops from the floor into the wardrobe, a note higher each time
+      spring(S.doors, (t > OPEN && t < SHUT) || (t > SOCK + .1 && t < SOCK + .55) ? 1 : 0, 90, .5, dt);
+      if (t > OPEN) S.once('open', () => { S.sfx('creak', {}, WARD); S.sfx('tock', { f: 520, gain: .6 }, WARD); });
+      if (t > SHUT) S.once('shut', () => { S.sfx('tock', { f: 640 }, WARD); S.sfx('tock', { f: 760, gain: .7 }, WARD + 1); });
+      its.filter(it => it.i !== 1).forEach((it, k) => {
+        const at = PUT0 + k * PUT_EVERY;
+        if (t > at && it.state === 'floor') {
+          Object.assign(it, { state: 'put', t0: t, fx: it.x, fy: it.y, frot: it.rot });
+          S.sfx('pluck', { n: k, oct: 1, g: .07 }, WARD); S.sfx('rustle', { n: 1 }, it.x); bo.q.v -= 1.2;
+        }
+      });
+      for (const it of its) {
+        if (it.state !== 'put' && it.state !== 'flick') continue;
+        const u = clamp((t - it.t0) / (it.state === 'flick' ? .5 : .42)), tx = WARD + (hash(it.i) - .5) * 40, ty = GROUND - 170;
+        it.x = lerp(it.fx, tx, sine(u)); it.y = lerp(it.fy, ty, sine(u)) - Math.sin(Math.PI * u) * 150; it.rot = (it.frot || 0) * (1 - u) + u * 3; it.k2 = 1 - outCubic(seg(u, .7, 1));
+        if (u >= 1) { it.state = 'gone'; if (it.i === 1) { S.sfx('tock', { f: 700 }, WARD); S.sfx('tock', { f: 820, gain: .7 }, WARD + 1); } }
+      }
+      if (t > SHUT + .25) S.once('reveal', () => { S.sfx('sparkle', { n: 7 }, CHAIR); S.sfx('chime', { n: 4, g: .09 }, CHAIR); });
+      if (t > SIT + .5) S.once('sit', () => S.sfx('swell', { root: 392 }));
+      if (t > SOCK + .6) S.once('nice', () => S.sfx('laugh', { n: 3 }, bo.x));
+      S.once('amb', () => S.sfx('birds', { d: LOOP, g: .5 }));
+
+      // camera: the room, then closer for the burial and the chair
+      if (t > 4 && t < LEAVE + .3) {
+        if (t > BURY - .3 && t < 26.4) { S.camGoal.x = bo.x + 60; S.camGoal.z = 1.05; }
+        else if (t > SIT - 1 && t < OFF) { S.camGoal.x = CHAIR + 30; S.camGoal.z = 1.02; }
+        else { S.camGoal.x = 1195; S.camGoal.z = .88; }
+        S.camGoal.kx = 1.6; S.camGoal.kz = 1.3;
+      }
+    },
+    drawSky(S, ctx, t, v) {
+      for (let i = 0; i < 3; i++) {
+        const W = v.right - v.left + 400, x = v.left - 200 + (1 - ((t / S.T + i / 3 + .3) % 1)) * W;
+        cloud(ctx, x, v.top + (v.bottom - v.top) * (.17 + i * .06), 9, { X: '#ebe8f4' });
+      }
+    },
+    drawBack(S, ctx, t) {
+      const J = i => S.J(i), nt = nightAt(t);
+      // the bedroom, cut open: warm by day, blue by night
+      ctx.fillStyle = mix('#fff2dc', '#3f4577', nt); ctx.fillRect(HOUSE_A, TOP, HOUSE_B - HOUSE_A, GROUND - TOP);
+      // the window: sky outside, sun by day and moon by night
+      ctx.save(); ctx.beginPath(); ctx.rect(WIN - 80, TOP + 60, 160, 130); ctx.clip();
+      ctx.fillStyle = mix('#bfe6ff', '#24295a', nt); ctx.fillRect(WIN - 80, TOP + 60, 160, 130);
+      sun(ctx, WIN + 30, TOP + 120 + nt * 120, 6, { X: PAL.orange }, 1 - nt);
+      moon(ctx, WIN - 20, TOP + 220 - nt * 110, 6, { X: '#fff6c8' }, nt);
+      ctx.restore();
+      ctx.lineWidth = 5; ctx.strokeStyle = '#111'; ctx.strokeRect(WIN - 80, TOP + 60, 160, 130);
+      ctx.beginPath(); ctx.moveTo(WIN, TOP + 60); ctx.lineTo(WIN, TOP + 190); ctx.stroke();
+      // walls, door gaps, roof
+      ctx.lineWidth = 6;
+      ctx.beginPath(); ctx.moveTo(HOUSE_A, GROUND - 250); ctx.lineTo(HOUSE_A + J(1) * .3, TOP); ctx.lineTo(HOUSE_B, TOP); ctx.lineTo(HOUSE_B + J(2) * .3, GROUND - 250); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(HOUSE_A - 40, TOP); ctx.lineTo((HOUSE_A + HOUSE_B) / 2, TOP - 90); ctx.lineTo(HOUSE_B + 40, TOP); ctx.stroke();
+      // the calendar: one page a day
+      const ck = S.calT ? seg(t, S.calT, S.calT + .35) : 1, day = dayAt(t);
+      ctx.fillStyle = '#fff'; ctx.lineWidth = 4; ctx.fillRect(CAL - 36, TOP + 80, 72, 80); ctx.strokeRect(CAL - 36, TOP + 80, 72, 80);
+      ctx.fillStyle = PAL.red; ctx.fillRect(CAL - 36, TOP + 80, 72, 18); ctx.strokeRect(CAL - 36, TOP + 80, 72, 18);
+      sprite(ctx, SPRITES['d' + day], CAL, TOP + 130, 6, { X: '#111' });
+      if (ck < 1) { ctx.save(); ctx.translate(CAL, TOP + 98); ctx.scale(1, 1 - ck); ctx.fillStyle = '#fff'; ctx.fillRect(-36, 0, 72, 62); ctx.strokeRect(-36, 0, 72, 62); sprite(ctx, SPRITES['d' + (day - 1)], 0, 32, 6, { X: '#111' }); ctx.restore(); }
+      // the laundry basket (empties as Bo takes things out)
+      const left = S.items.filter(it => it.state === 'basket').length;
+      ctx.fillStyle = mix(PAL.peach, PAL.brown, .25); ctx.lineWidth = 5;
+      for (let k = 0; k < Math.min(left, 4); k++) { ctx.fillStyle = CLOTHES[CLOTHES.length - 1 - k].c; ctx.beginPath(); ctx.ellipse(BASKET - 30 + k * 20, GROUND - 82 + (k % 2) * 5, 24, 13, (k - 1.5) * .2, 0, Math.PI * 2); ctx.fill(); ctx.stroke(); }
+      ctx.fillStyle = mix(PAL.peach, PAL.brown, .25);
+      ctx.beginPath(); ctx.moveTo(BASKET - 62, GROUND - 76); ctx.lineTo(BASKET + 62, GROUND - 76); ctx.lineTo(BASKET + 50, GROUND); ctx.lineTo(BASKET - 50, GROUND); ctx.closePath(); ctx.fill(); ctx.stroke();
+      ctx.lineWidth = 3; ctx.strokeStyle = mix(PAL.brown, '#111', .3);
+      for (let k = -2; k <= 2; k++) { ctx.beginPath(); ctx.moveTo(BASKET + k * 22, GROUND - 70); ctx.lineTo(BASKET + k * 19, GROUND - 6); ctx.stroke(); }
+      ctx.beginPath(); ctx.moveTo(BASKET - 56, GROUND - 40); ctx.lineTo(BASKET + 56, GROUND - 40); ctx.stroke();
+      // the wardrobe, right there the whole time
+      const d = S.doors.x;
+      ctx.strokeStyle = '#111'; ctx.lineWidth = 5; ctx.fillStyle = '#5b3d2c';
+      ctx.fillRect(WARD - 78, GROUND - 300, 156, 300); ctx.strokeRect(WARD - 78, GROUND - 300, 156, 300);
+      ctx.fillStyle = PAL.brown;
+      for (const s of [-1, 1]) {
+        const w = 78 * (1 - d * .78), x0 = s < 0 ? WARD - 78 - d * 50 : WARD + 78 + d * 50 - w;
+        ctx.fillRect(x0, GROUND - 300, w, 290); ctx.strokeRect(x0, GROUND - 300, w, 290);
+        ctx.fillStyle = '#ffd27a'; ctx.beginPath(); ctx.arc(s < 0 ? x0 + w - 12 : x0 + 12, GROUND - 160, 5, 0, Math.PI * 2); ctx.fill(); ctx.stroke(); ctx.fillStyle = PAL.brown;
+      }
+      ctx.fillStyle = PAL.brown; ctx.fillRect(WARD - 90, GROUND - 316, 180, 18); ctx.strokeRect(WARD - 90, GROUND - 316, 180, 18);
+      // the chair (under there somewhere)
+      ctx.fillStyle = mix(PAL.orange, PAL.brown, .45); ctx.lineWidth = 5;
+      ctx.beginPath(); ctx.moveTo(CHAIR - 50, SEAT + 12); ctx.lineTo(CHAIR - 54, GROUND + 2); ctx.moveTo(CHAIR + 48, SEAT + 12); ctx.lineTo(CHAIR + 52, GROUND + 2); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(CHAIR + 50, SEAT); ctx.lineTo(CHAIR + 58, SEAT - 130); ctx.stroke();
+      ctx.beginPath(); ctx.roundRect(CHAIR + 40, SEAT - 140, 34, 30, 8); ctx.fill(); ctx.stroke();
+      ctx.beginPath(); ctx.roundRect(CHAIR - 64, SEAT - 2, 128, 16, 6); ctx.fill(); ctx.stroke();
+      // the clothes on the floor and in the pile (the pile is drawn behind Bo)
+      for (const it of S.items) if (it.state === 'pile' || it.state === 'floor' || it.state === 'toss') drawCloth(ctx, it, it.x, it.y, it.rot);
+      // ...and the pile's eyes
+      if (S.eyes > .01 && S.pile.length) {
+        const p = S.pile[S.pile.length - 2] || S.pile[0], k = outBack(S.eyes), blink = (t % 2.7) > 2.55, lx = clamp((S.bo.x - CHAIR) / 200, -1, 1) * 3;
+        for (const s of [-1, 1]) {
+          ctx.fillStyle = '#fff'; ctx.lineWidth = 4; ctx.beginPath(); ctx.ellipse(p.x + s * 18, p.y - 6, 11 * k, (blink ? 2 : 12) * k, 0, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+          if (!blink) { ctx.fillStyle = '#111'; ctx.beginPath(); ctx.arc(p.x + s * 18 + lx, p.y - 4, 4.5 * k, 0, Math.PI * 2); ctx.fill(); }
+        }
+      }
+      // night falls over the whole room (Bo too)
+      S.night = nt;
+    },
+    drawFront(S, ctx, t, v) {
+      for (const it of S.items) {
+        if (it.state === 'head' || it.state === 'lift' || it.state === 'mound' || it.state === 'tuft' || it.state === 'fall') drawCloth(ctx, it, it.x, it.y, it.rot, it.state === 'tuft' ? .8 : 1);
+        if (it.state === 'put' || it.state === 'flick') drawCloth(ctx, it, it.x, it.y, it.rot, it.k2 ?? 1);
+      }
+      if (S.night > .01) { ctx.save(); ctx.globalAlpha = S.night * .42; ctx.fillStyle = '#1d2250'; ctx.fillRect(HOUSE_A, TOP, HOUSE_B - HOUSE_A, GROUND - TOP + 4); ctx.restore(); }
+      // a sparkle on the chair when it's found again
+      const rk = seg(t, SHUT + .25, SHUT + .6) * (1 - seg(t, SIT - .4, SIT));
+      if (rk > 0) for (let i = 0; i < 4; i++) sprite(ctx, SPRITES.sparkle, CHAIR - 50 + i * 34, SEAT - 40 - ((t * 40 + i * 13) % 40), 2.6, { X: PAL.orange }, rk * Math.max(0, Math.sin(t * 5 + i * 2)));
+    },
+  });
+})();

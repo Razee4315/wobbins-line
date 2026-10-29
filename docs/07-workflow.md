@@ -20,6 +20,14 @@ Prints each loop's length and seam error, which parts of Wobbin's state differ a
 any other character still within 650 units of Wobbin at the seam. All 33 take about 17 seconds.
 It checks the simulation only; use the contact sheets below to check how it looks.
 
+## Characters touching, and beats that went missing
+
+```bash
+node tools/overlap.js                  # characters overlapping in the 9:16 frame (add --wide for 16:9)
+node tools/events.js save              # record every episode's sound beats (do this before an engine change)
+node tools/events.js diff              # after: which beats vanished, appeared or moved
+```
+
 ## Check an episode properly (the dev tools)
 
 `tools/dev_server.py` serves the project and saves PNGs/MP4s that the page POSTs to it, so we can make contact sheets and renders without downloads.

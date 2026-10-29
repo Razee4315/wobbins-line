@@ -5,7 +5,7 @@
   // little more at each one. The biggest picture slips, and behind it is a friend having a rainy day.
   // Button: Bo turns round and proudly pops up a picture of its own muddy, rainy day. The friends'
   // pictures bounce, hearts pour out of Bo's picture, Zu cheers "best one yet!", and off Bo goes.
-  const { PAL, SPRITES, sprite, lerp, seg, sine, outBack, clamp, hash, spring, mix, GROUND } = Shorts;
+  const { PAL, SPRITES, sprite, cloud, lerp, seg, sine, outBack, clamp, hash, spring, mix, GROUND } = Shorts;
   const V = 130, REVEAL = 20.6;
   const SHOW_X = 1800, PIC = 33.0, CHEER = 33.7, TOSS = 35.85, LEAVE = 36.4;
   const C = { S: '#9ad7ff', Y: PAL.yellow, G: PAL.green, N: PAL.brown, B: PAL.blue, W: '#fff', P: PAL.peach, V: PAL.violet, R: PAL.red, O: PAL.orange, K: '#a7abb2', D: '#7a4a2a' };
@@ -102,7 +102,7 @@
     drawSky(S, ctx, t, v) {
       for (let i = 0; i < 3; i++) {
         const W = v.right - v.left + 400, x = v.left - 200 + (1 - ((t / S.T + i / 3 + .1) % 1)) * W;
-        sprite(ctx, SPRITES.cloud, x, v.top + (v.bottom - v.top) * (.25 + i * .06), 9, { X: '#ebe8f4' });
+        cloud(ctx, x, v.top + (v.bottom - v.top) * (.25 + i * .06), 9, { X: '#ebe8f4' });
       }
     },
     drawBack(S, ctx, t) {

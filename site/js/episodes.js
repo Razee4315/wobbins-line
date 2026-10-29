@@ -1,6 +1,13 @@
 /* Every episode of Wobbin's Line. Numbered in release order; the page lists seasons newest first.
    poster: the moment (seconds) used as the card's still frame and where hover previews start. */
 window.WL_SEASONS = [
+  { n: 8, title: 'Daily routine', episodes: [
+    { id: 'the-chair', title: 'The Chair', theme: 'putting it away', accent: '#3b7dd8', poster: 18.2, line: 'Clean laundry goes on the chair, not in the wardrobe right next to it. “later.” By day four the pile blinks.', quote: 'put it away now. future you says thanks.' },
+    { id: 'two-minutes', title: 'Two Minutes', theme: 'the tiny task you dread', accent: '#ffa300', poster: 24.0, line: 'The lamp flickers, new bulbs sit right beside it, and a cloud of dread grows for days. The fix takes 0:02.', quote: 'it took two seconds. the dread took two weeks.' },
+    { id: 'did-i-lock-it', title: 'Did I Lock It?', theme: 'checking again', accent: '#f53b57', poster: 15.2, line: 'Locked. Walk away. Wait... Back again, and again, until a red elastic of worry yanks Wobbin home.', quote: 'you checked. you can let it go.' },
+    { id: 'water-yourself', title: 'Water Yourself', theme: 'looking after yourself', accent: '#29adff', poster: 24.6, line: 'Wobbin waters the little plant every day and forgets the glass of water on the table. The plant notices.', quote: 'you need watering too.' },
+    { id: 'slow-walker', title: 'Slow Walker', theme: 'slowing down for others', accent: '#ffa300', poster: 13.3, line: 'One line, no overtaking, and someone very slow in front. “excuse me...” Then Wobbin looks where they look.', quote: 'some days, the slow lane has the best view.' },
+  ] },
   { n: 7, title: 'Heavy things', episodes: [
     { id: 'just-in-case', title: 'Just in Case', theme: 'overpacking life', accent: '#ffa300', poster: 18.0, line: 'An umbrella, a sweater, a lamp, a duck, a ladder. All on Wobbin’s head, all just in case.', quote: 'pack light. keep one umbrella.' },
     { id: 'heavy', title: 'Heavy', theme: 'asking for help', accent: '#3b7dd8', poster: 29.6, line: 'The kite is stuck. “no no, I’ve got it!” Jump, crate, so close. Then, quietly: “could you help?”', quote: 'asking for help isn’t weak. it’s how we reach higher.' },
@@ -49,7 +56,7 @@ window.WL_SEASONS = [
     { id: 'the-gap', title: 'The Gap', theme: 'courage', accent: '#3b7dd8', poster: 20.0, line: 'Stuck at the edge, until the line behind starts to vanish.', quote: 'jump before the ground decides for you.' },
   ] },
 ];
-// release-order episode numbers (Season 1 = EP 01–03 … Season 7 = EP 29–33)
+// release-order episode numbers (Season 1 = EP 01–03 … Season 8 = EP 34–38)
 (() => {
   let n = 0;
   [...window.WL_SEASONS].reverse().forEach(s => s.episodes.forEach(e => { e.ep = ++n; e.season = s.n; }));

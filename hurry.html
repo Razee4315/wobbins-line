@@ -6,14 +6,14 @@
 <title>Hurry</title>
 </head>
 <body>
-<script src="sfx.js?v=8"></script>
-<script src="engine2.js?v=8"></script>
+<script src="sfx.js?v=10"></script>
+<script src="engine2.js?v=10"></script>
 <script>
 // A ticking clock hounds Bo from a walk to a jog to a sprint, the world streaking by,
 // until Bo trips. Sitting in the grass, Bo meets a snail and a butterfly.
 // Button: as Bo strolls on, the snail comes zooming up from behind, speed lines and all, and
 // overtakes. Bo stops, stares, deadpan... then laughs, hops, and strolls on anyway.
-const { PAL, SPRITES, sprite, lerp, seg, sine, outBack, clamp, hash, spring, GROUND, BODY_H } = Shorts;
+const { PAL, SPRITES, sprite, butterfly, cloud, lerp, seg, sine, outBack, clamp, hash, spring, GROUND, BODY_H } = Shorts;
 const V = 130, PEB = 3900, ZONE_END = 3700, STOP = 14.78;   // STOP: when Bo comes to rest after the trip
 // the button, in seconds after STOP: the snail floors it, Bo reacts, Bo walks on
 const ZOOM = 10.7, LEAVE = 14.6;
@@ -53,7 +53,8 @@ Shorts.play({
 
     // trip on the pebble, tumble twice, end up sitting
     if (bo.x >= PEB - 30) S.once('trip', () => {
-      bo.jump(bo.vx * .62, -620, 13); S.shake(4); S.sfx('trip', {}, bo.x);
+      bo.jump(bo.vx * .62, -620, 13, false); S.shake(4);   // a trip: no wind-up
+      S.sfx('trip', {}, bo.x);
       ck.fly = { x: ck.x.x, y: ck.y.x, vx: bo.vx * .9, vy: -700 };
     });
     if (S.fired.has('trip') && bo.lands === 1) S.once('bounce', () => { bo.jump(bo.vx * .5, -360, 9); S.shake(3); });
@@ -117,7 +118,7 @@ Shorts.play({
     // clouds drift faster as Bo speeds up; they always keep the loop's rhythm
     for (let i = 0; i < 3; i++) {
       const W = v.right - v.left + 400, x = v.left - 200 + (1 - ((t / S.T * 2 + i / 3 + .15) % 1)) * W;
-      sprite(ctx, SPRITES.cloud, x, v.top + (v.bottom - v.top) * (.25 + i * .06), 9, { X: '#ebe8f4' });
+      cloud(ctx, x, v.top + (v.bottom - v.top) * (.25 + i * .06), 9, { X: '#ebe8f4' });
     }
   },
   drawBack(S, ctx, t, v) {
@@ -202,8 +203,7 @@ Shorts.play({
         const inK = sine(seg(ts, 3, 4)), outK = sine(seg(ts, 7.5, 9));
         const x = lerp(T.x + 300, T.x, inK) + outK * 420 + Math.sin(ts * 6) * 20 * (1 - inK + outK);
         const y = lerp(T.y - 260, T.y - 10, inK) - outK * 420;
-        const flap = ts > 4 && ts < 7.5 ? Math.floor(ts * 3) % 3 === 0 : Math.floor(t * 12) % 2;
-        sprite(ctx, flap ? SPRITES.flyA : SPRITES.flyB, x, y, 4.2, { X: PAL.pink, B: '#111' });
+        butterfly(ctx, x, y, 4.2, { X: PAL.pink }, 1, ts > 4 && ts < 7.5 ? 1.4 : 12);
       }
     }
   },

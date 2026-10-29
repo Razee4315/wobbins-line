@@ -95,14 +95,19 @@ The walk-off tails are the easiest place to trim later.
 
 ## Still to do, in order
 
-### 2 · Hook in the first second
+### 2 · Hook in the first second — done 2026-10-30
+Players and MP4 exports now open 0.7 s before the first caption (`show.hook`, override with
+`story.hook`); the soundtrack is rotated to match. Below is the original note.
 - Show the odd thing in the first frame (the gap, the cloud, the line of people), and the first
   caption by 0.5–1 s. The empty walk-in should be under 1.5 s.
 - Option that keeps the loop: export each MP4 **starting at the hook** (e.g. 5 s in) and wrapping
   around. The walk-off then flows into the opening, so the video ends where it begins and people
   watch it twice. Needs a `start` offset in `exportMP4` (video and the soundtrack buffer).
 
-### 3 · More life in the acting (engine)
+### 3 · More life in the acting (engine) — mostly done 2026-10-30
+Done: the brow, takes (stretch, ink lines, camera lean-in), anticipation before jumps, step and turn
+squash, eye follow-through. Still open: walk moods and idle fidgets (they change the walk, so each
+loop needs re-checking), emotion marks beyond the take lines.
 - **A brow.** One short line above the eye would roughly triple Wobbin's range (worried, cheeky,
   determined, sceptical) for almost no drawing cost.
 - **Walk moods:** `cmd.mood` changes step lift, bob, cadence and lean: happy bounce, sad shuffle,

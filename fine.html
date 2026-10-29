@@ -6,8 +6,8 @@
 <title>Fine</title>
 </head>
 <body>
-<script src="sfx.js?v=8"></script>
-<script src="engine2.js?v=8"></script>
+<script src="sfx.js?v=10"></script>
+<script src="engine2.js?v=10"></script>
 <script>
 // Bo walks along, low. A friend is coming, so Bo pops on a painted smile. "how are you?" "fine!"
 // Another friend: "totally fine!" (the mask slips). Another: "never better!" (it cracks). Alone on a
@@ -15,7 +15,7 @@
 // the rain with Bo, and says the thing. The cloud clears.
 // Button: where the cloud was, a little rainbow. Bo's real smile (no mask needed); the friend
 // bumps shoulders with Bo in a little hop together, then skips off ahead and Bo follows, humming.
-const { PAL, SPRITES, sprite, lerp, seg, sine, outBack, clamp, hash, spring, mix, GROUND, GRAV, BODY_H } = Shorts;
+const { PAL, SPRITES, sprite, sun, cloud, lerp, seg, sine, outBack, clamp, hash, spring, mix, GROUND, GRAV, BODY_H } = Shorts;
 const V = 110, BENCH = 2150, MASK_ON = 4.9, SLIP = 13.4, CRACK = 18.6, SIT = 22.0, OFF = 22.7, CLOUD = 23.2, RETURN = 25.6, CLEAR = 31.0, LEAVE = 36.4, LOOP = LEAVE + 8.7;   // bench and lamp out of view at the seam
 const STAND_UP = 33.4, BUMP = 34.3, BOW = [31.4, 37.4];   // the shoulder bump; the rainbow comes and goes
 const rainbowAt = t => sine(seg(t, BOW[0], BOW[0] + 1)) * (1 - sine(seg(t, BOW[1], BOW[1] + 1.2)));
@@ -50,12 +50,15 @@ Shorts.play({
     const bo = S.bo, c = bo.cmd, [pink, blue, orange] = S.fr;
     // friends: each walks up, says hi, and walks on past
     const moveTo = (f, x) => { const dx = x - f.x; f.x += dx; f.hx += dx; if (f.tuft) f.tuft.x += dx; for (const F of f.feet) { F.x += dx; F.fromX += dx; F.toX += dx; } };
-    const visit = (f, at, leaveAt, i) => {
-      if (t > at - 3.4) S.once('arrive' + i, () => { moveTo(f, bo.x + 820); f.leaveTo = null; });
-      if (t > at - 3.4 && t < leaveAt) Object.assign(f.cmd, { x: bo.x + 170, speed: 200, accel: 500, face: -1 });
+    // each friend stops a polite step from where Bo stops (not on Bo's nose while Bo is still walking)
+    const visit = (f, at, leaveAt, i, stop) => {
+      if (t > at - 3.4) S.once('arrive' + i, () => { moveTo(f, Math.max(bo.x + 820, stop + 700)); f.leaveTo = null; });
+      if (t > at - 3.4 && t < leaveAt) Object.assign(f.cmd, { x: stop + 176, speed: 200, accel: 500, face: -1 });
+      // ...and hops right over Bo to carry on its way (never walks through Bo)
+      if (t >= leaveAt) S.once('hopOver' + i, () => { f.jump(-650, -1050); S.sfx('whoosh', { d: .4, v: .45 }, f.x); });
       if (t >= leaveAt && t < RETURN) { f.leaveTo ??= bo.x - 2200; Object.assign(f.cmd, { x: f.leaveTo, speed: 150, accel: 450, face: -1, eye: 'happy' }); }
     };
-    visit(pink, 5.6, 8.9, 0); visit(blue, 11.2, 14.6, 1); visit(orange, 17.0, 20.0, 2);
+    visit(pink, 5.6, 8.9, 0, 600); visit(blue, 11.2, 14.6, 1, 1200); visit(orange, 17.0, 20.0, 2, 1800);
     S.plan(bo, t, [
       [0, { x: 600, speed: V, accel: 400, eye: 'sad', lookY: .3 }],
       [4.2, { lookX: .6, lookY: 0, eye: 'wide' }],                               // someone's coming!
@@ -78,8 +81,8 @@ Shorts.play({
       [CLEAR, { eye: 'happy', tilt: .14 }],
       [CLEAR, () => { S.sfx('swell', { root: 392 }); S.sfx('sparkle', { n: 8 }, bo.x); }],
       [32.0, { tilt: 0, lookY: -.8, lookX: .2 }],                              // a rainbow!
-      [STAND_UP, { sit: 0, tilt: 0, lookX: .5, lookY: 0, face: -1 }],
-      [BUMP - .25, { crouch: .2 }], [BUMP, { crouch: 0 }], [BUMP, () => bo.jump(-110, -380)],   // bump!
+      [STAND_UP, { sit: 0, tilt: 0, lookX: -.4, lookY: 0, face: 1 }],            // side by side, both facing the rainbow
+      [BUMP - .25, { crouch: .2 }], [BUMP, { crouch: 0 }], [BUMP, () => bo.jump(0, -380)],   // a happy hop, leaning in
       [BUMP + .35, { tilt: -.16 }], [BUMP + .8, { tilt: 0 }],
       [BUMP + .8, () => { S.sfx('laugh', { n: 3 }, bo.x); S.sfx('laugh', { n: 3, k: 1.3, g: .8 }, S.fr[0].x); }],
       [35.6, { face: 1, lookX: 0, crouch: .2 }], [35.85, { crouch: 0 }], [35.85, () => bo.jump(0, -400)],
@@ -88,16 +91,16 @@ Shorts.play({
     ]);
     // everyone stops to talk next to Bo, then leaves; the friend who notices comes back
     if (t > 7.0 && t < 7.5) pink.cmd.eye = 'happy';
-    if (t > 8.9) S.once('pinkWave', () => pink.jump(0, -300));
     if (t > RETURN) {
       S.once('pinkBack', () => moveTo(pink, BENCH - 900));
-      S.plan(pink, t, [[RETURN, { x: BENCH - 175, speed: 170, accel: 450, face: 1, eye: 'open', lookX: .5 }], [26.8, { sit: 1, eye: 'sad' }], [27.4, { eye: 'open' }], [29.6, { tilt: .12, eye: 'happy' }], [CLEAR, { eye: 'happy' }],
+      S.plan(pink, t, [[RETURN, { x: BENCH - 210, speed: 170, accel: 450, face: 1, eye: 'open', lookX: .5 }], [26.8, { sit: 1, eye: 'sad' }], [27.4, { eye: 'open' }], [29.6, { tilt: .12, eye: 'happy' }], [CLEAR, { eye: 'happy' }],
         [32.0, { tilt: 0, lookY: -.8, lookX: .3 }], [STAND_UP, { sit: 0, tilt: 0, lookY: 0, lookX: .5 }],
-        [BUMP - .25, { crouch: .2 }], [BUMP, { crouch: 0 }], [BUMP, () => pink.jump(110, -380)], [BUMP + .35, { tilt: -.16 }], [BUMP + .8, { tilt: 0 }],
+        [BUMP - .25, { crouch: .2 }], [BUMP, { crouch: 0 }], [BUMP, () => pink.jump(0, -380)], [BUMP + .35, { tilt: -.16 }], [BUMP + .8, { tilt: 0 }],
         [LEAVE - .3, { x: 1e6, face: 1, speed: 250, accel: 700, eye: 'happy', lookX: 0 }]]);
       if (t > BUMP + .25) S.once('bump', () => { S.sfx('thump', { g: .4 }, bo.x); S.sfx('pop', { pitch: 640, g: .07 }, bo.x); const top = bo.top(); S.burst((top.x + pink.top().x) / 2, top.y - 20, 5, [PAL.pink, PAL.orange], { speed: 170, gravity: -60, size: 18, life: 1.1, shape: 'heart' }); });
-      // skips off ahead (hops keep the run speed)
-      if (t > LEAVE + .2 && pink.mode === 'ground' && hash(Math.floor(t * 2.5)) > .7) S.once(`skip:${Math.floor(t * 2.5)}`, () => pink.jump(pink.vx, -300));
+      // leapfrogs Bo to lead the way, then skips off ahead (hops keep the run speed)
+      if (t > LEAVE - .3 && pink.mode === 'ground' && bo.x - pink.x > 0 && bo.x - pink.x < 205) S.once('frog', () => { pink.jump(640, -1050); S.sfx('whoosh', { d: .4, v: .5 }, pink.x); });
+      if (t > LEAVE + .2 && pink.mode === 'ground' && pink.x > bo.x + 150 && hash(Math.floor(t * 2.5)) > .7) S.once(`skip:${Math.floor(t * 2.5)}`, () => pink.jump(pink.vx, -300));
     }
     if (t > BOW[0] + .3) S.once('bow', () => S.sfx('arp', { notes: [5, 7, 9], gap: .1, g: .05 }));
     // the mask: pops on, slips, cracks, then falls off
@@ -118,10 +121,10 @@ Shorts.play({
   },
   drawSky(S, ctx, t, v) {
     const w = warm(t);
-    if (w > .02) sprite(ctx, SPRITES.sun, BENCH + 360, v.top + (GROUND - v.top) * .55 + (1 - w) * 60, 10, { X: PAL.orange }, w);
+    if (w > .02) sun(ctx, BENCH + 360, v.top + (GROUND - v.top) * .55 + (1 - w) * 60, 10, { X: PAL.orange }, w);
     for (let i = 0; i < 3; i++) {
       const W = v.right - v.left + 400, x = v.left - 200 + (1 - ((t / 42 + i / 3 + .3) % 1)) * W;
-      sprite(ctx, SPRITES.cloud, x, v.top + (v.bottom - v.top) * (.16 + i * .06), 9, { X: mix('#ebe8f4', '#ffd8bc', w) });
+      cloud(ctx, x, v.top + (v.bottom - v.top) * (.16 + i * .06), 9, { X: mix('#ebe8f4', '#ffd8bc', w) });
     }
   },
   drawBack(S, ctx, t) {

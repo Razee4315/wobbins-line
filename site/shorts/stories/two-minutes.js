@@ -1,0 +1,208 @@
+/* two-minutes: extracted from ../two-minutes.html by scripts/sync-shorts.py. Do not edit here. */
+(function () {
+  const Shorts = Object.assign(Object.create(window.Shorts), { play: story => { (window.WL_STORIES ||= {})['two-minutes'] = story; } });
+  // The lamp flickers. A box of new bulbs sits on the table right next to it. "tomorrow." Days go by in
+  // the window; the flicker gets worse, and a grumbly ink cloud of dread grows over the room. Bo stubs a
+  // toe in the dark. Bo cowers under the dread: "i'll do it... tomorrow." Then one breath, one hop, and
+  // the bulb is changed. A stopwatch: 0:02. The dread poofs. "...that's it?"
+  // Button: a little sticky note pops up on the wall (a letter to answer) and a tiny dread starts to
+  // sprout on it. Bo doesn't wait this time: hop, tick, "done." Off Bo goes, humming.
+  const { PAL, SPRITES, sprite, sun, moon, cloud, lerp, seg, sine, outBack, outCubic, clamp, hash, spring, mix, GROUND } = Shorts;
+  const V = 140, HOUSE_A = 760, HOUSE_B = 1640, TOP = GROUND - 400;
+  const CUSH = 980, LAMP = 1170, SIDE = 1325, WIN = 1480, NOTE = { x: 1290, y: TOP + 120 };
+  const DAYS = [[8.0, 9.5], [13.2, 14.7], [19.0, 20.5]];                   // the window spins a day round
+  const PICK = 25.9, FIX = 27.3, LIT = 27.6, TASK = 34.4, TICK = 35.6, LEAVE = 37.7, LOOP = LEAVE + 7.8;
+  const MAIL = ['XXXXXXX', 'XX...XX', 'X.X.X.X', 'X..X..X', 'XXXXXXX'];
+  // how dark the room is, how big the dread is, how likely the lamp is to be off at any moment
+  const darkAt = t => t > LIT ? .22 * (1 - seg(t, LIT, LIT + .6)) : ramp4(t, [[0, .18], [9.5, .3], [14.7, .55], [20.5, .72], [LIT, .72]]) * (1 - .8 * swoosh(t));
+  const dreadAt = t => t > LIT ? Math.max(0, 1 - (t - LIT) / .25) * 1.05 : ramp4(t, [[9.4, 0], [12.4, .3], [14.6, .42], [18.2, .64], [20.6, .78], [22.6, 1.02]]);
+  const offChance = t => t < 5 ? 0 : t > LIT - .1 ? 0 : t < 9.5 ? .22 : t < 14.7 ? .34 : t < 20.5 ? .48 : .66;
+  function ramp4(t, stops) { if (t <= stops[0][0]) return stops[0][1]; for (let i = 1; i < stops.length; i++) if (t <= stops[i][0]) return lerp(stops[i - 1][1], stops[i][1], sine(seg(t, stops[i - 1][0], stops[i][0]))); return stops[stops.length - 1][1]; }
+  function swoosh(t) { return DAYS.reduce((m, [a, b]) => Math.max(m, Math.sin(Math.PI * seg(t, a, b))), 0); }
+
+  Shorts.play({
+    title: 'Two Minutes',
+    accent: PAL.orange,
+    voice: { pitch: 1 },
+    loopAfter: LOOP,
+    captions: [
+      [6.3, 7.5, 'tomorrow.'],
+      [11.0, 12.4, 'tomorrow...'],
+      [16.0, 17.0, '*ow.*'],
+      [21.0, 22.8, "i'll do it... *tomorrow.*"],
+      [28.2, 29.3, "...that's *it?*"],
+      [29.8, 34.0, 'it took two seconds. *the dread took two weeks.*'],
+      [35.9, 36.7, '*done.*'],
+    ],
+    init(S) {
+      S.bo = S.addChar({ x: 0, walk: V });
+      S.lampOff = false; S.flk = -1; S.oldBulb = { mode: 'socket', x: LAMP, y: GROUND - 262, vy: 0, rot: 0 }; S.newBulb = { mode: 'box', x: SIDE, y: GROUND - 96, rot: 0, t0: 0 };
+      S.dreadSize = 0; S.swooshN = 0; S.stars = 0; S.stubT = 0;
+    },
+    update(S, t, dt) {
+      const bo = S.bo, top = bo.top();
+      S.plan(bo, t, [
+        [0, { x: CUSH, speed: 210, accel: 300 }],                               // home for the evening
+        [5.2, { lookX: .7, lookY: -1, eye: 'open' }],                           // the lamp, flickering
+        [5.8, { eye: 'flat' }],
+        [6.3, { lookX: 1, lookY: -.3, eye: 'open' }],                           // the new bulbs, right there
+        [6.8, { eye: 'flat', lookX: -.4, lookY: 0 }],                           // ...tomorrow
+        [7.4, { sit: 1 }],
+        [10.4, { eye: 'squeeze' }], [10.8, { eye: 'flat' }],
+        [12.0, { lookX: 1, lookY: -.3 }], [12.5, { lookX: -.5, lookY: 0, eye: 'sad' }],
+        [14.2, { sit: 0, eye: 'open', lookX: 0 }],
+        [14.4, { x: 1420, speed: 190, accel: 400, lookX: .4, lookY: -.3 }],     // off to the window in the dark...
+        [18.6, { x: CUSH, speed: 125 }], [18.8, { sit: 1, eye: 'sad', lookY: .3 }],
+        [20.8, { crouch: .2, eye: 'sad', lookY: -.6, lookX: .5 }],              // the dread looms
+        [23.0, { eye: 'wide', lookX: 1, lookY: -.3, crouch: 0 }],              // the box...
+        [23.8, { eye: 'squeeze' }], [23.8, () => S.sfx('breathIn', { d: 1.0 }, bo.x)],
+        [24.4, { sit: 0, eye: 'open', lookY: 0 }],
+        [24.6, { x: SIDE - 110, speed: 190, accel: 600, lookX: .6 }],
+        [PICK - .25, { crouch: .2 }], [PICK, { crouch: 0 }], [PICK, () => { bo.jump(0, -300); S.newBulb.mode = 'lift'; S.newBulb.t0 = t; S.sfx('pop', { pitch: 720, g: .08 }, SIDE); }],
+        [26.3, { x: LAMP, speed: 160, accel: 600, lookX: .2, lookY: -.8 }],
+        [FIX - .3, { crouch: .25, eye: 'squeeze' }], [FIX, { crouch: 0 }], [FIX, () => bo.jump(0, -470)],
+        [LIT + .2, { eye: 'wide', lookY: -.8 }],
+        [28.1, { eye: 'open', lookX: .4, lookY: -.2 }],
+        [29.5, { eye: 'happy', lookY: 0 }],
+        [TASK + .3, { eye: 'wide', lookX: .7, lookY: -.9 }],                    // another one?
+        [35.0, { eye: 'squeeze', crouch: .22 }], [TICK, { crouch: 0, eye: 'happy' }], [TICK, () => bo.jump(80, -520)],   // not waiting this time
+        [36.6, { lookX: 0, lookY: 0 }],
+        [37.0, { crouch: .2 }], [37.25, { crouch: 0 }], [37.25, () => bo.jump(0, -430)],
+        [LEAVE, { x: 1e6, speed: V, accel: 450, eye: 'open', lookX: 0, lookY: 0, tilt: 0 }],
+        [LEAVE + .1, () => S.sfx('hum', { notes: [2, 4, 5, 7, 5], gap: .3, g: .04 }, bo.x)],
+      ]);
+      // ...and the table leg finds Bo's toe; Bo hops back and limps to the cushion
+      if (t > 14.4 && bo.x > 1236) S.once('stub', () => { S.stubT = t; bo.jump(-90, -330); S.stars = t; S.sfx('trip', {}, bo.x); S.sfx('thump', { g: .45 }, SIDE); S.shake(3); });
+      if (S.stubT) { const d = t - S.stubT, c = bo.cmd; if (d < 2.6) Object.assign(c, d < .9 ? { x: 1180, eye: 'squeeze', tilt: -.2 } : { x: CUSH, speed: 125, accel: 300, eye: 'sad', tilt: .06 * Math.sin(d * 9) }); }
+      // the lamp flickers: worse every day, until it's fixed
+      const k = Math.floor(t * 9), off = hash(k * 1.71 + 3) < offChance(t);
+      if (off !== S.lampOff) { S.lampOff = off; if (off) S.sfx('tap', { dull: 1, gain: .32 }, LAMP); }
+      // days spin by in the window
+      DAYS.forEach(([a], i) => { if (t > a) S.once('day' + i, () => { S.sfx('whoosh', { d: 1.3, v: .4 }, WIN); S.sfx('tweet', { k: 1.1, g: .5 }, WIN); }); });
+      // the dread grumbles as it grows
+      [12.4, 18.2, 21.6].forEach((a, i) => { if (t > a) S.once('grr' + i, () => S.sfx('rumble', { d: 1 + i * .4 })); });
+      // the bulbs: the new one hops onto Bo's head, then up into the lamp as the old one spins out
+      const nb = S.newBulb, ob = S.oldBulb;
+      if (nb.mode === 'lift') { const u = clamp((t - nb.t0) / .35); nb.x = lerp(SIDE, top.x, sine(u)); nb.y = lerp(GROUND - 96, top.y - 18, sine(u)) - Math.sin(Math.PI * u) * 70; if (u >= 1) nb.mode = 'head'; }
+      else if (nb.mode === 'head') { nb.x = top.x; nb.y = top.y - 18; if (t > FIX + .12) { nb.mode = 'up'; nb.t0 = t; nb.fx = nb.x; nb.fy = nb.y; } }
+      else if (nb.mode === 'up') { const u = clamp((t - nb.t0) / .3); nb.x = lerp(nb.fx, LAMP, sine(u)); nb.y = lerp(nb.fy, GROUND - 262, sine(u)); nb.rot = u * Math.PI * 4; if (u >= 1) { nb.mode = 'socket'; nb.rot = 0; } }
+      if (t > FIX + .1 && ob.mode === 'socket') { ob.mode = 'out'; ob.vx = -160; ob.vy = -380; S.sfx('zip', { d: .18 }, LAMP); }
+      if (ob.mode === 'out') { ob.vy += 1800 * dt; ob.x += ob.vx * dt; ob.y += ob.vy * dt; ob.rot += 14 * dt; if (ob.y > GROUND - 12) { ob.y = GROUND - 12; ob.mode = 'floor'; ob.rot = 1.4; S.sfx('tock', { f: 1100, gain: .6 }, ob.x); } }
+      if (t > LIT) S.once('lit', () => {
+        S.sfx('zip', { d: .14 }, LAMP); S.sfx('ding', { pitch: 1568, g: .1 }, LAMP); S.sfx('swell', { root: 392 }); S.sfx('sparkle', { n: 7 }, LAMP);
+        S.sfx('poof', {}, LAMP); S.burst(LAMP - 40, GROUND - 340, 26, ['#2b2b33', '#5a5a66', '#8a8a96'], { speed: 420, gravity: 300, size: 9, life: 1.1 });
+      });
+      if (t > LIT + .9) S.once('laughAtIt', () => S.sfx('laugh', { n: 2, g: .7 }, bo.x));
+      // the button: a new little task, dealt with at once
+      if (t > TASK) S.once('task', () => { S.sfx('pop', { pitch: 880, g: .08 }, NOTE.x); S.sfx('flip', {}, NOTE.x); });
+      if (t > TASK + .6) S.once('sprout', () => S.sfx('scribble', { v: .6 }, NOTE.x));
+      if (t > TICK + .25) S.once('tick', () => { S.sfx('ding', { pitch: 1760, g: .09 }, NOTE.x); S.sfx('poof', { gain: .6 }, NOTE.x); });
+      if (t > TICK + .9) S.once('laugh', () => S.sfx('laugh', { n: 3 }, bo.x));
+      S.once('amb', () => S.sfx('birds', { d: LOOP, g: .4 }));
+
+      if (t > 4 && t < LEAVE + .3) { S.camGoal.x = t > 24.4 && t < 29 ? 1230 : 1195; S.camGoal.z = t > 26 && t < 29.5 ? 1.0 : .9; S.camGoal.kx = 1.6; S.camGoal.kz = 1.3; }
+    },
+    drawSky(S, ctx, t, v) {
+      for (let i = 0; i < 3; i++) {
+        const W = v.right - v.left + 400, x = v.left - 200 + (1 - ((t / S.T + i / 3 + .6) % 1)) * W;
+        cloud(ctx, x, v.top + (v.bottom - v.top) * (.17 + i * .06), 9, { X: '#ebe8f4' });
+      }
+    },
+    drawBack(S, ctx, t) {
+      const J = i => S.J(i), dk = darkAt(t), sw = swoosh(t);
+      ctx.fillStyle = mix('#fff1df', '#454a7a', dk); ctx.fillRect(HOUSE_A, TOP, HOUSE_B - HOUSE_A, GROUND - TOP);
+      // the window: a whole day goes round in it each time
+      ctx.save(); ctx.beginPath(); ctx.rect(WIN - 75, TOP + 60, 150, 140); ctx.clip();
+      const night = clamp(dk * 1.25 - .15);
+      ctx.fillStyle = mix(mix('#ffd3a8', '#2a2f63', night), '#bfe6ff', sw); ctx.fillRect(WIN - 75, TOP + 60, 150, 140);
+      const ph = DAYS.reduce((m, [a, b]) => t > a && t < b ? seg(t, a, b) : m, -1);
+      if (ph >= 0) { const a = Math.PI * (1 + 2 * ph); sun(ctx, WIN + Math.cos(a) * 60, TOP + 200 + Math.sin(a) * 110, 5, { X: PAL.orange }); moon(ctx, WIN - Math.cos(a) * 60, TOP + 200 - Math.sin(a) * 110, 5, { X: '#fff6c8' }); }
+      else if (night > .4) moon(ctx, WIN + 20, TOP + 110, 5, { X: '#fff6c8' }, night);
+      else sun(ctx, WIN + 20, TOP + 170, 5, { X: PAL.orange }, 1 - night * 2);
+      ctx.restore();
+      ctx.lineWidth = 5; ctx.strokeStyle = '#111'; ctx.strokeRect(WIN - 75, TOP + 60, 150, 140);
+      ctx.beginPath(); ctx.moveTo(WIN, TOP + 60); ctx.lineTo(WIN, TOP + 200); ctx.moveTo(WIN - 75, TOP + 130); ctx.lineTo(WIN + 75, TOP + 130); ctx.stroke();
+      // walls, door gaps, roof
+      ctx.lineWidth = 6;
+      ctx.beginPath(); ctx.moveTo(HOUSE_A, GROUND - 250); ctx.lineTo(HOUSE_A + J(1) * .3, TOP); ctx.lineTo(HOUSE_B, TOP); ctx.lineTo(HOUSE_B + J(2) * .3, GROUND - 250); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(HOUSE_A - 40, TOP); ctx.lineTo((HOUSE_A + HOUSE_B) / 2, TOP - 90); ctx.lineTo(HOUSE_B + 40, TOP); ctx.stroke();
+      // the floor cushion
+      ctx.fillStyle = PAL.pink; ctx.lineWidth = 5; ctx.beginPath(); ctx.ellipse(CUSH, GROUND - 8, 92, 16, 0, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+      // the side table, with the box of new bulbs on it the whole time
+      ctx.fillStyle = PAL.brown; ctx.beginPath(); ctx.roundRect(SIDE - 70, GROUND - 74, 140, 14, 5); ctx.fill(); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(SIDE - 56, GROUND - 60); ctx.lineTo(SIDE - 56, GROUND + 2); ctx.moveTo(SIDE + 56, GROUND - 60); ctx.lineTo(SIDE + 56, GROUND + 2); ctx.stroke();
+      ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.roundRect(SIDE - 26, GROUND - 120, 52, 46, 4); ctx.fill(); ctx.stroke();
+      ctx.fillStyle = PAL.yellow; ctx.beginPath(); ctx.arc(SIDE, GROUND - 100, 9, 0, Math.PI * 2); ctx.fill(); ctx.lineWidth = 3; ctx.stroke(); ctx.lineWidth = 5;
+      // the lamp: a tall arc over the cushion
+      ctx.beginPath(); ctx.moveTo(LAMP + 70, GROUND + 2); ctx.lineTo(LAMP + 70 + J(3) * .3, GROUND - 300); ctx.quadraticCurveTo(LAMP + 66, GROUND - 350, LAMP + 10, GROUND - 330); ctx.stroke();
+      ctx.fillStyle = PAL.brown; ctx.beginPath(); ctx.ellipse(LAMP + 70, GROUND - 4, 40, 9, 0, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+      // the old bulb on the floor once it's out
+      if (S.oldBulb.mode === 'floor') drawBulb(ctx, S.oldBulb.x, S.oldBulb.y, S.oldBulb.rot, false, 0);
+    },
+    drawFront(S, ctx, t) {
+      const bo = S.bo, top = bo.top(), dk = darkAt(t), on = t > LIT || (!S.lampOff && t > 4.6), nb = S.newBulb, ob = S.oldBulb;
+      // the lamp's light, then the room's darkness over everything (Bo too)
+      const glow = t > LIT ? 1 : on ? .55 : 0;
+      if (glow > 0) { const g = ctx.createRadialGradient(LAMP, GROUND - 250, 10, LAMP, GROUND - 120, 300); g.addColorStop(0, `rgba(255,214,120,${.38 * glow})`); g.addColorStop(1, 'rgba(255,214,120,0)'); ctx.fillStyle = g; ctx.beginPath(); ctx.moveTo(LAMP - 40, GROUND - 260); ctx.lineTo(LAMP + 40, GROUND - 260); ctx.lineTo(LAMP + 230, GROUND); ctx.lineTo(LAMP - 230, GROUND); ctx.closePath(); ctx.fill(); }
+      if (dk > .01) { ctx.save(); ctx.globalAlpha = dk * (on ? .55 : .85) * .55; ctx.fillStyle = '#161a44'; ctx.fillRect(HOUSE_A, TOP, HOUSE_B - HOUSE_A, GROUND - TOP + 4); ctx.restore(); }
+      // the dread: a grumbly ink tangle that grows every day, and opens two cross little eyes
+      const D = dreadAt(t);
+      if (D > .02) {
+        const cx = lerp(LAMP - 210, CUSH - 30, clamp(D)), cy = TOP + 100 + D * 25, R = 30 + D * 150, f = Math.floor(t * 10);
+        ctx.save(); ctx.strokeStyle = '#1b1b22'; ctx.lineWidth = 4; ctx.globalAlpha = Math.min(1, D * 2.2);
+        for (let i = 0, n = 6 + Math.round(D * 26); i < n; i++) {
+          const a = hash(i * 3.3) * Math.PI * 2, r = R * (.35 + .65 * hash(i * 1.9)), x = cx + Math.cos(a) * r * .62, y = cy + Math.sin(a) * r * .45;
+          ctx.beginPath(); ctx.ellipse(x + (hash(i + f) - .5) * 4, y + (hash(i + f + .5) - .5) * 4, 14 + 30 * hash(i * 2.2) * D, 9 + 16 * hash(i * 4.4) * D, a, 0, Math.PI * 2); ctx.stroke();
+        }
+        if (D > .5) {
+          const e = outBack(seg(D, .5, .66)), lx = clamp((bo.x - cx) / 200, -1, 1) * 3;
+          for (const s of [-1, 1]) {
+            const ex = cx + s * 30, ey = cy + 6;
+            ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.ellipse(ex, ey, 13 * e, 11 * e, 0, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+            ctx.fillStyle = '#111'; ctx.beginPath(); ctx.arc(ex + lx, ey + 2, 5 * e, 0, Math.PI * 2); ctx.fill();
+            ctx.lineWidth = 5; ctx.beginPath(); ctx.moveTo(ex - s * 16 * e, ey - 18 * e); ctx.lineTo(ex + s * 8 * e, ey - 10 * e); ctx.stroke(); ctx.lineWidth = 4;
+          }
+        }
+        ctx.restore();
+      }
+      // the shade and the bulbs
+      if (ob.mode === 'socket' || ob.mode === 'out') drawBulb(ctx, ob.x, ob.y, ob.rot, on && t < LIT, 0);
+      if (nb.mode !== 'box') drawBulb(ctx, nb.x, nb.y, nb.rot, nb.mode === 'socket', 1);
+      ctx.fillStyle = PAL.orange; ctx.lineWidth = 5; ctx.strokeStyle = '#111';
+      ctx.beginPath(); ctx.moveTo(LAMP - 52, GROUND - 252); ctx.lineTo(LAMP + 52, GROUND - 252); ctx.lineTo(LAMP + 28, GROUND - 318); ctx.lineTo(LAMP - 28, GROUND - 318); ctx.closePath(); ctx.fill(); ctx.stroke();
+      // stubbed toe: little stars
+      if (S.stars && t - S.stars < 1.3) for (let i = 0; i < 3; i++) { const a = t * 5 + i * 2.1; sprite(ctx, SPRITES.star, top.x + Math.cos(a) * 40, top.y - 30 + Math.sin(a) * 10, 3.4, { X: PAL.yellow }, 1 - seg(t - S.stars, 1, 1.3)); }
+      // the stopwatch: 0:02
+      const sk = outBack(clamp((t - (FIX + .1)) / .3)) * (1 - seg(t, 29.6, 30));
+      if (sk > .01) {
+        ctx.save(); ctx.translate(LAMP + 150, GROUND - 380); ctx.scale(sk, sk);
+        ctx.fillStyle = '#fff'; ctx.lineWidth = 5; ctx.beginPath(); ctx.arc(0, 0, 50, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(0, -50); ctx.lineTo(0, -64); ctx.stroke(); ctx.fillStyle = '#111'; ctx.fillRect(-10, -72, 20, 8);
+        ctx.font = '26px Silkscreen, monospace'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillStyle = '#111'; ctx.fillText('0:02', 0, 2);
+        ctx.restore();
+      }
+      // the button: a sticky note with a letter on it, a tiny dread, then a tick
+      const nk = outBack(clamp((t - TASK) / .3)) * (1 - seg(t, LEAVE + 1, LEAVE + 1.4));
+      if (nk > .01) {
+        const done = t > TICK + .2;
+        ctx.save(); ctx.translate(NOTE.x, NOTE.y); ctx.rotate(-.06); ctx.scale(nk, nk);
+        ctx.fillStyle = PAL.yellow; ctx.lineWidth = 4; ctx.beginPath(); ctx.rect(-34, -32, 68, 64); ctx.fill(); ctx.stroke();
+        if (done) sprite(ctx, SPRITES.check, 0, 0, 9 * outBack(clamp((t - TICK - .2) / .3)), { X: PAL.green });
+        else sprite(ctx, MAIL, 0, 0, 6, { X: '#111' });
+        ctx.restore();
+        const sd = t > TASK + .6 && !done ? seg(t, TASK + .6, TICK) * .5 : 0;
+        if (sd > .01) { ctx.strokeStyle = '#1b1b22'; ctx.lineWidth = 3.5; for (let i = 0; i < 5; i++) { ctx.beginPath(); ctx.ellipse(NOTE.x + 30 + (hash(i) - .5) * 40 * sd, NOTE.y - 40 - hash(i + .3) * 30 * sd, 6 + 14 * sd, 4 + 8 * sd, i, 0, Math.PI * 2); ctx.stroke(); } }
+      }
+    },
+  });
+
+  // a light bulb (lit: glowing yellow; spare: plain), drawn at its screw base
+  function drawBulb(ctx, x, y, rot, lit, spare) {
+    ctx.save(); ctx.translate(x, y); ctx.rotate(rot);
+    ctx.fillStyle = lit ? PAL.yellow : spare ? '#fffbe8' : '#d9d9d2'; ctx.strokeStyle = '#111'; ctx.lineWidth = 4;
+    ctx.beginPath(); ctx.arc(0, 14, 16, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+    ctx.fillStyle = PAL.grey; ctx.fillRect(-9, -6, 18, 10); ctx.strokeRect(-9, -6, 18, 10);
+    if (lit) { ctx.globalAlpha = .35; ctx.fillStyle = PAL.yellow; ctx.beginPath(); ctx.arc(0, 14, 34, 0, Math.PI * 2); ctx.fill(); }
+    ctx.restore();
+  }
+})();

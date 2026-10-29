@@ -6,7 +6,7 @@
   // and the sky opens. Bo's umbrella pops up; Bo shuffles over and shares it. They laugh; the "..."
   // turns into hearts. The rain stops, the stranger's bus comes, they wave, and Bo walks on.
   // Button: down the road a new stranger is coming the other way, and this time Bo speaks first.
-  const { PAL, SPRITES, sprite, lerp, seg, sine, outBack, clamp, hash, spring, mix, ramp, GROUND } = Shorts;
+  const { PAL, SPRITES, sprite, cloud, lerp, seg, sine, outBack, clamp, hash, spring, mix, ramp, GROUND } = Shorts;
   const V = 140, STOP = 880, PAL_X = 1100, POLE = 990, MEET = 1440;
   const RAIN = [15.4, 29.4], OPEN = 17.6, SHARE = 19.6, BUS_IN = 29.8, BOARD = 31.6, BUS_OUT = 32.6, WALK = 34.4, HI = 38.3, LEAVE = 41.6, LOOP = LEAVE + 6.8;
   const rainy = t => sine(seg(t, RAIN[0] - .6, RAIN[0] + .8)) * (1 - sine(seg(t, RAIN[1] - .4, RAIN[1] + 1.4)));
@@ -66,7 +66,7 @@
         [HI, { eye: 'happy', lookX: 0 }], [HI, () => S.sfx('pop', { pitch: 700, g: .08 }, bo.x)],
         [HI + 1.7, { eye: 'open' }],
         [HI + 2.8, { eye: 'happy' }], [HI + 2.9, () => { S.sfx('laugh', { n: 3 }, bo.x); S.sfx('laugh', { n: 3, k: 1.35 }, S.next.x); }],
-        [40.9, { crouch: .2 }], [41.15, { crouch: 0 }], [41.15, () => bo.jump(0, -400)],
+        [40.9, { crouch: .2 }], [41.15, { crouch: 0 }], [41.15, () => { bo.jump(620, -1050); S.sfx('whoosh', { d: .4, v: .5 }, bo.x); }],   // leapfrog, not through
         [LEAVE, { x: 1e6, speed: V, accel: 450, eye: 'open', lookX: 0, lookY: 0 }],
       ]);
       // the new stranger: strolls up, gets a "hi!" first, beams, and carries on to the bus stop
@@ -74,6 +74,7 @@
         [28.6, { x: MEET + 160, speed: 120, accel: 320, face: -1 }],
         [HI + .3, { lookX: .5, eye: 'wide' }], [HI + 1.0, { eye: 'open', lookX: 0 }],
         [HI + 1.8, { eye: 'happy' }], [HI + 1.85, { crouch: .2 }], [HI + 2.1, { crouch: 0 }], [HI + 2.1, () => S.next.jump(0, -340)],
+        [40.95, { crouch: .3, eye: 'happy' }], [41.6, { crouch: 0 }],                // ducks so Bo can hop over
         [LEAVE + .3, { x: -1e5, speed: 120, accel: 320, eye: 'open' }],
       ]);
       S.plan(pal, t, [
@@ -112,7 +113,7 @@
         S.dropT += dt; const rate = .012 / rk;
         while (S.dropT > rate) { S.dropT -= rate; const n = S.dropN++; S.drops.push({ x: cx - 900 + hash(n) * 1800, y: GROUND - 900 - hash(n + .4) * 80 }); }
       }
-      const top = bo.top(), u = S.umb.x, canopy = { x: top.x + 40 * u, y: top.y - 130 * u, r: 150 * u };
+      const top = bo.top(), u = S.umb.x, canopy = { x: top.x + 95 * u, y: top.y - 135 * u, r: 205 * u };   // wide enough for two standing a polite step apart
       S.canopy = canopy;
       S.drops = S.drops.filter(d => {
         d.y += 1100 * dt; d.x -= 120 * dt;
@@ -132,7 +133,7 @@
       const rk = rainy(t);
       for (let i = 0; i < 4; i++) {
         const W = v.right - v.left + 400, x = v.left - 200 + (1 - ((t / 40 + i / 4 + .1) % 1)) * W;
-        sprite(ctx, SPRITES.cloud, x, v.top + (v.bottom - v.top) * (.16 + i * .05) + rk * 30, 9 + rk * 5, { X: mix('#ebe8f4', '#a9b0bf', rk) });
+        cloud(ctx, x, v.top + (v.bottom - v.top) * (.16 + i * .05) + rk * 30, 9 + rk * 5, { X: mix('#ebe8f4', '#a9b0bf', rk) });
       }
       const after = sine(seg(t, RAIN[1] + .2, RAIN[1] + 2.6)) * (1 - seg(t, LEAVE + 2, LEAVE + 4));
       if (after > .01) {

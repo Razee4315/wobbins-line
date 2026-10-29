@@ -6,8 +6,8 @@
 <title>Inner Voice</title>
 </head>
 <body>
-<script src="sfx.js?v=8"></script>
-<script src="engine2.js?v=8"></script>
+<script src="sfx.js?v=10"></script>
+<script src="engine2.js?v=10"></script>
 <script>
 // Bo flicks up a ball and starts bouncing it on its head: 1, 2, 3. A grumbly ink scribble pops up
 // beside Bo: "is that it?" Bo drops it. "you're going to drop it." Bo drops it. Each jab, the
@@ -15,7 +15,7 @@
 // buddy who cheers. Bo bounces the ball higher than ever, then heads it over to the new friend.
 // Button: the buddy tries a header too and... bonk, right on its head, dizzy. "oops!" Bo laughs:
 // "nice try!" (kind, like it learned). Then the buddy skips ahead through the air and Bo follows.
-const { PAL, SPRITES, sprite, lerp, seg, sine, outBack, clamp, hash, spring, mix, GROUND } = Shorts;
+const { PAL, SPRITES, sprite, cloud, lerp, seg, sine, outBack, clamp, hash, spring, mix, GROUND } = Shorts;
 const V = 140, SPOT = 860, BALL0 = 930, BR = 22;
 const FLICKS = [5.2, 9.4, 12.8, 23.0], DROPS = [8.0, 11.6, 14.2], BIG = 26.4, PASS = 29.7, LEAVE = 33.8, LOOP = LEAVE + 7.0;
 const BONK = 30.5, GO = LEAVE - .2;   // BONK: when the passed ball lands on the buddy (follows from PASS; checked)
@@ -124,7 +124,7 @@ Shorts.play({
   drawSky(S, ctx, t, v) {
     for (let i = 0; i < 3; i++) {
       const W = v.right - v.left + 400, x = v.left - 200 + (1 - ((t / 36 + i / 3 + .6) % 1)) * W;
-      sprite(ctx, SPRITES.cloud, x, v.top + (v.bottom - v.top) * (.15 + i * .06), 9, { X: '#ebe8f4' });
+      cloud(ctx, x, v.top + (v.bottom - v.top) * (.15 + i * .06), 9, { X: '#ebe8f4' });
     }
   },
   drawBack(S, ctx, t) {

@@ -4,7 +4,7 @@
   // A small worry appears over Bo's head. It grows, fills with more worries, and weighs Bo
   // down until Bo can't walk. Bo stops and breathes, and the tangle unwinds into a bird.
   // Button: the bird swoops back, lands on Bo's tuft, tweets once (Bo beams), and flies on ahead.
-  const { PAL, SPRITES, sprite, lerp, seg, sine, outBack, clamp, hash, spring, mix, GROUND } = Shorts;
+  const { PAL, SPRITES, sprite, bird, cloud, lerp, seg, sine, outBack, clamp, hash, spring, mix, GROUND } = Shorts;
   const V = 130, BREATH0 = 22.8, BREATH = 2.4, RELEASE = 30.2;
   const BACK = 35.0, PERCH = 35.9, TWEET = 36.4, AWAY = 37.0, LEAVE = 38.0;   // the bird comes back to say hi
   const ICON = {
@@ -159,7 +159,7 @@
       if (t > RELEASE + .3 && t < 34) {
         const u = t - (RELEASE + .3), k = outBack(clamp(u / .4));
         const x = cx + Math.pow(u, 1.6) * 170, y = cy - Math.pow(u, 1.4) * 150 + Math.sin(u * 5) * 14;
-        sprite(ctx, Math.floor(t * 8) % 2 ? SPRITES.birdA : SPRITES.birdB, x, y, 8 * k, { X: PAL.blue });
+        bird(ctx, x, y, 8 * k, { X: PAL.blue }, 1, 7);
       }
       // ...swoops back to perch on Bo's tuft, says one tweet, and flies on ahead
       if (t > BACK && t < AWAY + 2.2) {
@@ -167,14 +167,14 @@
         const hop = t > TWEET && t < TWEET + .35 ? Math.sin(Math.PI * (t - TWEET) / .35) * 12 : 0;
         const x = lerp(T.x + 420, T.x, inK) + out * out * 160 + out * 120, y = lerp(T.y - 320, T.y - 16, inK) + Math.sin(inK * Math.PI) * 60 - hop - out * out * 150 - out * 90;
         const perched = t > PERCH && t < AWAY;
-        sprite(ctx, Math.floor(t * (perched ? 2.5 : 8)) % 2 ? SPRITES.birdA : SPRITES.birdB, x, y, 8, { X: PAL.blue });
+        bird(ctx, x, y + (perched ? -4 : 0), 8, { X: PAL.blue }, 1, perched ? 0 : 7);
         if (t > TWEET && t < TWEET + .9) sprite(ctx, SPRITES.note, x + 34, y - 30 - (t - TWEET) * 30, 5, { X: PAL.violet }, 1 - seg(t, TWEET + .5, TWEET + .9));
       }
     },
     drawSky(S, ctx, t, v) {
       for (let i = 0; i < 3; i++) {
         const W = v.right - v.left + 400, x = v.left - 200 + (1 - ((t / S.T + i / 3 + .4) % 1)) * W;
-        sprite(ctx, SPRITES.cloud, x, v.top + (v.bottom - v.top) * (.25 + i * .06), 9, { X: '#ebe8f4' });
+        cloud(ctx, x, v.top + (v.bottom - v.top) * (.25 + i * .06), 9, { X: '#ebe8f4' });
       }
     },
   });

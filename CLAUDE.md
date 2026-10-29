@@ -1,6 +1,6 @@
 # Wobbin's Line — project rules
 
-A tiny animated show drawn on one line (33 episodes, 7 seasons) plus its website. Start with `docs/README.md`.
+A tiny animated show drawn on one line (38 episodes, 8 seasons) plus its website. Start with `docs/README.md`.
 
 ## Before making episodes
 - Read `docs/02-episode-guide.md` (story shape, loop rules, engine cheat sheet) and `docs/06-preferences.md` (what the user likes).

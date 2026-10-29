@@ -5,7 +5,7 @@
   // Each night the flag runs a little further and the grass grows round Bo's feet. Then one step.
   // Button: walking on, a second flag pops up ahead. Bo's old habit kicks in (starts to sit)...
   // then Bo springs back up: "today." and jogs straight to it.
-  const { PAL, SPRITES, sprite, zzz, lerp, seg, sine, outBack, clamp, hash, spring, mix, GROUND } = Shorts;
+  const { PAL, SPRITES, sprite, cloud, zzz, lerp, seg, sine, outBack, clamp, hash, spring, mix, GROUND } = Shorts;
   const V = 130, SPOT = 750, START = 805, ARRIVE = 1270;
   const NIGHTS = [[9.2, 11.0], [14.0, 15.2], [17.4, 18.8]];
   const night = t => Math.max(0, ...NIGHTS.map(([a, b]) => sine(seg(t, a, a + .6)) * (1 - sine(seg(t, b - .5, b)))));
@@ -118,7 +118,7 @@
       }
       for (let i = 0; i < 3; i++) {
         const W = v.right - v.left + 400, x = v.left - 200 + (1 - ((t / S.T * 2 + i / 3 + .4) % 1)) * W;
-        sprite(ctx, SPRITES.cloud, x, v.top + (v.bottom - v.top) * (.25 + i * .06), 9, { X: mix('#ebe8f4', '#c6bfe6', nt) });
+        cloud(ctx, x, v.top + (v.bottom - v.top) * (.25 + i * .06), 9, { X: mix('#ebe8f4', '#c6bfe6', nt) });
       }
     },
     drawBack(S, ctx, t) {

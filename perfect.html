@@ -6,15 +6,15 @@
 <title>Perfect</title>
 </head>
 <body>
-<script src="sfx.js?v=8"></script>
-<script src="engine2.js?v=8"></script>
+<script src="sfx.js?v=10"></script>
+<script src="engine2.js?v=10"></script>
 <script>
 // Bo paints a pixel heart, dab by dab, with its hair. One pixel is wrong: wipe it all. Again.
 // Faster. Meanwhile a friend happily finishes painting after painting. The "wrong" pixel
 // turns out to be a ladybug.
 // Button: Bo calls it done (the heart joins Mo's pile) and dabs a quick, wobbly heart just for fun,
 // leaving one gap on purpose. The ladybug flies back and settles right into the gap.
-const { PAL, SPRITES, sprite, lerp, seg, sine, outBack, clamp, hash, spring, GROUND } = Shorts;
+const { PAL, SPRITES, sprite, cloud, lerp, seg, sine, outBack, clamp, hash, spring, GROUND } = Shorts;
 const V = 130, EASEL = 900, CELL = 22, MO_EASEL = 1220, MO_CELL = 16, STACK_X = 1080;
 const CMAP = { R: PAL.red, P: PAL.pink, Y: PAL.yellow, O: PAL.orange, G: PAL.green, B: PAL.brown, S: PAL.sky, K: '#111', V: PAL.violet };
 const HEART = ['.RR..RR.', 'RPPRRRRR', 'RPRRRRRR', 'RRRRRRRR', '.RRRRRR.', '..RRRR..', '...RR...', '........'];
@@ -93,6 +93,7 @@ Shorts.play({
       [LEAVE, { x: 1e6, speed: V, accel: 450, eye: 'open', lookX: 0, lookY: 0, tilt: 0 }],
       [LEAVE + .1, () => S.sfx('hum', { notes: [2, 4, 5, 7, 5], gap: .3, g: .04 }, bo.x)],
     ]);
+    if (t > LEAVE) S.leapfrog(bo, mo);   // over the friend on the way out, never through
     S.plan(mo, t, [
       [0, { lookX: .6, lookY: -.2 }],
       [18.6, { x: 1075, speed: 200, accel: 700, eye: 'wide', lookX: 0 }],   // "wait!"
@@ -146,7 +147,7 @@ Shorts.play({
   drawSky(S, ctx, t, v) {
     for (let i = 0; i < 3; i++) {
       const W = v.right - v.left + 400, x = v.left - 200 + (1 - ((t / S.T + i / 3 + .3) % 1)) * W;
-      sprite(ctx, SPRITES.cloud, x, v.top + (v.bottom - v.top) * (.25 + i * .06), 9, { X: '#ebe8f4' });
+      cloud(ctx, x, v.top + (v.bottom - v.top) * (.25 + i * .06), 9, { X: '#ebe8f4' });
     }
   },
   drawBack(S, ctx, t) {

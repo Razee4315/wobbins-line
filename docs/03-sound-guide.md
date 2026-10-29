@@ -20,7 +20,7 @@ All sound is synthesized in code (`sfx.js`): soft sine and triangle tones, filte
 
 | Sound | Level | Notes |
 |---|---|---|
-| Caption voice (one sentence) | about −52 dB | a faint murmur under everything |
+| Caption voice (one sentence) | −48 to −50 dB | one soft note per word, faint |
 | Walking (8 steps) | about −42 dB | very faint |
 | Landing thud | about −36 dB | |
 | Chime | about −34 dB | the loudest "musical" accents sit here |
@@ -36,7 +36,13 @@ If a new sound feels loud, measure it the same way (`docs/07-workflow.md`) and k
 
 ## The caption voice
 
-When captions type out, Wobbin "speaks" in a soft murmur, like the voices in Animal Crossing: one syllable for every second letter, the vowel picked from the letter, a slight random wobble in pitch, a rise at the end of questions and a fall on the last syllable. Each speaker has a pitch: Wobbin 1.0, friends 1.15–1.45, the critic in Inner Voice 0.72. Set it per episode with `voice: { pitch }` or per caption as the 5th item (`false` makes a caption silent).
+When captions type out, the speaker sings one soft note per word, like humming "mm" over a felt mallet. The notes wander the C pentatonic scale in small steps (picked from the caption and word number, so the same line always plays the same tune); a question lifts at the end, an exclamation brightens, a plain sentence settles on the home note and "..." trails off. The last word is longer with a touch of vibrato. Each speaker has a register: Wobbin 1.0, friends 1.15–1.45, the critic in Inner Voice 0.72. Set it per episode with `voice: { pitch }` or per caption as the 5th item (`false` makes a caption silent).
+
+It replaced a murmured formant syllable every other letter (the "do-do-do" the user disliked, 2026-10-30).
+
+**Foley drifts.** Body and prop sounds (`step`, `land`, `pop`, `tock`, `knock` and so on, the `FOLEY` list in `sfx.js`) get a small random change in pitch (±4%) and level (±12%) each time, so nothing repeats exactly. Musical sounds are never detuned.
+
+**Softer replacements (2026-10-30):** `laugh` is now breathy little "he" notes at uneven gaps (was a 30 Hz vibrato buzz), `ring` a soft bell trill (was a 90 Hz warble), `beep` a round "boop", `typing` soft wooden clicks.
 
 ## Ambience
 

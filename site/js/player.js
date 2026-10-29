@@ -60,7 +60,7 @@
     setTimeout(() => {                                   // let the sheet open before the loop is computed
       if (ep !== target) return;
       if (!loops[ep.id]) { const s = new Shorts.Show(story); loops[ep.id] = { T: s.T, startState: s.startState }; }
-      show = new Shorts.Show(story, { loop: loops[ep.id] });
+      show = new Shorts.Show(story, { loop: loops[ep.id] }); show.seek(show.hook);   // open on the hook, not the walk-in
       show.onSfx = ev => { if (soundOn && playing && actx && actx.state === 'running' && !busy) SFX.play(actx, ev, actx.currentTime + .02); };
       note.textContent = ''; setPlaying(true);
     }, first ? 120 : 0);

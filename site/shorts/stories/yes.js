@@ -5,7 +5,7 @@
   // boxes pile up until the flower is buried and the stack crashes. Then Bo says no, and it's fine.
   // Button: a friend comes back with a huge moving box. "help me move?" Bo, smiling: "no."
   // Friend: "ok!" Both happy; the friend skips off to ask someone else and Bo strolls on.
-  const { PAL, SPRITES, sprite, lerp, seg, sine, outBack, clamp, hash, spring, GROUND, GRAV } = Shorts;
+  const { PAL, SPRITES, sprite, cloud, lerp, seg, sine, outBack, clamp, hash, spring, GROUND, GRAV } = Shorts;
   const V = 130, BX = 30;
   const BOXC = [PAL.sky, PAL.orange, PAL.violet, PAL.lime, PAL.red, PAL.yellow, PAL.blue, PAL.pink];
   const FLOWER = ['..X..', '.XXX.', 'XXCXX', '.XXX.', '..X..'];
@@ -89,6 +89,8 @@
         if (t >= give + .9 || (refused && t > NO + 1.8)) Object.assign(f.cmd, { face: 1, x: bo.x + 3000, speed: 240, accel: 600, eye: 'open' });
       });
 
+      // a friend heading off hops over the next one arriving, instead of walking through it
+      for (const f of S.friends) for (const g of S.friends) if (f !== g && f.cmd.x > bo.x + 2000 && g.cmd.face < 0 && g.cmd.x < bo.x + 400) S.leapfrog(f, g, 'yes' + Math.floor(t / 2.5));
       // Bo: stops for every ask, nods, and walks on a little slower and lower each time
       const busy = ASKS.some(a => a.give !== null && t > a.give - 1.5 && t < a.give + .7);
       if (t < COLLAPSE) {
@@ -179,7 +181,7 @@
     drawSky(S, ctx, t, v) {
       for (let i = 0; i < 3; i++) {
         const W = v.right - v.left + 400, x = v.left - 200 + (1 - ((t / S.T + i / 3 + .6) % 1)) * W;
-        sprite(ctx, SPRITES.cloud, x, v.top + (v.bottom - v.top) * (.25 + i * .06), 9, { X: '#ebe8f4' });
+        cloud(ctx, x, v.top + (v.bottom - v.top) * (.25 + i * .06), 9, { X: '#ebe8f4' });
       }
     },
     drawBack(S, ctx) { for (const b of S.boxes) if (b.state === 'ground') drawBox(ctx, b); },

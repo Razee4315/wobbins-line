@@ -6,15 +6,15 @@
 <title>Imposter</title>
 </head>
 <body>
-<script src="sfx.js?v=8"></script>
-<script src="engine2.js?v=8"></script>
+<script src="sfx.js?v=10"></script>
+<script src="engine2.js?v=10"></script>
 <script>
 // Bo breaks the finish tape and the friends crown Bo. Bo is sure it's a mistake: gives it back,
 // passes it on, buries it, throws it away. It keeps landing back on Bo's head. Until Bo keeps it.
 // Button: a bow-off. A friend bows, Bo bows lower, all three bow lower still, and Bo out-bows
 // them all with a front flip. Ta-da! The friends cheer and skip off ahead, Bo hums after them.
-const { PAL, SPRITES, sprite, lerp, seg, sine, outBack, clamp, hash, spring, mix, GROUND } = Shorts;
-const V = 130, POST_A = 820, POST_B = 900, SPOT = 990, SPOTS = [1140, 1290, 1440];
+const { PAL, SPRITES, sprite, cloud, lerp, seg, sine, outBack, clamp, hash, spring, mix, GROUND } = Shorts;
+const V = 130, POST_A = 820, POST_B = 900, SPOT = 990, SPOTS = [1170, 1345, 1520];   // ~175 apart, nobody overlapping
 const BOW = 27.2, FLIP = 29.35, TADA = 30.0, LEAVE = 31.8;
 const CROWN = ['X...X...X', 'XX.XXX.XX', 'XXXXXXXXX', 'XRXXRXXRX', 'XXXXXXXXX'];
 // where the crown goes: [time it leaves, destination, flight seconds, arc]
@@ -85,7 +85,7 @@ Shorts.play({
         [BOW + 1.3 + i * .06, { tilt: .8, eye: 'closed' }], [BOW + 1.9, { tilt: 0, eye: 'open' }],
         [FLIP + .1, { eye: 'wide' }], [TADA, { eye: 'happy' }],
         [TADA + .05 + i * .08, () => f.jump(0, -420 - i * 20)],
-        [TADA + .9 + i * .1, { face: 1, x: 1e6, speed: 290, accel: 700 }],
+        [TADA + .9 + (2 - i) * .3, { face: 1, x: 1e6, speed: 290, accel: 700 }],   // front one first, so nobody runs into anybody
       ]);
       if (t > TADA + 1.3 && f.mode === 'ground' && hash(Math.floor(t * 2.5) + i) > .7) S.once(`skip${i}:${Math.floor(t * 2.5)}`, () => f.jump(f.vx, -300));
     });
@@ -121,12 +121,12 @@ Shorts.play({
     if (t > 21.8) S.once('melt', () => { S.sfx('swell', { root: 523.25 }); S.sfx('charge', { n: 6 }, bo.x); });
     if (t > 22.6) S.once('melt2', () => S.sfx('charge', { n: 9 }, bo.x));
     if (t > 24.2) S.once('bow', () => S.friends.forEach((f, i) => f.jump(0, -380)));
-    if (t > 5 && t < LEAVE) { S.camGoal.x = 1210; S.camGoal.z = .8; S.camGoal.kx = 2.4; }
+    if (t > 5 && t < LEAVE) { S.camGoal.x = 1250; S.camGoal.z = .78; S.camGoal.kx = 2.4; }
   },
   drawSky(S, ctx, t, v) {
     for (let i = 0; i < 3; i++) {
       const W = v.right - v.left + 400, x = v.left - 200 + (1 - ((t / S.T + i / 3 + .35) % 1)) * W;
-      sprite(ctx, SPRITES.cloud, x, v.top + (v.bottom - v.top) * (.25 + i * .06), 9, { X: '#ebe8f4' });
+      cloud(ctx, x, v.top + (v.bottom - v.top) * (.25 + i * .06), 9, { X: '#ebe8f4' });
     }
   },
   drawBack(S, ctx, t) {

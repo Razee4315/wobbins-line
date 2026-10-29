@@ -5,9 +5,9 @@
   // different, while the sun goes down. Bo dithers... then just walks, and the choices melt away.
   // Button: down the line a friend gets a fork of their own and freezes: "which way?" Bo, the
   // expert now: "this way!" One arrow pops, the friend beams, and they head off together.
-  const { PAL, SPRITES, sprite, lerp, seg, sine, outBack, clamp, hash, spring, mix, GROUND } = Shorts;
+  const { PAL, SPRITES, sprite, sun, cloud, lerp, seg, sine, outBack, clamp, hash, spring, mix, GROUND } = Shorts;
   const V = 130, FORK = 900, SPOT = 740, SPLIT = [4.0, 8.0, 12.0, 16.0], SPREAD = [.4, .32, .22, .15], GO = 21.2;
-  const MEET = 1450, PAL_X = 1600, SIGN = 1655, SIGN_T = 27.1, THIS = 28.5, LEAVE = 30.2;
+  const MEET = 1440, PAL_X = 1622, SIGN = 1677, SIGN_T = 27.1, THIS = 28.5, LEAVE = 30.2;
   const COLS = [PAL.red, PAL.orange, PAL.yellow, PAL.lime, PAL.sky, PAL.blue, PAL.violet, PAL.pink];
   const ICONS = [
     ['..X..', '.XXX.', 'XXXXX', '.X.X.', '.XXX.'], ['..X..', 'XXXXX', '.XXX.', '.X.X.', 'X...X'], SPRITES.heart, SPRITES.note,
@@ -108,13 +108,12 @@
       const a = seg(t, 3, 4) * (1 - seg(t, 19, 19.6)), sy = lerp(GROUND - 420, GROUND + 10, sine(seg(t, 4, 19)));
       if (a > 0) {
         ctx.save(); ctx.beginPath(); ctx.rect(v.left, v.top, v.right - v.left, GROUND - v.top); ctx.clip(); ctx.globalAlpha = a;
-        ctx.fillStyle = mix(PAL.yellow, PAL.orange, seg(t, 8, 16)); const sx = v.cx + 140, R = 46;
-        for (let y = -R; y < R; y += 8) { const w = Math.sqrt(Math.max(0, R * R - (y + 4) ** 2)); ctx.fillRect(sx - w, sy + y, w * 2, 8.5); }
+        sun(ctx, v.cx + 140, sy, 46 / 2.7, { X: mix(PAL.yellow, PAL.orange, seg(t, 8, 16)) });
         ctx.restore();
       }
       for (let i = 0; i < 3; i++) {
         const W = v.right - v.left + 400, x = v.left - 200 + (1 - ((t / S.T + i / 3 + .65) % 1)) * W;
-        sprite(ctx, SPRITES.cloud, x, v.top + (v.bottom - v.top) * (.25 + i * .06), 9, { X: mix('#ebe8f4', '#c6bfe6', s.nite) });
+        cloud(ctx, x, v.top + (v.bottom - v.top) * (.25 + i * .06), 9, { X: mix('#ebe8f4', '#c6bfe6', s.nite) });
       }
     },
     drawBack(S, ctx, t) {

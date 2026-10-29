@@ -5,7 +5,7 @@
   // and walks toward it, and up close it's just five small steps. The weekend is at the top.
   // Button: down the other side there's a tiny mountain with its own tiny storm cloud. "oh. tuesday."
   // Bo hops right over it and the little cloud puffs away.
-  const { PAL, SPRITES, sprite, lerp, seg, sine, outBack, clamp, hash, spring, mix, GROUND } = Shorts;
+  const { PAL, SPRITES, sprite, cloud, lerp, seg, sine, outBack, clamp, hash, spring, mix, GROUND } = Shorts;
   const V = 130, STEP0 = 1200, SW = 90, SH = 42, N = 5, TOP0 = STEP0 + N * SW, TOP1 = TOP0 + 180, TOPX = TOP0 + 95, END = TOP1 + N * SW;
   const LIGHTNING = [6.2, 7.4, 8.1];
   const height = x => x < STEP0 ? 0 : x < TOP0 ? (Math.floor((x - STEP0) / SW) + 1) * SH : x < TOP1 ? N * SH : x < END ? (N - Math.floor((x - TOP1) / SW) - 1) * SH : 0;
@@ -102,7 +102,7 @@
       }
       for (let i = 0; i < 3; i++) {
         const W = v.right - v.left + 400, x = v.left - 200 + (1 - ((t / S.T + i / 3 + .55) % 1)) * W;
-        sprite(ctx, SPRITES.cloud, x, v.top + (v.bottom - v.top) * (.25 + i * .06), 9, { X: '#ebe8f4' });
+        cloud(ctx, x, v.top + (v.bottom - v.top) * (.25 + i * .06), 9, { X: '#ebe8f4' });
       }
     },
     drawBack(S, ctx, t) {

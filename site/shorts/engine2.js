@@ -7,9 +7,10 @@
 (function () {
   const GROUND = 620, BODY_H = 60, HIP_Y = 44, LEG = 66, STAND = 10 + 58 + HIP_Y;
   const GRAV = 2600, DT = 1 / 240, INK = '#111', PAPER = '#ffffff';
-  // a small retro (PICO-8 flavoured) palette for accents
+  // a small retro (PICO-8 flavoured) palette for accents. Red, yellow and the greens are a touch softer than
+  // PICO-8's neon ones (2026-10-30), so they sit with the pastel friends and warm paper instead of shouting
   const PAL = {
-    red: '#ff004d', orange: '#ffa300', yellow: '#ffec27', green: '#00b543', lime: '#00e436',
+    red: '#f53b57', orange: '#ffa300', yellow: '#ffe03d', green: '#1fa84a', lime: '#3ad65c',
     blue: '#3b7dd8', sky: '#29adff', violet: '#7b5cff', pink: '#ff77a8', peach: '#ffccaa',
     lav: '#b9b1d6', grey: '#c2c3c7', dim: '#9a9aa2', navy: '#1d2b53', plum: '#7e2553', brown: '#ab5236',
   };
@@ -83,6 +84,112 @@
     ctx.restore();
   }
 
+  // ---- ink-drawn side characters: the sun, the moon, clouds, butterflies and birds ----
+  // They used to be flat pixel blocks; now they're drawn in the show's ink with a little life of their
+  // own (breathing, blinking, flapping), animated from the frame time NOW. Same arguments as sprite().
+  const hexOk = c => typeof c === 'string' && /^#[0-9a-f]{6}$/i.test(c);
+  const shade = (c, k, to = '#2a2238') => hexOk(c) ? mix(c, to, k) : c;
+  function cloud(ctx, x, y, px, colors, alpha = 1) {
+    if (alpha <= 0) return;
+    const col = typeof colors === 'string' ? colors : colors.X, s = px / 9, ph = x * .003 + y * .02;
+    const L = [[-56, 8, 18], [-30, -4, 27], [2, -12, 32], [36, -2, 26], [60, 9, 17]];
+    ctx.save(); ctx.globalAlpha *= alpha; ctx.translate(x, y + Math.sin(NOW * .7 + ph) * 2 * s); ctx.scale(s, s);
+    ctx.beginPath();
+    L.forEach(([dx, dy, r], i) => { const rr = r * (1 + .04 * Math.sin(NOW * 1.1 + i * 1.9 + ph)); ctx.moveTo(dx + rr, dy); ctx.arc(dx, dy, rr, 0, Math.PI * 2); });
+    ctx.moveTo(-58, 26); ctx.arc(-58, 14, 12, Math.PI * .5, Math.PI * 1.5); ctx.lineTo(62, 2); ctx.arc(62, 14, 12, -Math.PI * .5, Math.PI * .5); ctx.closePath();   // same winding as the lumps, so they all join
+    ctx.lineWidth = 5; ctx.lineJoin = 'round'; ctx.strokeStyle = shade(col, .16); ctx.stroke(); ctx.fillStyle = col; ctx.fill();
+    ctx.globalAlpha *= .55; ctx.fillStyle = hexOk(col) ? mix(col, '#ffffff', .6) : col;   // a soft highlight on the top lumps
+    ctx.beginPath(); ctx.arc(-30, -10, 13, 0, Math.PI * 2); ctx.moveTo(19, -22); ctx.arc(4, -22, 15, 0, Math.PI * 2); ctx.fill();
+    ctx.restore();
+  }
+  function sun(ctx, x, y, px, colors, alpha = 1) {
+    if (alpha <= 0) return;
+    const col = typeof colors === 'string' ? colors : colors.X, s = px / 10, R = 27;
+    ctx.save(); ctx.globalAlpha *= alpha; ctx.translate(x, y + Math.sin(NOW * 1.3) * 2 * s); ctx.scale(s, s);
+    ctx.lineCap = 'round'; ctx.strokeStyle = col; ctx.lineWidth = 5.5;
+    for (let i = 0; i < 10; i++) {                                  // rays turn slowly and breathe one after another
+      const a = i / 10 * Math.PI * 2 + NOW * .2, l = 10 + 5 * Math.sin(NOW * 2.4 + i * 1.3), r0 = R + 8;
+      ctx.beginPath(); ctx.moveTo(Math.cos(a) * r0, Math.sin(a) * r0); ctx.lineTo(Math.cos(a) * (r0 + l), Math.sin(a) * (r0 + l)); ctx.stroke();
+    }
+    const br = 1 + .025 * Math.sin(NOW * 2);
+    ctx.save(); ctx.scale(br, 2 - br);
+    ctx.fillStyle = col; ctx.strokeStyle = INK; ctx.lineWidth = 4;
+    ctx.beginPath(); ctx.arc(0, 0, R, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+    ctx.fillStyle = hexOk(col) ? mix(col, '#ffffff', .45) : col;
+    ctx.beginPath(); ctx.arc(-11, -13, 6, 0, Math.PI * 2); ctx.fill();
+    const a0 = ctx.globalAlpha; ctx.fillStyle = PAL.pink; ctx.globalAlpha = a0 * .55;
+    ctx.beginPath(); ctx.ellipse(-15, 7, 5, 3, 0, 0, Math.PI * 2); ctx.moveTo(20, 7); ctx.ellipse(15, 7, 5, 3, 0, 0, Math.PI * 2); ctx.fill();
+    ctx.globalAlpha = a0;
+    const k = Math.floor(NOW / 3.1), blink = NOW - k * 3.1 - hash(k + 4.2) * 1.5, ex = Math.sin(NOW * .45) * 1.5;
+    ctx.fillStyle = INK; ctx.strokeStyle = INK; ctx.lineWidth = 3; ctx.lineCap = 'round';
+    for (const sx of [-9, 9]) {
+      if (blink > 0 && blink < .14) { ctx.beginPath(); ctx.moveTo(sx + ex - 4, -3); ctx.lineTo(sx + ex + 4, -3); ctx.stroke(); }
+      else { ctx.beginPath(); ctx.arc(sx + ex, -3, 3.4, 0, Math.PI * 2); ctx.fill(); }
+    }
+    ctx.beginPath(); ctx.arc(ex, 3, 8, Math.PI * .2, Math.PI * .8); ctx.stroke();
+    ctx.restore(); ctx.restore();
+  }
+  function moon(ctx, x, y, px, colors, alpha = 1) {
+    if (alpha <= 0) return;
+    const col = typeof colors === 'string' ? colors : colors.X, s = px / 9, R = 30, ix = R * .55, iy = -R * .2, ir = R * .84;
+    ctx.save(); ctx.globalAlpha *= alpha; ctx.translate(x, y + Math.sin(NOW * .9) * 2 * s); ctx.scale(s, s); ctx.rotate(-.2 + Math.sin(NOW * .6) * .05);
+    ctx.save(); ctx.beginPath(); ctx.rect(-R * 3, -R * 3, R * 6, R * 6); ctx.arc(ix, iy, ir, 0, Math.PI * 2); ctx.clip('evenodd');
+    ctx.fillStyle = col; ctx.strokeStyle = INK; ctx.lineWidth = 4;
+    ctx.beginPath(); ctx.arc(0, 0, R, 0, Math.PI * 2); ctx.fill(); ctx.stroke(); ctx.restore();
+    ctx.save(); ctx.beginPath(); ctx.arc(0, 0, R, 0, Math.PI * 2); ctx.clip();
+    ctx.strokeStyle = INK; ctx.lineWidth = 4; ctx.beginPath(); ctx.arc(ix, iy, ir, 0, Math.PI * 2); ctx.stroke(); ctx.restore();
+    ctx.strokeStyle = INK; ctx.lineWidth = 2.8; ctx.lineCap = 'round';   // asleep: a closed eye and a small smile
+    ctx.beginPath(); ctx.arc(-17, -4, 4.5, Math.PI * .1, Math.PI * .9); ctx.stroke();
+    ctx.beginPath(); ctx.arc(-14, 9, 4, Math.PI * .15, Math.PI * .75); ctx.stroke();
+    ctx.restore();
+  }
+  // seen from the front: wings snap shut fast and open slowly; the body bobs with each beat
+  function butterfly(ctx, x, y, px, colors, alpha = 1, rate = 12) {
+    if (alpha <= 0) return;
+    const col = typeof colors === 'string' ? colors : colors.X, s = px / 3.6, ph = NOW * rate * Math.PI * .5;
+    const open = .16 + .84 * Math.pow(Math.abs(Math.cos(ph)), .6), bob = Math.sin(ph * 2) * 1.6;
+    ctx.save(); ctx.globalAlpha *= alpha; ctx.translate(x, y + bob * s); ctx.scale(s, s);
+    ctx.lineWidth = 2.2; ctx.strokeStyle = INK; ctx.lineJoin = 'round'; ctx.lineCap = 'round';
+    for (const side of [-1, 1]) {
+      ctx.save(); ctx.scale(side * open, 1); ctx.beginPath();
+      ctx.ellipse(9, -5, 9.5, 7.5, -.5, 0, Math.PI * 2); ctx.moveTo(13.5, 6); ctx.ellipse(7, 6, 6.5, 5, .5, 0, Math.PI * 2);
+      ctx.restore(); ctx.fillStyle = col; ctx.fill(); ctx.stroke();
+      ctx.save(); ctx.scale(side * open, 1); ctx.beginPath(); ctx.arc(11, -6, 2.4, 0, Math.PI * 2); ctx.restore();
+      ctx.fillStyle = '#fff'; ctx.fill();
+    }
+    ctx.fillStyle = INK; ctx.beginPath(); ctx.ellipse(0, 0, 2.3, 7.5, 0, 0, Math.PI * 2); ctx.fill();
+    ctx.lineWidth = 1.8; ctx.beginPath();
+    ctx.moveTo(-1, -6); ctx.quadraticCurveTo(-3, -12, -6, -14); ctx.moveTo(1, -6); ctx.quadraticCurveTo(3, -12, 6, -14); ctx.stroke();
+    ctx.restore();
+  }
+  // seen from the side, facing dir: flapping wings (rate 0 = perched), a body that stretches on the
+  // downstroke, a tail that flicks, a bright eye
+  function bird(ctx, x, y, px, colors, alpha = 1, rate = 8, dir = 1) {
+    if (alpha <= 0) return;
+    const col = typeof colors === 'string' ? colors : colors.X, s = px / 6, fly = rate > 0, ph = NOW * rate * Math.PI * .5;
+    const flap = fly ? Math.sin(ph) : 0, perch = fly ? 0 : Math.max(0, Math.sin(NOW * 2.1)) ** 8;
+    ctx.save(); ctx.globalAlpha *= alpha; ctx.translate(x, y - perch * 3 * s); ctx.scale(dir * s, s);
+    ctx.scale(1 - flap * .04, 1 + flap * .05);
+    ctx.lineWidth = 3; ctx.strokeStyle = INK; ctx.lineJoin = 'round'; ctx.lineCap = 'round';
+    const tail = fly ? flap * .15 : Math.sin(NOW * 3) * .1;
+    ctx.save(); ctx.translate(-12, -1); ctx.rotate(-.35 + tail);
+    ctx.beginPath(); ctx.moveTo(2, -4); ctx.lineTo(-13, -6); ctx.lineTo(-11, 4); ctx.lineTo(2, 4); ctx.closePath();
+    ctx.fillStyle = shade(col, .2); ctx.fill(); ctx.stroke(); ctx.restore();
+    if (!fly) { ctx.beginPath(); ctx.moveTo(-3, 10); ctx.lineTo(-4, 16); ctx.moveTo(4, 10); ctx.lineTo(4, 16); ctx.stroke(); }
+    ctx.beginPath(); ctx.ellipse(0, 0, 15, 11.5, 0, 0, Math.PI * 2); ctx.fillStyle = col; ctx.fill();
+    ctx.save(); ctx.clip(); ctx.fillStyle = hexOk(col) ? mix(col, '#ffffff', .6) : '#fff';
+    ctx.beginPath(); ctx.ellipse(3, 7, 10, 6.5, 0, 0, Math.PI * 2); ctx.fill(); ctx.restore();
+    ctx.beginPath(); ctx.ellipse(0, 0, 15, 11.5, 0, 0, Math.PI * 2); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(13, -4); ctx.lineTo(22, -1); ctx.lineTo(13, 3); ctx.closePath();
+    ctx.fillStyle = (colors && colors.O) || PAL.orange; ctx.fill(); ctx.stroke();
+    ctx.fillStyle = INK; ctx.beginPath(); ctx.arc(7, -4, 2.6, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(6.2, -4.9, .9, 0, Math.PI * 2); ctx.fill();
+    ctx.save(); ctx.translate(-2, -3); ctx.rotate(fly ? -flap * 1.05 - .15 : .25);
+    ctx.beginPath(); ctx.ellipse(-8, 0, fly ? 12 : 9.5, fly ? 5.5 : 5, 0, 0, Math.PI * 2);
+    ctx.fillStyle = shade(col, .22); ctx.fill(); ctx.stroke(); ctx.restore();
+    ctx.restore();
+  }
+
   // the paper sheet for drawPaper: cream base, faint fibres, darker toward the corners
   const paperTextures = new Map();
   function paperTexture(w, h) {
@@ -102,6 +209,17 @@
     if (paperTextures.size > 6) paperTextures.clear();
     paperTextures.set(key, cv); return cv;
   }
+
+  let NOW = 0;   // the time of the frame being drawn, for the ink helpers below (sun, clouds, birds)
+
+  // brow poses per eye state: [amount, height, peak]. Amount 0 hides it (the calm default face);
+  // height raises it; peak > 0 arches it (surprise, worry), peak < 0 makes a V (effort, determination)
+  const BROWS = {
+    open: [0, 0, 0], blink: [0, 0, 0], wide: [1, 1, .55], sad: [1, .25, .9], flat: [1, -.75, -.05],
+    happy: [.75, .55, .45], squeeze: [1, -.45, -.85], closed: [.55, .1, .35], heart: [.8, .7, .6], dizzy: [.8, .3, -.4],
+  };
+  const ANTIC = .14;   // seconds of crouch before a jump
+  const SPACE = 180;   // closest two characters stand, centre to centre (bodies are ~160 wide face to face, wider when squashed)
 
   // body outline (facing right): a bean with a soft forehead bump
   const N_SHAPE = 44;
@@ -135,6 +253,10 @@
         state: 'planted', planted: 1, s: 0, dur: .3, fromX: 0, fromY: 0, toX: 0,
       }));
       this.tuft = null;
+      // acting: the brow (amount, height, peak) springs toward a pose picked from the eye,
+      // and a "take" (a surprised pop) is remembered so the drawing can add its little lines
+      this.brow = { a: { x: 0, v: 0 }, y: { x: 0, v: 0 }, p: { x: 0, v: 0 } };
+      this.prevEye = this.cmd.eye; this.prevFace = this.cmd.face; this.takeT = -9;
     }
     get dir() { return this.face.x >= 0 ? 1 : -1; }
     get fw() { return clamp(this.face.x, -1, 1); }
@@ -146,8 +268,11 @@
     hip(i) { return this.toWorld((i ? 9 : -9) * this.fw, HIP_Y); }
     outline() { return shapeAt(this.fw).map(([x, y]) => this.toWorld(x, y)); }
     top() { return this.toWorld(0, -BODY_H); }
-    jump(vx, vy, spin = 0) {
-      this.mode = 'air'; this.vx = vx; this.vy = vy; this.spin = spin; this.q.v -= 2.5;
+    jump(vx, vy, spin = 0, antic = true) {
+      // jumps from the ground are logged, so the next run of the film can crouch into them (anticipation)
+      // (not a bounce straight off a landing: there's no time to crouch, and it would feed back on itself)
+      if (antic && this.mode === 'ground' && this.S.jlog && !(this.t - this.landedAt < ANTIC)) (this.S.jlog[this.idx] ??= []).push([this.S.t, vy]);
+      this.mode = 'air'; this.vx = vx; this.vy = vy; this.spin = spin; this.q.v -= 2.5 + clamp(-vy / 900) * 1.5;
       this.S.sfx('jump', { v: clamp(-vy / 900), gain: this.gain }, this.x);
     }
     hold(x, y) { if (this.mode !== 'held') { this.mode = 'held'; this.hx = this.x; this.hy = this.y; } this.hx = x; this.hy = y; }
@@ -156,13 +281,34 @@
     step(dt) {
       const c = this.cmd, S = this.S; this.t += dt;
       spring(this.face, c.face, 320, 1, dt);
-      spring(this.lookX, c.lookX, 240, .9, dt);
-      spring(this.lookY, c.lookY, 240, .9, dt);
+      // the eye overshoots a little when it snaps to a new look (follow-through), then settles
+      spring(this.lookX, c.lookX, 260, .62, dt);
+      spring(this.lookY, c.lookY, 260, .62, dt);
       spring(this.sit, this.mode === 'ground' ? c.sit : 0, 120, .7, dt);
       const pvx = this.vx, px = this.x, py = this.y;
+      // turning round squashes the body for a beat; a surprise ("wide") stretches it up: a take
+      if (c.face !== this.prevFace) { if (Math.sign(c.face) !== Math.sign(this.prevFace)) this.q.v += 1.1; this.prevFace = c.face; }
+      if (c.eye !== this.prevEye) {
+        if (c.eye === 'wide' && this.mode === 'ground') {
+          this.q.v -= 2.2; this.takeT = this.t;
+          if (this === S.focus) S.cam.z.v += .2;   // and the camera leans in a touch
+        }
+        this.prevEye = c.eye;
+      }
+      const B = BROWS[c.eye] ?? BROWS.open;
+      spring(this.brow.a, B[0], 300, .7, dt);
+      spring(this.brow.y, B[1] - clamp(this.lookY.x, -1, 1) * .25, 300, .55, dt);
+      spring(this.brow.p, B[2], 300, .6, dt);
+      // anticipation: crouch into a jump the film is about to make (times come from the loop pass)
+      let wind = 0;
+      const cues = S.cues && S.cues[this.idx];
+      if (cues && this.mode === 'ground') for (const [tj, vy] of cues) {
+        const u = tj - S.t;
+        if (u > 0 && u < ANTIC) wind = Math.max(wind, sine(1 - u / ANTIC) * (.09 + .13 * clamp(-vy / 900)));
+      }
 
       if (this.mode === 'ground') {
-        const dx = c.x - this.x;
+        const dx = (this.goal ?? c.x) - this.x;   // goal: the target moved out of someone's personal space
         if (Math.abs(dx) < .8 && Math.abs(this.vx) < c.accel * dt * 2) this.vx = 0;
         else {
           const want = Math.sign(dx) * Math.min(c.speed, Math.sqrt(2 * c.accel * Math.abs(dx)));
@@ -171,13 +317,14 @@
         this.x += this.vx * dt;
         // standing still, the body breathes a little, so a held pose never looks frozen
         const still = 1 - clamp(Math.abs(this.vx) / 30);
-        spring(this.q, c.crouch + still * (this.breathe ?? .011) * Math.sin(this.t * 2.5 + (this.seed ?? 0)), 340, .3, dt);
+        spring(this.q, c.crouch + wind + still * (this.breathe ?? .011) * Math.sin(this.t * 2.5 + (this.seed ?? 0)), 340, .3, dt);
       } else if (this.mode === 'air') {
         this.vy += GRAV * dt; this.x += this.vx * dt; this.y += this.vy * dt;
-        spring(this.q, -clamp(Math.abs(this.vy) / 2800, 0, .13), 340, .45, dt);
+        // stretched along the motion when fast, round again at the top of the arc
+        spring(this.q, -clamp(Math.abs(this.vy) / 2300, 0, .17), 340, .45, dt);
         if (this.spin) { this.rot.x += this.spin * dt; this.rot.v = 0; }
         if (this.vy > 0 && this.y >= S.groundAt(this.x) - STAND + BODY_H * this.q.x) {
-          this.mode = 'ground'; this.q.v += this.vy * .004; this.landV = this.vy; this.vy = 0;
+          this.mode = 'ground'; this.q.v += this.vy * .0048; this.landV = this.vy; this.vy = 0;
           this.landedAt = this.t; this.lands++;
           if (this.spin) { this.rot.x = Math.atan2(Math.sin(this.rot.x), Math.cos(this.rot.x)); this.rot.v = this.spin * .2; this.spin = 0; }
           S.puff(this.x, -1); S.puff(this.x, 1);
@@ -247,6 +394,7 @@
           this.bob += arc * clamp(2.5 + spd * .018, 2.5, 8);
           if (F.s >= 1) {
             F.state = 'planted'; F.planted = 0; F.y = S.groundAt(F.x); F.rot = 0;
+            this.q.v += .55 * clamp(spd / 400);   // weight settles onto the foot: a tiny squash on every step
             if (F.dur > .1) S.sfx('step', { v: clamp(spd / 450) * .8 + .12, seed: ++this.stepN, gain: this.gain }, F.x);
           }
         }
@@ -283,6 +431,14 @@
       if (this.startState) this.applyState(this.startState);
       else this.warm(this.story.warmup ?? 3);
       this.onSfx = listener;
+      // jumps are logged as the film runs; the loop pass hands them back as cues for anticipation
+      this.jlog = {}; this.cues = this.story.__cues || null;
+    }
+    // where playback (and MP4s) start: just before the first caption, so the very first
+    // frame already shows the odd thing instead of an empty walk-in (stories can set hook: seconds)
+    get hook() {
+      const first = (this.story.captions || [])[0], h = this.story.hook ?? (first ? first[0] - .7 : 0);
+      return isFinite(this.T) ? clamp(h, 0, Math.max(0, this.T - 1)) : 0;
     }
     // seamless loops: the film opens on the exact state it ends on (Bo, feet, hair, camera)
     captureState() {
@@ -312,7 +468,32 @@
       for (const c of this.chars) c.t = 0;
       this.fx = []; this.parts = [];
     }
-    addChar(o) { const c = new Character(this, o); c.seed = this.chars.length * 1.7; this.chars.push(c); return c; }
+    addChar(o) { const c = new Character(this, o); c.seed = this.chars.length * 1.7; c.idx = this.chars.length; this.chars.push(c); return c; }
+    // personal space: a character never stops inside another one (no bodies squashed together, no
+    // faces touching). If its target would end within SPACE of someone it's walking up to, it stops at
+    // the edge instead; two that start too close step apart. Walking past someone is untouched.
+    // Stories can turn it off (space: false) or exempt a character (c.space = 0).
+    spaceOut() {
+      for (const c of this.chars) c.goal = null;
+      if (this.story.space === false) return;
+      const live = this.chars.filter(c => c.mode === 'ground' && !c.hidden && c.space !== 0);
+      for (const A of live) {
+        let tx = A.cmd.x; if (Math.abs(tx) > 1e5) continue;
+        for (let pass = 0; pass < 2; pass++) for (const B of live) {
+          if (B === A || Math.abs(A.y - B.y) > 95) continue;
+          const side = A.x < B.x || (A.x === B.x && A.idx < B.idx) ? -1 : 1, edge = B.x + side * SPACE;
+          if (Math.abs(tx - B.x) < SPACE && (side < 0 ? tx > edge : tx < edge)) tx = edge;
+        }
+        if (tx !== A.cmd.x) A.goal = tx;
+      }
+    }
+    // hop clean over someone in the way instead of walking through them (call it every frame while
+    // it may happen; it fires once per pair and key). The one jumped over ducks a little.
+    leapfrog(a, b, key = 'frog', vx = 620) {
+      const dir = Math.sign(a.vx) || a.dir, d = (b.x - a.x) * dir;
+      if (a.mode === 'ground' && b.mode !== 'air' && !b.hidden && d > 0 && d < 210 && Math.abs(a.vx) > 50)
+        this.once(`${key}${a.idx}-${b.idx}`, () => { a.jump(dir * Math.max(vx, Math.abs(a.vx) + 320), -1050); b.q.v += 2.5; this.sfx('whoosh', { d: .4, v: .5 }, a.x); });
+    }
     once(key, fn) { if (!this.fired.has(key)) { this.fired.add(key); fn(); } }
     plan(c, t, list) {
       list.forEach(([at, v], i) => {
@@ -328,16 +509,24 @@
       const pan = x === undefined ? 0 : clamp((x - this.cam.x.x) / 520, -.7, .7);
       this.onSfx({ t: this.t, name, p, pan });
     }
-    // typed captions make a sound as they appear: a soft murmured voice (story.voice = { pitch },
-    // or per caption as its 5th item; false = silent); story.voice: false falls back to a muted key click
+    // typed captions make a sound as they appear: one soft sung note per word, so a sentence plays
+    // as a little tune (story.voice = { pitch }, or per caption as its 5th item; false = silent);
+    // story.voice: false falls back to a muted key click per letter
     captionBlips() {
       (this.story.captions || []).forEach(([a, b, text, , vo], i) => {
         const plain = text.replace(/\*/g, ''), n = this.t < a || this.t > b ? 0 : Math.floor(plain.length * seg(this.t, a, a + Math.min(1.3, plain.length * .055)) + 1e-6);
-        const prev = this.capShown[i] ?? 0, ch = plain[n - 1];
-        if (n > prev && ch !== ' ') {
-          const voice = vo === undefined ? (this.story.voice ?? { pitch: 1 }) : vo;   // everyone murmurs unless a story sets voice: false
-          if (voice) { if (n % 2 === 0 || n === plain.length) this.sfx('voice', { k: n + i * 7, ch, pitch: voice.pitch ?? 1, g: voice.g ?? 1, rise: /\?\W*$/.test(plain) && n > plain.length - 4 ? 1 : 0, last: n === plain.length }); }
-          else if (vo === undefined) this.sfx('blip', { k: n });
+        const prev = this.capShown[i] ?? 0;
+        if (n > prev) {
+          const voice = vo === undefined ? (this.story.voice ?? { pitch: 1 }) : vo;   // everyone speaks unless a story sets voice: false
+          const words = plain.split(' ').filter(Boolean), end = /\?\W*$/.test(plain) ? 'ask' : /!\W*$/.test(plain) ? 'yay' : /\.\.\.\W*$/.test(plain) ? 'trail' : 'say';
+          for (let j = prev + 1; j <= n; j++) {
+            const ch = plain[j - 1]; if (ch === ' ') continue;
+            if (voice) {
+              if (j > 1 && plain[j - 2] !== ' ') continue;                         // only where a word starts
+              const w = plain.slice(0, j - 1).split(' ').filter(Boolean).length;  // which word this is
+              this.sfx('voice', { k: i * 7 + w, w, nw: words.length, word: words[w], end, pitch: voice.pitch ?? 1, g: voice.g ?? 1, last: w === words.length - 1 });
+            } else if (vo === undefined && j === n) this.sfx('blip', { k: n });
+          }
         }
         this.capShown[i] = n;
       });
@@ -369,6 +558,7 @@
       for (let i = 0; i < n; i++) {
         this.camGoal = {};
         this.story.update(this, this.t, h);
+        this.spaceOut();
         for (const c of this.chars) c.step(h);
         this.stepCam(h);
         for (const p of this.parts) { const dr = Math.exp(-p.drag * h); p.vx *= dr; p.vy = p.vy * dr + p.g * h; p.x += p.vx * h; p.y += p.vy * h; }
@@ -402,9 +592,14 @@
       if (!st.loopAfter) { this.T = st.T; return; }
       const T = Math.round(st.loopAfter * 60) / 60;
       this.T = Infinity; this.startState = null;
-      for (let i = 0; i < 3; i++) { this.reset(); this.advance(T); this.startState = this.captureState(); }
-      this.reset(); const s0 = this.snapshot(); this.advance(T); const s1 = this.snapshot();
-      this.loopErr = Math.sqrt(s0.reduce((a, v, k) => a + (v - s1[k]) ** 2, 0));
+      for (let i = 0; i < 3; i++) { this.reset(); this.advance(T); this.startState = this.captureState(); st.__cues = this.jlog; }
+      // a story whose jump times depend on the simulation can need a pass or two more to settle
+      for (let i = 0; i < 4; i++) {
+        this.reset(); const s0 = this.snapshot(); this.advance(T); const s1 = this.snapshot(); st.__cues = this.jlog;
+        this.loopErr = Math.sqrt(s0.reduce((a, v, k) => a + (v - s1[k]) ** 2, 0));
+        if (this.loopErr < .005) break;
+        this.startState = this.captureState();
+      }
       this.T = T;
     }
     canBlink() { return this.t > .6 && this.t < this.T - .6; }
@@ -417,7 +612,9 @@
     // ---- rendering ----
     viewFor(cw, ch) {
       const portrait = ch > cw;
-      const unit = (this.story.unit ? this.story.unit(cw, ch) : Math.min(cw / (portrait ? 640 : 1200), ch / 600)) * this.cam.z.x;
+      // a portrait frame shorter than 9:16 (a phone with browser bars) keeps the full 9:16 height in view
+      // and shows a little more to the sides, so nothing tall gets cut off and captions never crowd it
+      const unit = (this.story.unit ? this.story.unit(cw, ch) : Math.min(cw / (portrait ? 640 : 1200), ch / (portrait ? 640 * 16 / 9 : 600))) * this.cam.z.x;
       const gy = ch * (this.story.groundFrac ?? (portrait ? .64 : .7));
       const k = this.t * 31, a = this.cam.shake;
       const sx = (hash(Math.floor(k)) - .5) * 2 * a, sy = (hash(Math.floor(k) + .5) - .5) * 2 * a;
@@ -432,7 +629,7 @@
 
     render(ctx, cw, ch) {
       const st = this.story, t = this.t, v = this.view = this.viewFor(cw, ch);
-      this.ctx = ctx; this.boilFrame = Math.floor(t * 12);
+      this.ctx = ctx; this.boilFrame = Math.floor(t * 12); NOW = t;
       ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.globalAlpha = 1;
       if (st.clear) ctx.clearRect(0, 0, cw, ch); else { ctx.fillStyle = st.paperAt ? st.paperAt(t, this) : st.paper || PAPER; ctx.fillRect(0, 0, cw, ch); }
       ctx.setTransform(v.unit, 0, 0, v.unit, v.ox, v.oy);
@@ -513,6 +710,7 @@
         ctx.globalAlpha = 1; ctx.fillStyle = INK;
       }
       this.drawEye(ctx, c);
+      this.drawTake(ctx, c);
     }
 
     drawLeg(ctx, c, h, F, i) {
@@ -558,6 +756,26 @@
         ctx.rotate(c.t * 7); ctx.lineWidth = 3.5; ctx.beginPath();
         for (let a = 0; a < Math.PI * 4; a += .2) a ? ctx.lineTo(Math.cos(a) * a, Math.sin(a) * a) : ctx.moveTo(0, 0);
         ctx.stroke();
+      }
+      // the brow: hidden on the calm face, it grows in for feelings (raised, worried, flat, determined)
+      const ba = c.brow.a.x;
+      if (ba > .04) {
+        const hw = 12 * Math.min(1.15, ba), by = -19 - 6.5 * c.brow.y.x - (state === 'wide' ? 3 : 0), pk = 5.5 * c.brow.p.x * Math.min(1, ba);
+        ctx.lineWidth = 4.5; ctx.globalAlpha = clamp(ba * 2);
+        ctx.beginPath(); ctx.moveTo(-hw + this.J(310) * .3, by + pk * .9); ctx.quadraticCurveTo(0, by - pk * 1.1, hw + this.J(311) * .3, by + pk * .9); ctx.stroke();
+        ctx.globalAlpha = 1;
+      }
+      ctx.restore();
+    }
+
+    // a take: three little ink lines spring out round the head when a character is surprised
+    drawTake(ctx, c) {
+      const u = (c.t - c.takeT) / .5; if (u < 0 || u >= 1) return;
+      const top = c.toWorld(14 * c.fw, -BODY_H - 6), e = outCubic(u);
+      ctx.save(); ctx.lineWidth = 4.5 * (1 - u * .6); ctx.globalAlpha = 1 - u * u;
+      for (const a of [-.62, 0, .62]) {
+        const ang = -Math.PI / 2 + a + c.rot.x, r0 = 14 + 16 * e, r1 = r0 + 16 * Math.sin(Math.PI * Math.min(1, u * 1.6));
+        ctx.beginPath(); ctx.moveTo(top.x + Math.cos(ang) * r0, top.y + Math.sin(ang) * r0); ctx.lineTo(top.x + Math.cos(ang) * r1, top.y + Math.sin(ang) * r1); ctx.stroke();
       }
       ctx.restore();
     }
@@ -611,8 +829,13 @@
             for (const chr of parts) {
               if (chr === '*') { accent = !accent; continue; }
               if (idx >= shown) { if (!cursor) cursor = [x, y]; idx++; continue; }
+              // each letter pops in: it drops into place and overshoots a touch (accent words a bit more)
+              const cwid = ctx.measureText(chr).width, k = clamp((t - (a + typeDur * (idx + 1) / plain.length)) / .2);
+              const sc = .55 + .45 * outBack(k) + (accent ? .16 * Math.sin(Math.PI * k) : 0), dy = (1 - outCubic(k)) * fs * -.28;
               ctx.fillStyle = accent ? (color || this.story.accent || PAL.blue) : INK;
-              ctx.fillText(chr, x, y); x += ctx.measureText(chr).width; idx++;
+              ctx.save(); ctx.globalAlpha = alpha * clamp(k * 4); ctx.translate(x + cwid / 2, y + dy); ctx.scale(sc, sc);
+              ctx.fillText(chr, -cwid / 2, 0); ctx.restore();
+              x += cwid; idx++;
             }
           });
           if (!cursor && li === lines.length - 1) cursor = [x, y];
@@ -662,7 +885,7 @@
     document.head.appendChild(s);
   });
 
-  async function exportMP4(story, loop, { w, h, fps, loops }, onProgress) {
+  async function exportMP4(story, loop, { w, h, fps, loops, hook }, onProgress) {
     if (!('VideoEncoder' in window)) throw new Error('This browser cannot encode MP4. Use Chrome or Edge on a laptop.');
     await loadMuxer();
     await document.fonts.load(`40px Silkscreen`).catch(() => {});
@@ -676,12 +899,16 @@
 
     // soundtrack: collect the film's sound events, mix them offline into one seamless loop
     let audio = null;
+    const start = Math.round((hook ?? new Show(story, { loop }).hook) * fps);   // first frame: the hook, not the empty walk-in
     const AAC = { codec: 'mp4a.40.2', sampleRate: 48000, numberOfChannels: 2, bitrate: 192000 };
     if (window.SFX && 'AudioEncoder' in window && (await AudioEncoder.isConfigSupported(AAC).catch(() => ({}))).supported) {
       const events = [], A = new Show(story, { loop });
       A.onSfx = e => events.push(e);
       for (let i = 0, n = Math.round(loop.T * fps); i < n; i++) A.advance(1 / fps);
       audio = await SFX.renderLoop(events, loop.T, AAC.sampleRate);
+      // the video opens on the hook, so the soundtrack is turned round to start there too
+      const off = Math.round(start / fps * audio.sr) % audio.N;
+      if (off) audio.ch = audio.ch.map(c => { const r = new Float32Array(c.length); r.set(c.subarray(off)); r.set(c.subarray(0, off), c.length - off); return r; });
       let peak = 0; for (const c of audio.ch) for (const v of c) peak = Math.max(peak, Math.abs(v));
       // normalise every short to the same gentle peak (about -6 dB) so they all sit at the same soft level
       if (peak > 0) for (const c of audio.ch) for (let i = 0; i < c.length; i++) c[i] *= .5 / peak;
@@ -714,7 +941,8 @@
     const perLoop = Math.round(loop.T * fps), total = perLoop * loops;
     for (let i = 0; i < total; i++) {
       if (failure) throw failure;
-      if (i % perLoop === 0) S.reset(); else S.advance(1 / fps);
+      const f = (start + i) % perLoop;
+      if (i === 0) { S.reset(); S.advance(f / fps); } else if (f === 0) S.reset(); else S.advance(1 / fps);
       S.render(ctx, w, h);
       const frame = new VideoFrame(cv, { timestamp: Math.round(i * 1e6 / fps), duration: Math.round(1e6 / fps) });
       enc.encode(frame, { keyFrame: i % (fps * 2) === 0 }); frame.close();
@@ -751,7 +979,8 @@
     const $ = k => document.querySelector(`[data-k="${k}"]`);
     const stage = document.querySelector('.stage'), cv = stage.querySelector('canvas'), ctx = cv.getContext('2d');
     const S = new Show(story);
-    console.log(`[${story.title}] loop T=${S.T.toFixed(3)}s, seam error ${S.loopErr?.toFixed(2) ?? 'n/a'}`);
+    console.log(`[${story.title}] loop T=${S.T.toFixed(3)}s, seam error ${S.loopErr?.toFixed(2) ?? 'n/a'}, opens at ${S.hook.toFixed(1)}s`);
+    S.seek(S.hook);
 
     let mode = window.matchMedia('(max-width: 600px)').matches ? 'fit' : '9:16';
     $('frame').value = mode;
@@ -812,7 +1041,7 @@
   }
 
   window.Shorts = {
-    play, exportMP4, Show, GROUND, STAND, BODY_H, GRAV, INK, PAPER, PAL, SPRITES, sprite, zzz, ramp,
+    play, exportMP4, Show, GROUND, STAND, BODY_H, GRAV, INK, PAPER, PAL, SPRITES, sprite, zzz, ramp, cloud, sun, moon, butterfly, bird,
     clamp, lerp, seg, sine, outCubic, inCubic, outBack, hash, spring, mix,
   };
 })();
