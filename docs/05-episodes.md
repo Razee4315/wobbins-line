@@ -58,11 +58,11 @@ All 38 episodes in release order. ★ = one of the user's favourites. Seasons on
 
 ## Posting log
 
-Track what has gone out on Instagram / YouTube here.
+Track what has gone out here. Posting order and captions: `exports/POSTING-PLAN.md` (folder per day).
 
 | Date | Platform | Episode | Notes |
 |---|---|---|---|
-| | | | Suggested first three: Bloom, The Hill, One More (see `brand/instagram/captions.md`) |
+| 2026-10-30 | Instagram, Facebook Page, YouTube Shorts, TikTok, Pinterest | 01 Battery | First post. Uploaded a 1080p copy (CRF 17, ~9.6 MB: the browser extension's upload limit is 10 MB). YouTube kept a video frame as thumbnail and TikTok went through a first-post review. |
 
 ## Adding an episode
 
