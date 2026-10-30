@@ -78,6 +78,18 @@ exportAll({ video: false });        // covers and captions only (seconds)
 
 `exports/` is git-ignored. `exports/POSTING-PLAN.md` explains the daily routine and the order.
 
+### Brand kit (profile picture, banners, GIPHY stickers)
+
+```js
+await import('/tools/brand.js');
+await brandAll();      // exports/00 - Brand kit/: profile picture + a banner per platform (sizes in BANNERS)
+await stickers();      // numbered PNG frames per sticker, see-through background
+```
+
+Join each sticker's frames into a GIF with ffmpeg (palettegen with `reserve_transparent=1`, then
+paletteuse), then delete the frames. `exports/00 - Brand kit/SETUP.md` has the name, bio and settings
+for every platform.
+
 ## Render MP4s
 
 - **One at a time:** open the episode on the website, then Download MP4 (1080×1920, 2160×3840 or 3840×2160). Or on the episode page itself, Export MP4.
