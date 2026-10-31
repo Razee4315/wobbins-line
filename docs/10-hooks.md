@@ -93,5 +93,60 @@ Then look at frame one yourself, at full size.
 Check these in each platform's analytics, and note what you find in `04-lessons-learned.md`:
 
 - YouTube Studio: **viewed vs swiped away**, and the retention curve's first 3 seconds.
-- Instagram: plays against reach, and average watch time.
+- Instagram: plays against reach, and average watch time. Also saves, shares and follows as a percentage of views.
 - Compare the new episodes with the old ones, and change one thing at a time.
+
+## Lessons from Digital Income Project (2026-10-31)
+
+The user shared 12 video transcripts from Clay's channel. We took the method, not the tools: no image or video generation, everything goes into our own animation.
+
+Be careful with his numbers. They are his own claims about his own accounts, most of these videos are sponsored by the tools they show, and he makes money from people following him. Everything below is something to test. Nothing is proven for us until our own stats say so.
+
+### How he opens
+
+| Move | What he does | For Wobbin |
+|---|---|---|
+| **A number first** | 9 of the 12 have a specific number in the first two sentences: "over 180,000 followers", "17 million views" | A count in frame one. Only Call Mum and Say Hi really do this so far |
+| **A twist straight after** | "750,000 followers... but there's one thing you should know." "Not real." | Two steps: the claim at 0 s, something breaks it by 2 s |
+| **A clock or a bet** | One hour, and his brother's flight leaves in 45 minutes. A first sale in 48 hours | A deadline on screen: "bus in 30 seconds." None of our episodes do this yet |
+| **A loss** | "Instagram just deleted my account" | Open at the second it goes wrong: the drop, the crack, the last bar of battery |
+| **Talking to you** | "Come a little closer because we need to talk" | Wobbin turns and looks straight at the viewer. Our eye can already do this, and the caption can talk to them |
+| **The result first** | He plays the finished video, then explains it | Open on the funniest moment, then go back. The loop can make the end meet it |
+
+His hit stories also have a second person in the conflict from the start: a girlfriend, a parent, a rival. Most of our openings are Wobbin alone. Hiding is the best example of how it could work.
+
+### How he keeps people watching
+
+- **He interrupts at the point people leave.** A heckler says "this is starting to get boring", and he admits "this is when a lot of you leave". For us: a bird or a friend who heckles Wobbin around 4 to 6 seconds, which is where our TikTok viewers go.
+- **He shows the low point.** "6 and a half hours later": no sales. Then a jump to the win. A time card ("3 hours later") is a cheap new beat.
+- **A second twist.** The clone video reveals itself, then says the footage is still not real.
+- **Fast shots.** One reel he studied had 32 cuts in 47 seconds, a new shot every 1.5 seconds. We have a new beat every 3 to 4 seconds and no cuts at all, just one moving camera. This is our biggest gap. Try hard cuts to a close-up of the eye or a prop. The camera runs on springs, so a story would set `S.cam.x.x` and `S.cam.z.x` directly. No episode has tried it yet, so check the seam.
+- **He still says the story matters more than the cuts.** Fast cuts on a weak idea won't save it.
+
+### What gets a video pushed
+
+- **Saves, shares and follows from strangers,** as a percentage of views. He says about 7% saves or 4% shares goes viral, on his carousels. We are nowhere near that: Battery had 0.19% saves and 0% shares, and The Chair had 0% and 0.23%.
+- **Build the reason to save or send into the video.** One account he studied opens with "repeat these affirmations for 7 days", so people save it. For us the natural one is sending: "send this to your friend who always cancels."
+- **The caption does three jobs:** repeats the hook, uses searchable words, and asks for something. Ours has the quote, a question and five hashtags, but the quote rarely repeats the hook and has few searchable words. Search brought 30% of Battery's YouTube views, which fits.
+
+### Finding ideas
+
+- **Look for outliers:** small, recent accounts with far more views than followers. Copy the formula, never the content.
+- **Read the scripts of what's working** in relatable animation and pull out the hook structure.
+- **When one works, make more like it.**
+- **Expect slow results.** He says it took 17 uploads before one passed 2,000 views. We have posted 4.
+
+### A format to try: carousels
+
+He says Reels are crowded and carousels have more room, and that they work without sound. We can make them cheaply: `cover()` in `tools/export.js` already turns any moment of an episode into a PNG. His formula: a bold hook on slide 1, one point per slide, an ask on the last slide, 3:4 or 4:5, not square. Test one before building anything bigger.
+
+### Not for us
+
+- **Swapping our character into someone else's viral video,** or re-uploading anything. It's copying, and he says himself it risks a copyright flag.
+- **Stories told as true when they aren't,** drama for its own sake, and rage bait. It isn't our tone.
+- **Paying strangers to recover an account,** buying pages, or paying networks to reshare.
+- **Trending music, unless the user decides otherwise.** He says every viral video he showed had a trending song. That goes against "no music". If it's ever tried, try it on Instagram only, on one post, and compare.
+
+### Protecting the show
+
+He says he lost 3 million followers to bans with no warning, and a Facebook business page was his only way to reach a person at Meta. So: link the Facebook Page to Instagram (it's on the user's list in `11-posting.md`), keep posting on all five platforms, and keep the website as the home nobody can delete.

@@ -24,13 +24,14 @@ Names, bios and settings for these and every optional platform are in `12-accoun
 
 ## The plan
 
-**Two sets of numbers:** folders, days and `exports/` use the posting order below. `05-episodes.md` uses EP numbers, the order episodes were made. The Gap is day 5 but EP 03.
+**Two sets of numbers:** folders, days and `exports/` use the posting order below. `05-episodes.md` uses EP numbers, the order episodes were made. The Gap is day 15 but EP 03.
 
 - **One video a day at about 12 pm Pakistan time**, in the order at the end of this page.
 - The user sometimes says "post now". Do it, and mention how close it is to the last post. A few hours apart is the guideline.
 - Keep to the order until the user changes it.
 - **Don't post on your own.** Each post needs the user to say so.
 - **The older videos stay as they are.** After seeing the first stats the user chose not to re-cut them (2026-10-31).
+- **Hook-first episodes go first** (the user chose this on 2026-10-31): the ten from Seasons 10 and 11 are days 5 to 14, and the older videos moved to days 15 to 48. The four Season 9 pilots stay last, as days 49 to 52, and aren't exported yet.
 - **The order:** `ORDER` in `tools/export.js` is the truth. If the table at the end of this page differs, trust `ORDER` and update the table. Episodes without a folder in `exports/` have to be exported first, and that's a render, so ask.
 
 ## What Claude can and can't do
@@ -52,7 +53,7 @@ Claude posts through Claude in Chrome, in the user's logged-in browser.
 ## Before each post
 
 1. **Browser:** run `list_connected_browsers` and use the **Windows** one (`onThisComputer`). A Mac browser on the same account can be the default, and it's logged out of everything.
-2. **Upload copy:** the extension's `file_upload` stops at 10 MB per call, so make a 1080p copy. Start at CRF 17 and raise it until the file is under 9.8 MB (Battery and Seen were fine at 17, The Chair needed 20, Water Yourself 17):
+2. **Upload copy:** the extension's `file_upload` stops at 10 MB per call, so make a 1080p copy. Start at CRF 17 and raise it until the file is under 9.8 MB (Battery and Seen were fine at 17, The Chair needed 20, Water Yourself 17). The pencil episodes hold far more detail, so start those at CRF 29 (One Trip: 50 MB at 17, 13 MB at 26, 8.6 MB at 29, and it still looks clean):
 
    ```bash
    ffmpeg -i "NN Title 4K.mp4" -vf "scale=1080:1920:flags=lanczos" -c:v libx264 -preset slow -crf 17 -profile:v high -pix_fmt yuv420p -c:a aac -b:a 160k -movflags +faststart "NN Title 1080p.mp4"
@@ -108,7 +109,7 @@ Instagram's URL `/reel/<id>/` can roll on to someone else's reel, so use `/wobbi
 
 ## The order
 
-Days 1 to 4 have gone out. **Next is day 5, The Gap.**
+Days 1 to 4 have gone out. **Next is day 5, One Trip.**
 
 | Day | Folder | About | Line |
 |---|---|---|---|
@@ -116,37 +117,47 @@ Days 1 to 4 have gone out. **Next is day 5, The Gap.**
 | 2 | 02 - The Chair | putting it away | put it away now. future you says thanks. |
 | 3 | 03 - Seen | waiting for a reply | not every silence is about you. |
 | 4 | 04 - Water Yourself | looking after yourself | you need watering too. |
-| 5 | 05 - The Gap | courage | jump before the ground decides for you. |
-| 6 | 06 - Last Minute | procrastination | why is the last night always the most productive? |
-| 7 | 07 - Did I Lock It | checking again | you checked. you can let it go. |
-| 8 | 08 - Yes | people-pleasing | you can say no. they’ll be okay. |
-| 9 | 09 - Perfect | perfectionism | done is better than perfect. |
-| 10 | 10 - Two Minutes | the tiny task you dread | it took two seconds. the dread took two weeks. |
-| 11 | 11 - What If | overthinking | let it go. |
-| 12 | 12 - Rain Check | cancelling plans | not every plan needs a rain check. sometimes, go anyway. |
-| 13 | 13 - Slow Walker | slowing down for others | some days, the slow lane has the best view. |
-| 14 | 14 - Lost | losing things | slow down. it’s usually closer than you think. |
-| 15 | 15 - Why Was I Here | forgetting | it’s not just you. doorways really do make you forget. |
-| 16 | 16 - Snooze | five more minutes | the day doesn’t wait. get up for it. |
-| 17 | 17 - Small Talk | awkward silence | every friend was a stranger once. |
-| 18 | 18 - Tomorrow | putting it off | ready or not... just start. |
-| 19 | 19 - One More | scrolling | life doesn’t send notifications. |
-| 20 | 20 - Monday Mountain | dread | it’s never as big up close. |
-| 21 | 21 - Busy | rushing past | slow down for the ones who wait. |
-| 22 | 22 - Can't Sleep | night thoughts | tomorrow is tomorrow’s problem. |
-| 23 | 23 - Fine | pretending you’re okay | not fine? that’s fine too. |
-| 24 | 24 - Imposter | imposter syndrome | you did earn it. you belong here. |
-| 25 | 25 - Highlight Reel | comparison | don’t compare your every day to their best day. |
-| 26 | 26 - The Other Line | impatience | the other line always looks faster. yours is moving too. |
-| 27 | 27 - Just in Case | overpacking life | pack light. keep one umbrella. |
-| 28 | 28 - Heavy | asking for help | asking for help isn’t weak. it’s how we reach higher. |
-| 29 | 29 - Comfort Zone | stepping out | comfort zones grow every time you step out. |
-| 30 | 30 - Inner Voice | the inner critic | talk to yourself the way you would talk to a friend. |
-| 31 | 31 - Decision | too many choices | pick one. you can always turn. |
-| 32 | 32 - Small Steps | consistency | small steps, every day. they add up. |
-| 33 | 33 - Reset | bad days | bad days end. tomorrow is a new line. |
-| 34 | 34 - Bloom | kindness | pass it on. |
-| 35 | 35 - The Hill | keep going | every hill has another side. |
-| 36 | 36 - Hurry | slowing down | you’ll still get there. |
-| 37 | 37 - The Seed | patience | some things only grow when you stop watching. |
-| 38 | 38 - The Cloud | sadness | sit with it. something grows. |
+| 5 | 05 - One Trip | carrying everything at once | two trips never hurt anyone. |
+| 6 | 06 - Call Mum | calling home | call her back. she just wants to know you ate. |
+| 7 | 07 - Payday | money that leaves | broke by five. happy anyway. |
+| 8 | 08 - Say Hi | talking to strangers | say hi. it’s contagious. |
+| 9 | 09 - Hiding | avoiding someone you know | everyone is hiding from someone. say hi. |
+| 10 | 10 - Small Wins | tiny good things | small wins count. so count them. |
+| 11 | 11 - The Mosquito | the 3 am battle | you can’t win every fight. get a net. |
+| 12 | 12 - Dance Break | a little joy at work | dance a little. nobody minds. |
+| 13 | 13 - The Angle | the charger that barely works | fix the small thing. it costs nothing. |
+| 14 | 14 - Scribble | leaving a mark | some walls are just waiting. |
+| 15 | 15 - The Gap | courage | jump before the ground decides for you. |
+| 16 | 16 - Last Minute | procrastination | why is the last night always the most productive? |
+| 17 | 17 - Did I Lock It | checking again | you checked. you can let it go. |
+| 18 | 18 - Yes | people-pleasing | you can say no. they’ll be okay. |
+| 19 | 19 - Perfect | perfectionism | done is better than perfect. |
+| 20 | 20 - Two Minutes | the tiny task you dread | it took two seconds. the dread took two weeks. |
+| 21 | 21 - What If | overthinking | let it go. |
+| 22 | 22 - Rain Check | cancelling plans | not every plan needs a rain check. sometimes, go anyway. |
+| 23 | 23 - Slow Walker | slowing down for others | some days, the slow lane has the best view. |
+| 24 | 24 - Lost | losing things | slow down. it’s usually closer than you think. |
+| 25 | 25 - Why Was I Here | forgetting | it’s not just you. doorways really do make you forget. |
+| 26 | 26 - Snooze | five more minutes | the day doesn’t wait. get up for it. |
+| 27 | 27 - Small Talk | awkward silence | every friend was a stranger once. |
+| 28 | 28 - Tomorrow | putting it off | ready or not... just start. |
+| 29 | 29 - One More | scrolling | life doesn’t send notifications. |
+| 30 | 30 - Monday Mountain | dread | it’s never as big up close. |
+| 31 | 31 - Busy | rushing past | slow down for the ones who wait. |
+| 32 | 32 - Can't Sleep | night thoughts | tomorrow is tomorrow’s problem. |
+| 33 | 33 - Fine | pretending you’re okay | not fine? that’s fine too. |
+| 34 | 34 - Imposter | imposter syndrome | you did earn it. you belong here. |
+| 35 | 35 - Highlight Reel | comparison | don’t compare your every day to their best day. |
+| 36 | 36 - The Other Line | impatience | the other line always looks faster. yours is moving too. |
+| 37 | 37 - Just in Case | overpacking life | pack light. keep one umbrella. |
+| 38 | 38 - Heavy | asking for help | asking for help isn’t weak. it’s how we reach higher. |
+| 39 | 39 - Comfort Zone | stepping out | comfort zones grow every time you step out. |
+| 40 | 40 - Inner Voice | the inner critic | talk to yourself the way you would talk to a friend. |
+| 41 | 41 - Decision | too many choices | pick one. you can always turn. |
+| 42 | 42 - Small Steps | consistency | small steps, every day. they add up. |
+| 43 | 43 - Reset | bad days | bad days end. tomorrow is a new line. |
+| 44 | 44 - Bloom | kindness | pass it on. |
+| 45 | 45 - The Hill | keep going | every hill has another side. |
+| 46 | 46 - Hurry | slowing down | you’ll still get there. |
+| 47 | 47 - The Seed | patience | some things only grow when you stop watching. |
+| 48 | 48 - The Cloud | sadness | sit with it. something grows. |

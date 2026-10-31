@@ -2,6 +2,21 @@
 
 A running log. Newest at the top. When something breaks, write down what happened and the fix.
 
+## 2026-10-31 · Moved Seasons 10 and 11 up the queue
+
+- **Folder numbers follow `ORDER`,** so moving episodes means renaming the folders and the numbers in their file names. Work from the highest number down so nothing gets overwritten.
+- **Pencil episodes compress much worse than the flat ones.** The grain needs CRF 29 to fit the 10 MB upload limit. Lines, colour and captions stay clean, and only the fine grain softens.
+- **Read the captions after an export.** `TAGS` already adds `#relatable`, so One Trip and The Angle had it twice.
+- **`overlap.js` flags the exit hop.** Wobbin's clean hop over a friend counts for about a tenth of a second at take-off (Say Hi, Hiding, Small Wins, Dance Break). Look at those frames before changing the story.
+
+## 2026-10-31 · Studied Digital Income Project's videos
+
+- 12 transcripts, method only, no generation tools. The full notes are at the end of `10-hooks.md`.
+- **Our biggest gap is shots:** a reel he studied changed shot every 1.5 seconds, and ours never cut.
+- **Hook types we haven't used:** a clock or bet, a loss, Wobbin looking at the viewer, showing the result first.
+- **Our saves and shares are about 0.2% or less.** He aims for 7% saves or 4% shares on carousels, so give people a reason to send the video.
+- **A new format to test:** carousels, built from `cover()` in `tools/export.js`.
+
 ## 2026-10-31 · First real numbers from the posts
 
 Battery about 21 h old, The Chair about 8 h old. Small sample.

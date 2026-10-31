@@ -5,12 +5,13 @@
 //   exportAll({ only: ['the-chair'], video: false });         // just redo a cover and caption
 // Progress: window.EXP (current, pct, done, errors).
 
-// posting order: strongest and most relatable first, the quieter early ones later
-export const ORDER = ['battery', 'the-chair', 'seen', 'water-yourself', 'the-gap', 'last-minute', 'did-i-lock-it', 'yes', 'perfect',
+// posting order: the four already out, then the hook-first episodes, then the strongest and most relatable older ones
+export const ORDER = ['battery', 'the-chair', 'seen', 'water-yourself',
+  'one-trip', 'call-mum', 'payday', 'say-hi', 'hiding', 'small-wins', 'the-mosquito', 'dance-break', 'the-angle', 'scribble',
+  'the-gap', 'last-minute', 'did-i-lock-it', 'yes', 'perfect',
   'two-minutes', 'what-if', 'rain-check', 'slow-walker', 'lost', 'why-was-i-here', 'snooze', 'small-talk', 'tomorrow', 'one-more',
   'monday-mountain', 'busy', 'cant-sleep', 'fine', 'imposter', 'highlight-reel', 'the-other-line', 'just-in-case', 'heavy',
   'comfort-zone', 'inner-voice', 'decision', 'small-steps', 'reset', 'bloom', 'the-hill', 'hurry', 'the-seed', 'the-cloud',
-  'one-trip', 'call-mum', 'payday', 'say-hi', 'hiding', 'small-wins', 'the-mosquito', 'dance-break', 'the-angle', 'scribble',
   'power-cut', 'the-menu', 'puddles', 'new-pencil'];
 
 const TAGS = {
@@ -24,7 +25,7 @@ const TAGS = {
   'comfort-zone': 'comfortzone growth', 'inner-voice': 'selftalk innercritic', decision: 'decisions choices', 'small-steps': 'consistency smallsteps',
   reset: 'baddays newday', bloom: 'kindness passiton', 'the-hill': 'keepgoing motivation', hurry: 'slowdown slowliving', 'the-seed': 'patience growth',
   'the-cloud': 'sadness feelings',
-  'one-trip': 'groceries relatable', hiding: 'awkward introvert', 'the-angle': 'charger relatable', 'the-mosquito': 'mosquito cantsleep', payday: 'payday money',
+  'one-trip': 'groceries adulting', hiding: 'awkward introvert', 'the-angle': 'charger phonebattery', 'the-mosquito': 'mosquito cantsleep', payday: 'payday money',
   'small-wins': 'smallwins gratitude', 'say-hi': 'kindness strangers', 'dance-break': 'worklife joy', scribble: 'creativity art', 'call-mum': 'mum family',
   'power-cut': 'blackout stars', 'the-menu': 'food indecisive', puddles: 'innerchild play', 'new-pencil': 'trysomethingnew art',
 };
