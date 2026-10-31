@@ -102,8 +102,8 @@ All episodes: https://razee4315.github.io/wobbins-line/
 
 ## Optional extras
 
-### Threads: comes with Instagram (phone mostly)
-- Sign in with the Instagram account; name, picture and bio carry over.
+### Threads: comes with Instagram
+- Sign in with the Instagram account; name and picture carry over, the bio doesn't. Posting works from the website too.
 - **Bio** (150 max): same as Instagram.
 - Post the same video with the caption's first line only.
 

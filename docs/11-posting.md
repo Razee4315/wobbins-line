@@ -13,6 +13,7 @@ The show's name is **Wobbin's Line** and the handle is `wobbinsline` everywhere.
 | YouTube | https://www.youtube.com/@wobbinsline (channel `UCpmrIgPCgZBPcBU9VNG1CDw`) |
 | TikTok | https://www.tiktok.com/@wobbinsline |
 | Pinterest (business, board "Wobbin's Line episodes") | https://www.pinterest.com/wobbinsline/ |
+| Threads (comes with the Instagram account, first used 2026-11-01) | https://www.threads.com/@wobbinsline |
 
 Names, bios and settings for these and every optional platform are in `12-account-setup.md`. Where the two differ, this page wins. LinkedIn is out: the user said to ignore it.
 
@@ -20,6 +21,7 @@ Names, bios and settings for these and every optional platform are in `12-accoun
 - Link Facebook to Instagram: it needs the Instagram login. Until then each platform gets its own upload.
 - Add the website link on Instagram, and switch TikTok to a Business account. Both are phone-app only.
 - Do YouTube's one-time phone verification. It unlocks custom thumbnails and clickable links.
+- Add a Threads bio: it didn't carry over from Instagram, so the profile has none.
 - Decide whether the live bios should say Wobbin: the YouTube, Facebook and Pinterest ones say "Bo and friends", but Bo is only the name in the code.
 
 ## The plan
@@ -59,7 +61,7 @@ Claude posts through Claude in Chrome, in the user's logged-in browser.
    ffmpeg -i "NN Title 4K.mp4" -vf "scale=1080:1920:flags=lanczos" -c:v libx264 -preset slow -crf 17 -profile:v high -pix_fmt yuv420p -c:a aac -b:a 160k -movflags +faststart "NN Title 1080p.mp4"
    ```
 
-3. **Caption:** use `caption.txt` as it is, keeping the line breaks. From day 4 it has a short question under the quote (`ASK` in `tools/export.js`). TikTok gets it on one line.
+3. **Caption:** use `caption.txt` as it is, keeping the line breaks. From day 4 it has a short question under the quote (`ASK` in `tools/export.js`). TikTok gets it on one line. Threads gets the first line only.
 
 ## Platform by platform
 
@@ -79,7 +81,9 @@ Upload one thing at a time and look at the result before pressing the next butto
 - Title: an episode name plus a searchable phrase, ending in `#shorts`. For example `Battery: when your social battery hits 0% #shorts`. Search brought 30% of Battery's views.
 - Description: the quote and question, then "Wobbin's Line: a tiny animated show drawn on one line. A new short every day.", `All episodes: https://razee4315.github.io/wobbins-line/`, and the hashtags.
 - "Suggested hashtags" appears after the title and pushes the description box down. Click the box by its reference and check the text landed.
+- The description box turns red with the "make external links clickable" note. That is only the phone verification, and it saves and publishes fine.
 - Next three times, Public, Publish. The audience is already "not made for kids". Custom thumbnails need the phone verification.
+- If the tab dies before Publish, nothing is lost: Content → Shorts → Edit draft, then Next three times, Public, Publish.
 
 **TikTok** (tiktok.com/tiktokstudio/upload)
 - Clear the default description first, then click the box again before typing.
@@ -88,8 +92,13 @@ Upload one thing at a time and look at the result before pressing the next butto
 
 **Pinterest** (pinterest.com/pin-creation-tool/)
 - Title: a plain description. Description: the quote, the question, one line about the episode, three hashtags. Link: the website.
-- The board is already picked. The cover can only be a frame: click the strip (dragging doesn't work), then Done.
+- The board is already picked. The cover can only be a frame: scroll down to Edit cover under the video, click the strip (dragging doesn't work), then Done. The pencil at the top of the video opens the design editor instead; leave that with Done.
 - Publish stays grey while the video processes.
+
+**Threads** (threads.com/@wobbinsline)
+- Works from the website: click "What's new?", upload to the file input, then click the text box and type the caption's first line.
+- No cover step showed up (the ... menu on the video is still untried), so the post shows the video itself. Post, then wait for "Posted"; the profile lists the link.
+- It joined on day 5 at the user's request ("this time also"). Check it's wanted before adding it to a post.
 
 ## After each post
 
@@ -104,12 +113,13 @@ Get each post's link: the profile pages list them. Add them to the Posting log a
 | YouTube | `studio.youtube.com/video/<id>/analytics/tab-overview/period-default` | Views, subscribers, traffic sources; retention takes up to two days |
 | Facebook | The Page's reels tab | Views |
 | Pinterest | Not read yet: its analytics page opened another extension in the browser | |
+| Threads | Not read yet: View insights on the profile | |
 
 Instagram's URL `/reel/<id>/` can roll on to someone else's reel, so use `/wobbinsline/reel/<id>/`. Chrome screenshots time out when the window is in the background: read the page text instead.
 
 ## The order
 
-Days 1 to 4 have gone out. **Next is day 5, One Trip.**
+Days 1 to 5 have gone out. **Next is day 6, Call Mum.**
 
 | Day | Folder | About | Line |
 |---|---|---|---|

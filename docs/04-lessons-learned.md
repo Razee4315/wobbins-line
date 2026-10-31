@@ -2,6 +2,13 @@
 
 A running log. Newest at the top. When something breaks, write down what happened and the fix.
 
+## 2026-11-01 · Day 5, and the first post on Threads
+
+- Threads posts fine from the website through Claude in Chrome. No cover step showed up, and the Instagram bio didn't carry over.
+- Chrome dropped the whole tab group just before YouTube's Publish click. The upload was safe as a draft, so check the platform's own list before uploading again, or the video goes out twice.
+- Facebook had fallen back to the personal profile again. The check in `11-posting.md` caught it before anything was uploaded.
+- Pinterest's pencil on the video is the design editor, not the cover picker.
+
 ## 2026-10-31 · Season 12: hard cuts and the new hooks
 
 - **`overlap.js` only compares centre points, so it's a list of places to look, not a verdict.** Testing the real body outlines across all 57 episodes, most of its flags never touch, and it missed one that did (Small Talk). Six episodes had real contact, now fixed: Yes, Battery, Small Talk, Puddles, Power Cut and Say Hi. What's left are grazes of 2 units or less, thinner than a drawn line (Battery, Dance Break, Fine, Slow Walker).
