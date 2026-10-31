@@ -4,6 +4,7 @@ A running log. Newest at the top. When something breaks, write down what happene
 
 ## 2026-10-31 · Season 12: hard cuts and the new hooks
 
+- **Heavy: a friend landed on another friend.** When the tower fell, blue slid through pink for about half a second. Blue now gets a stronger throw. Personal space was quietly setting where pink, and so Wobbin, ended up, so changing the throw alone let Wobbin walk onto the crate and away from the balloon tower. Pink's mark now says that spot outright. If you move one character, compare everyone's positions before and after, not just the seam. The 0.1 s flag left at 30.6 s is blue still in the air beside pink, with clear space between them.
 - **The tools now read both line endings.** Git's `core.autocrlf` checks episodes out with Windows line endings, and six tools matched `<script>\n`, so 52 of the 57 episodes crashed them in a fresh worktree. They match `\r?\n` now, and the older notes below about CRLF breaking the tools no longer apply.
 - **Hard cuts keep the seam at 0.00,** even with 24 in one episode. How to do them is in `10-hooks.md`.
 - **Captions fade when the camera is close.** The shader picks its line blur from the zoom, so the thin letters go first. Thicken them for those shots (`bold()` in any Season 12 episode). It has to check it's the caption pass, or it stays on and repaints the next frame's lines in the caption's colour. We saw that as a red bus.

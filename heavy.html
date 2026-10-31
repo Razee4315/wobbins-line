@@ -141,11 +141,11 @@ Shorts.play({
     if (t > BUILD + 2.0 && t < TUMBLE) { onHead(bo, blue, BUILD + 2.0); if (t > BUILD + 1.7) S.once('climb2', () => S.sfx('toss', { pitch: 430 }, UNDER)); }
     if (t > BUILD + 2.4 && t < TUMBLE) [pink, blue, bo].forEach((m, i) => { m.cmd.tilt = Math.sin(t * 5 + i) * .05 * (i + 1); });
     if (t >= TUMBLE) S.once('tumble', () => {
-      blue.release(220, -420); bo.release(-160, -520); [blue, bo].forEach(m => { m.towerFrom = null; m.towered = false; m.heldFeet = null; });
+      blue.release(400, -420); bo.release(-160, -520); [blue, bo].forEach(m => { m.towerFrom = null; m.towered = false; m.heldFeet = null; });
       [pink, blue, bo].forEach(m => m.cmd.tilt = 0); pink.jump(170, -420);
       S.sfx('laugh', { n: 4 }, bo.x); S.sfx('laugh', { n: 3, k: 1.3 }, pink.x); S.sfx('laugh', { n: 3, k: 1.15 }, blue.x);
     });
-    if (t > TUMBLE + .3 && t < LEAVE - .4) { blue.cmd.x = UNDER + 240; pink.cmd.x = UNDER + 120; }
+    if (t > TUMBLE + .3 && t < LEAVE - .4) { blue.cmd.x = UNDER + 240; pink.cmd.x = UNDER + 60; }
     // the second tower: the stranger stands on Bo's head and gets the balloon back
     if (t > HELP && t < DOWN) { onHead(kid, bo, HELP); if (t > HELP + .1) S.once('climb3', () => S.sfx('toss', { pitch: 470 }, bo.x)); }
     // hops down behind Bo, well clear (the friends stand in front)
