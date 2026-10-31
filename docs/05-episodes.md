@@ -90,6 +90,7 @@ Track what has gone out here. How to post, and what's next: `11-posting.md`.
 | 2026-10-31 | Instagram, Facebook Page, YouTube Shorts, TikTok, Pinterest | 03 Seen | Posted 10:27 am Pakistan time, at the user's request (7h45 after The Chair). |
 | 2026-10-31 | Instagram, Facebook Page, YouTube Shorts, TikTok, Pinterest | 04 Water Yourself | Posted about 10:52 am Pakistan time at the user's request, shortly after Seen. First caption with a question under the quote. |
 | 2026-11-01 | Instagram, Facebook Page, YouTube Shorts, TikTok, Pinterest, Threads | 05 One Trip | Posted about 12:45 am Pakistan time at the user's request, about 14 hours after Water Yourself. First hook-first episode and first post on Threads. 1080p copy at CRF 29 (8.6 MB). TikTok showed "Content under review" at first, as usual. |
+| 2026-11-01 | Facebook groups, Threads topic | 05 One Trip | Extra shares at the user's request, about half an hour after the main post, all as Wobbin's Line. Relatable Threads: live, [post](https://www.threads.com/@wobbinsline/post/DfK-n7pgSZQ). Relatable Memes (RM) and Wholesome Memeposting: waiting for admin approval when logged. Wholesome memes: auto-declined, "video not allowed". |
 
 ### Post links
 

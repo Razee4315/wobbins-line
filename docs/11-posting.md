@@ -99,6 +99,30 @@ Upload one thing at a time and look at the result before pressing the next butto
 - Works from the website: click "What's new?", upload to the file input, then click the text box and type the caption's first line.
 - No cover step showed up (the ... menu on the video is still untried), so the post shows the video itself. Post, then wait for "Posted"; the profile lists the link.
 - It joined on day 5 at the user's request ("this time also"). Check it's wanted before adding it to a post.
+- Leaving the page straight after Post gives a "Leave site?" warning while it uploads. Don't force it. Wait until the composer has closed and the post shows on the profile.
+
+## Extra shares: groups and communities
+
+Only when the user asks. They want places where people find it relatable, not animator groups, where it would only get critiqued.
+
+**Facebook groups**
+- Check you're acting as the Page first. Pages join public groups with one click and post as Wobbin's Line.
+- Before joining, read the group's About page and rules, and open `/groups/<id>/media/videos`. No videos there can mean the group bans them: Wholesome memes has a filter that declines every video within minutes.
+- These groups all ban self-promotion, so post only the video, the quote and the question, with no link or hashtags.
+- Type the text first, then attach the video: attaching moves the text box. A click that misses it sends your typing to Facebook's keyboard shortcuts.
+- Big groups hold posts for approval. Check `/groups/<id>/my_pending_content`. A declined post sits in `my_declined_content`, and See details gives the reason.
+- Two or three groups for one video, no more, so the new Page doesn't look like spam.
+
+| Group | Members | Videos? | Result |
+|---|---|---|---|
+| [Relatable Memes (RM)](https://www.facebook.com/groups/351746386153743/) | 1.3M | Goes to admins | One Trip pending |
+| [Wholesome Memeposting](https://www.facebook.com/groups/wholesomememeposting/) | 2.6M | Yes, goes to admins | One Trip pending |
+| [Wholesome memes](https://www.facebook.com/groups/wholesomememess/) | 170K | No, auto-declined | Don't post video here |
+
+**Threads communities and topics**
+- In the composer, click "Community or topic" next to the name and type a word, then pick from the list. A post gets one.
+- Pick it while writing: the first One Trip post went out without one and needed a second post. It's simpler to add the topic to the main Threads post each day.
+- Compare topics with `threads.com/search?q=<topic>&serp_type=tags`. Relatable Threads is full of video memes. Funny Threads is active too.
 
 ## After each post
 

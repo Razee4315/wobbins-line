@@ -60,6 +60,7 @@ Collected from feedback so far. Add to it every time.
 - Captions very small. A short question under the quote from day 4 (Water Yourself) on.
 - Older videos stay as they are for now: they chose not to re-cut the openings after seeing the first stats.
 - LinkedIn is out.
+- Groups (2026-11-01): share to active groups where people find it relatable, like meme groups. Not animation creator groups, because they'd only critique it.
 
 ## How they like to work
 

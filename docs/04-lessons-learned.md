@@ -8,6 +8,8 @@ A running log. Newest at the top. When something breaks, write down what happene
 - Chrome dropped the whole tab group just before YouTube's Publish click. The upload was safe as a draft, so check the platform's own list before uploading again, or the video goes out twice.
 - Facebook had fallen back to the personal profile again. The check in `11-posting.md` caught it before anything was uploaded.
 - Pinterest's pencil on the video is the design editor, not the cover picker.
+- A public group's own filter can decline every video. Wholesome memes did it within minutes, with "video not allowed", and its rules never say so. The group's video tab shows this before you post.
+- Attaching a video moves Facebook's text box, so a click at the old spot missed and the typing went to the keyboard shortcuts. Type first, then attach.
 
 ## 2026-10-31 · Season 12: hard cuts and the new hooks
 
