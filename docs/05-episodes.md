@@ -65,6 +65,7 @@ Track what has gone out here. Posting order and captions: `exports/POSTING-PLAN.
 | 2026-10-30 | Instagram, Facebook Page, YouTube Shorts, TikTok, Pinterest | 01 Battery | First post. Uploaded a 1080p copy (CRF 17, ~9.6 MB: the browser extension's upload limit is 10 MB). YouTube kept a video frame as thumbnail and TikTok went through a first-post review. |
 | 2026-10-31 | Instagram, Facebook Page, YouTube Shorts, TikTok, Pinterest | 02 The Chair | Posted 2:42 am Pakistan time. 1080p copy at CRF 20 (CRF 17 came to 12 MB, over the 10 MB limit). |
 | 2026-10-31 | Instagram, Facebook Page, YouTube Shorts, TikTok, Pinterest | 03 Seen | Posted 10:27 am Pakistan time, at the user's request (7h45 after The Chair). |
+| 2026-10-31 | Instagram, Facebook Page, YouTube Shorts, TikTok, Pinterest | 04 Water Yourself | Posted about 10:52 am Pakistan time at the user's request, shortly after Seen. First caption with a question under the quote. |
 
 ## Adding an episode
 
