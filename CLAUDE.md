@@ -5,7 +5,8 @@ A tiny animated show drawn on one line (38 episodes, 8 seasons, plus the Season 
 ## Before making episodes
 - Read `docs/02-episode-guide.md` (story shape, loop rules, engine cheat sheet) and `docs/06-preferences.md` (what the user likes).
 - For a styled episode also read `docs/09-art-styles.md`, especially **Making it look hand-drawn**.
-- Topics: common, relatable, readable with the sound off. Open on curiosity, reveal, escalate three times, turn, end on a short quote.
+- Read `docs/10-hooks.md`: frame one has the problem, motion and words. About 25 seconds, a new beat every 3 to 4 seconds. Use the fast open (`page`), and check with `node tools/pace.js <id>`.
+- Topics: common, relatable, readable with the sound off. Open on the hook, reveal, escalate three times, turn, end on a short quote.
 - Small details matter: nothing crosses Wobbin's eye, nothing floats, nothing looks placed by a computer.
 - Every episode must loop with `seam error 0.00`. Check with `tools/sheet.js` (see `docs/07-workflow.md`).
 

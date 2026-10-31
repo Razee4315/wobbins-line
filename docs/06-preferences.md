@@ -22,6 +22,8 @@ Collected from feedback so far. Add to it every time.
 - **Hooks that hold attention** from the first second, so people keep watching and get the message.
 - **Everything in frame on a phone.**
 
+- **Favourite looks** (2026-10-31, after asking a friend): **pen + coloured pencil** (The Menu) and the **colour reveal** (Puddles). Those became Seasons 10 and 11.
+- **A hook at the very start** (2026-10-31): the videos go on social media and people don't have patience. Grab attention first, then tell the story. See `10-hooks.md`.
 - **The art styles** (feedback on the pilots, 2026-10-31): loved almost all of them, in the user's words "amazing". New Pencil
   was a favourite. The colour reveal in Puddles (jump, and the colour spreads) was a highlight. Liked the colours and feel of The Menu.
 - **Small details make the difference** (2026-10-31): "keep in mind the very small details". Check every frame like an artist would.
@@ -31,6 +33,7 @@ Collected from feedback so far. Add to it every time.
 
 ## Doesn't like
 
+- **Slow starts** (2026-10-31): Wobbin walking for a while before finding something. New episodes open inside the problem.
 - **Isometric 3D** (2026-10-31): the riso house didn't work for the user, so it was dropped. Flat riso is fine.
 - **Charcoal that is too dark** (2026-10-31): "it's very dark at the very start, but it was becoming lighter. That thing I like."
   Keep charcoal at the lighter, paper-showing tone. Never a nearly black frame.

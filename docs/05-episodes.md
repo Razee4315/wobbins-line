@@ -1,6 +1,6 @@
 # 05 · Episodes
 
-All 38 episodes in release order, plus the four Season 9 pilots. ★ = one of the user's favourites. Seasons on the site are listed newest first.
+All 38 episodes in release order, plus Seasons 9 to 11 in the art styles. ★ = one of the user's favourites. Seasons on the site are listed newest first.
 
 | EP | Season | Episode | Theme | Quote | Notes |
 |---|---|---|---|---|---|
@@ -46,6 +46,16 @@ All 38 episodes in release order, plus the four Season 9 pilots. ★ = one of th
 | 40 | 9 | [Power Cut](../power-cut.html) | switching off | the lights went out. the stars came on. | Pilot. Charcoal + chalk, flames are the only colour. Lightened after feedback |
 | 41 | 9 | [The Menu](../the-menu.html) | too many choices | you were always going to get the usual. | Pilot. Pen + coloured pencil, after the boba plates |
 | 42 | 9 | [Puddles](../puddles.html) | playing like a kid | you're never too old for puddles. | Pilot. Two media in one film: graphite into crayon |
+| 43 | 10 | [One Trip](../one-trip.html) | carrying everything at once | two trips never hurt anyone. | Pen + pencil, fast open |
+| 44 | 10 | [Hiding](../hiding.html) | avoiding someone you know | everyone is hiding from someone. say hi. | Pen + pencil, fast open |
+| 45 | 10 | [The Angle](../the-angle.html) | the charger that barely works | fix the small thing. it costs nothing. | Pen + pencil, fast open |
+| 46 | 10 | [The Mosquito](../the-mosquito.html) | the 3 am battle | you can't win every fight. get a net. | Pen + pencil, fast open |
+| 47 | 10 | [Payday](../payday.html) | money that leaves | broke by five. happy anyway. | Pen + pencil, fast open |
+| 48 | 11 | [Small Wins](../small-wins.html) | tiny good things | small wins count. so count them. | Pencil into crayon, fast open |
+| 49 | 11 | [Say Hi](../say-hi.html) | talking to strangers | say hi. it's contagious. | Pencil into crayon, fast open |
+| 50 | 11 | [Dance Break](../dance-break.html) | a little joy at work | dance a little. nobody minds. | Pencil into crayon, fast open |
+| 51 | 11 | [Scribble](../scribble.html) | leaving a mark | some walls are just waiting. | Pencil into crayon, fast open |
+| 52 | 11 | [Call Mum](../call-mum.html) | calling home | call her back. she just wants to know you ate. | Pencil into crayon, fast open |
 
 ## Seasons
 
@@ -60,6 +70,8 @@ All 38 episodes in release order, plus the four Season 9 pilots. ★ = one of th
 | 7 | Heavy things | 29–33 |
 | 8 | Daily routine | 34–38 |
 | 9 | Sketchbook (pilots) | 39–42 |
+| 10 | Errands (pen + coloured pencil) | 43–47 |
+| 11 | Colour in (pencil into crayon) | 48–52 |
 
 ## Posting log
 

@@ -1,6 +1,20 @@
 /* Every episode of Wobbin's Line. Numbered in release order; the page lists seasons newest first.
    poster: the moment (seconds) used as the card's still frame and where hover previews start. */
 window.WL_SEASONS = [
+  { n: 11, title: 'Colour in', episodes: [
+    { id: 'small-wins', title: 'Small Wins', theme: 'tiny good things', accent: '#e8503f', poster: 9.9, line: 'Matching socks, toast not burnt, the bus on time. Every small win scribbles a bit more of the world into colour.', quote: 'small wins count. so count them.' },
+    { id: 'say-hi', title: 'Say Hi', theme: 'talking to strangers', accent: '#e8503f', poster: 17, line: 'Nobody has spoken on this bus in six years. Wobbin says hi, and the colour passes along the seats.', quote: 'say hi. it\u2019s contagious.' },
+    { id: 'dance-break', title: 'Dance Break', theme: 'a little joy at work', accent: '#e8503f', poster: 10.4, line: 'A foot tapping under a grey desk, with colour coming off it. It snaps back whenever the boss turns round.', quote: 'dance a little. nobody minds.' },
+    { id: 'scribble', title: 'Scribble', theme: 'leaving a mark', accent: '#e8503f', poster: 20.5, line: 'One crayon flower on a long grey wall. Wobbin tries to rub it off and only spreads it.', quote: 'some walls are just waiting.' },
+    { id: 'call-mum', title: 'Call Mum', theme: 'calling home', accent: '#e8503f', poster: 20, line: '4 missed calls. Later, busy, tomorrow, until the ringing stops. Then one call floods the flat with colour.', quote: 'call her back. she just wants to know you ate.' },
+  ] },
+  { n: 10, title: 'Errands', episodes: [
+    { id: 'one-trip', title: 'One Trip', theme: 'carrying everything at once', accent: '#c9503f', poster: 3.6, line: 'Ten bags, one head, one trip. The gate, the cat, the key under the mat, and a stack with a life of its own.', quote: 'two trips never hurt anyone.' },
+    { id: 'hiding', title: 'Hiding', theme: 'avoiding someone you know', accent: '#c9503f', poster: 16.6, line: 'Aisle three, someone you know, and a cereal box held upside down. Then Wobbin backs into someone else who is hiding.', quote: 'everyone is hiding from someone. say hi.' },
+    { id: 'the-angle', title: 'The Angle', theme: 'the charger that barely works', accent: '#c9503f', poster: 13.4, line: 'It only charges at this exact angle, so nobody moves. A fly, the cat, and a pizza at the door.', quote: 'fix the small thing. it costs nothing.' },
+    { id: 'the-mosquito', title: 'The Mosquito', theme: 'the 3 am battle', accent: '#8a4fc9', poster: 12.9, line: 'Lights on: gone. Lights off: back. The score is on the wall, and the mosquito is winning.', quote: 'you can\u2019t win every fight. get a net.' },
+    { id: 'payday', title: 'Payday', theme: 'money that leaves', accent: '#c9503f', poster: 4.4, line: 'Wobbin is rich for three seconds. The bills arrive on little legs and the coins follow them out.', quote: 'broke by five. happy anyway.' },
+  ] },
   { n: 9, title: 'Sketchbook', episodes: [
     { id: 'new-pencil', title: 'New Pencil', theme: 'trying something new', accent: '#e8503f', poster: 14.4, line: 'Same line, same everything. Then a pencil falls out of the sky, and every hop redraws the world in a new medium.', quote: 'same you. new pencil.' },
     { id: 'power-cut', title: 'Power Cut', theme: 'switching off', accent: '#ff9d2e', poster: 30.7, line: 'Charcoal and chalk. The film stops, the phone dies, the wifi is gone. Then a small flame at the window.', quote: 'the lights went out. the stars came on.' },

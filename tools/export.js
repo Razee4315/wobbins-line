@@ -9,7 +9,9 @@
 export const ORDER = ['battery', 'the-chair', 'seen', 'water-yourself', 'the-gap', 'last-minute', 'did-i-lock-it', 'yes', 'perfect',
   'two-minutes', 'what-if', 'rain-check', 'slow-walker', 'lost', 'why-was-i-here', 'snooze', 'small-talk', 'tomorrow', 'one-more',
   'monday-mountain', 'busy', 'cant-sleep', 'fine', 'imposter', 'highlight-reel', 'the-other-line', 'just-in-case', 'heavy',
-  'comfort-zone', 'inner-voice', 'decision', 'small-steps', 'reset', 'bloom', 'the-hill', 'hurry', 'the-seed', 'the-cloud'];
+  'comfort-zone', 'inner-voice', 'decision', 'small-steps', 'reset', 'bloom', 'the-hill', 'hurry', 'the-seed', 'the-cloud',
+  'one-trip', 'call-mum', 'payday', 'say-hi', 'hiding', 'small-wins', 'the-mosquito', 'dance-break', 'the-angle', 'scribble',
+  'power-cut', 'the-menu', 'puddles', 'new-pencil'];
 
 const TAGS = {
   battery: 'socialbattery introvert', 'the-chair': 'laundry adulting', seen: 'overthinking texting', 'water-yourself': 'selfcare drinkwater',
@@ -22,6 +24,9 @@ const TAGS = {
   'comfort-zone': 'comfortzone growth', 'inner-voice': 'selftalk innercritic', decision: 'decisions choices', 'small-steps': 'consistency smallsteps',
   reset: 'baddays newday', bloom: 'kindness passiton', 'the-hill': 'keepgoing motivation', hurry: 'slowdown slowliving', 'the-seed': 'patience growth',
   'the-cloud': 'sadness feelings',
+  'one-trip': 'groceries relatable', hiding: 'awkward introvert', 'the-angle': 'charger relatable', 'the-mosquito': 'mosquito cantsleep', payday: 'payday money',
+  'small-wins': 'smallwins gratitude', 'say-hi': 'kindness strangers', 'dance-break': 'worklife joy', scribble: 'creativity art', 'call-mum': 'mum family',
+  'power-cut': 'blackout stars', 'the-menu': 'food indecisive', puddles: 'innerchild play', 'new-pencil': 'trysomethingnew art',
 };
 
 // one short question under the quote, to invite comments (episodes 1-3 went out without one)
@@ -38,6 +43,10 @@ const ASK = {
   decision: 'what decision have you been putting off?', 'small-steps': 'what small thing are you doing every day?', reset: 'what helps you reset after a bad day?',
   bloom: "who's been kind to you lately?", 'the-hill': 'what hill are you pushing up right now?', hurry: 'what are you rushing through right now?',
   'the-seed': 'what are you waiting to see grow?', 'the-cloud': 'what helps on your rainy days?',
+  'one-trip': 'how many bags before you admit defeat?', hiding: 'who was the last person you hid from?', 'the-angle': 'what small thing have you been meaning to fix?',
+  'the-mosquito': 'who wins in your house?', payday: 'how long does yours last?', 'small-wins': "what's your small win today?", 'say-hi': 'when did a stranger last make your day?',
+  'dance-break': 'what song gets your foot tapping?', scribble: 'what would you draw on the wall?', 'call-mum': 'when did you last call home?',
+  'power-cut': 'what do you do when the power goes?', 'the-menu': "what's your usual?", puddles: 'what makes you feel like a kid again?', 'new-pencil': 'what new thing are you trying?',
 };
 
 const W4 = 2160, H4 = 3840, FPS = 60, BITRATE = 24e6;
@@ -54,6 +63,9 @@ const post = async (path, body) => {
 const clean = s => s.replace(/[’‘]/g, "'").replace(/[?:/\\*"<>|]/g, '').trim();
 
 async function episodes() {
+  // styled episodes need sketch.js; without it they would quietly export in the flat look
+  if (!window.Sketch) await new Promise((res, rej) => { const s = document.createElement('script'); s.src = '/sketch.js'; s.onload = res; s.onerror = rej; document.head.appendChild(s); });
+  await Sketch.ready();
   if (!window.WL_EPISODES) { const src = await (await fetch('/site/js/episodes.js', { cache: 'no-store' })).text(); new Function(src)(); }
   return Object.fromEntries(window.WL_EPISODES.map(e => [e.id, e]));
 }

@@ -154,6 +154,17 @@ Battery about 21 h old, The Chair about 8 h old. Small sample.
 - GitHub Pages on a private repo needs a paid plan, and even then Actions artifact storage can run out (it did: about 1.2 GB of old build artifacts in other repos). Making the repo public fixed it, since public repos don't count toward the quota.
 - Commits must not carry a `Co-Authored-By: Claude` line.
 
+## Hooks and pace (2026-10-31)
+
+- The slow starts were caused by the loop rule itself: 650 units of empty line at each end meant 4 seconds walking in and 7 walking out, so old episodes make viewers wait 11 to 16 seconds at the end. The fast open (`story.page`) replaces that with about a second of blank paper. See `10-hooks.md`.
+- A caption has to start before the hook to be fully typed in frame one. `tools/pace.js` checks this.
+- A wipe with big zigzag teeth looks like a computer made it. Small wobbling steps look like a pencil.
+- Don't name a story field after an engine method. `S.warm = 0` overwrote `Show.warm()` and crashed the page.
+- Heavy graphite swallows captions and looks dull at phone size. The `sketch` look is the same pencil with a lighter hand.
+- A prop that stands in the way for the whole film (the ice cream cart) should arrive when it matters.
+- Check who has to walk through whom before staging a crowd. The neighbour in Scribble walked through the kid, and Wobbin through the passenger at the bus door.
+- `tools/export.js` used to run on any page, and a page without `sketch.js` would have exported a styled episode flat. It now loads it first.
+
 ## Art styles (2026-10-31)
 
 - The art kit we studied draws one still over many seconds in Node, so it can't run in a player. Its idea can: pigment catches on the paper's tooth according to pressure, and that is one line in a fragment shader.

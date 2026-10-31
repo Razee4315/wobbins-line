@@ -1,5 +1,7 @@
 # 02 · Writing an episode
 
+**New episodes open inside the problem and last about 25 seconds. Read `10-hooks.md` first.** The shape below is the same, but faster, and the fast open replaces the long walk in and out.
+
 ## The story shape
 
 Every episode follows the same arc. It's what the favourites have in common.
@@ -59,6 +61,7 @@ Shorts.play({
 - **Acting is automatic:** a crouch before every jump (anticipation, from the loop pass), stretch in the air, squash on landing, every step and every turn, a "take" when the eye goes `wide`, an eye that overshoots its look, and a brow for every expression except `open`. Pass `c.jump(vx, vy, spin, false)` for a jump that shouldn't wind up (a trip).
 - **Personal space is automatic:** nobody stops within 180 of anyone (`space: false` or `c.space = 0` to opt out). To get past someone, `S.leapfrog(a, b, key, vx)` (call every frame while it may happen). Lay out groups ~180 apart.
 - **Ink side characters:** `sun(ctx, x, y, px, { X })`, `moon(...)`, `cloud(...)` take the same arguments as `sprite()`; `butterfly(ctx, x, y, px, { X }, alpha, rate)` (rate ~12 flying, ~1 resting) and `bird(ctx, x, y, px, { X, O }, alpha, rate, dir)` (rate 0 = perched, dir -1 faces left). They breathe, blink and flap on their own. Keep pixel sprites for icons.
+- **Fast open:** `page: [.8, OUT - 1.2, OUT]` scribbles the scene in and rubs it out, so the loop needs no long walks. See `10-hooks.md`.
 - **Opening frame:** playback and MP4s start at `show.hook`, 0.7 s before the first caption. Set `hook: seconds` in the story if the odd thing appears at another moment.
 - **Helpers:** `PAL`, `SPRITES` (heart, sparkle, dot, cloud, flyA/flyB, birdA/birdB, check, note, star, moon, sun, bang, ask, bulb, d0–d7), `sprite(ctx, rows, x, y, px, colours, alpha)`, `zzz()`, `ramp()`, `mix()`, `lerp, seg, sine, outBack, outCubic, inCubic, clamp, hash, spring`, `GROUND = 620`, `STAND`, `BODY_H`, `GRAV`, `INK`, `PAPER`.
 
@@ -84,7 +87,7 @@ Go through the episode frame by frame and ask:
 
 ## Checklist before calling it done
 
-- [ ] Hook in the first 5 seconds; it reads with the sound off.
+- [ ] Frame one has the problem, motion and words; it reads with the sound off. `node tools/pace.js <id>` says ok.
 - [ ] Three escalations, a turn, a quote.
 - [ ] `seam error 0.00`; contact sheet checked (see `07-workflow.md`).
 - [ ] The small details above; key frames looked at full size.

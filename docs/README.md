@@ -12,6 +12,7 @@ Everything we know about making this show, in one place. Read it before starting
 | [06-preferences.md](06-preferences.md) | What the user loves and dislikes, in their own words where possible |
 | [07-workflow.md](07-workflow.md) | Tools and steps: testing, syncing the site, deploying, rendering, Instagram |
 | [08-audit.md](08-audit.md) | The full audit before posting: what's wrong, what's fixed, what to fix next |
+| [10-hooks.md](10-hooks.md) | **Hooks and pace:** the research, the rules, and how to open fast. Read before making an episode |
 | [09-art-styles.md](09-art-styles.md) | The art styles (charcoal, coloured pencil, crayon, graphite, riso): how they work and how to tune them |
 | [../ideas.md](../ideas.md) | The idea bank: every season's plan, the backlog of future episodes, research notes |
 

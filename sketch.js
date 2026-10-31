@@ -48,6 +48,7 @@
       warp: .5, misreg: 1, smudge: 0, sketch: 0, ink: [52, 74, 128], neutral: 1, accent: 1, lw: .5, wash: 0, font: 'serif', fontK: 1.12,
     },
   };
+  LOOKS.sketch = Object.assign({}, LOOKS.graphite, { label: 'Light pencil', light: .45 });   // graphite with a lighter hand, so words stay easy to read
   const FONTS = { serif: '"Kevin Serif Bold", Georgia, serif', sans: '"Kevin Sans", "Trebuchet MS", sans-serif' };
   const packLook = L => {
     const c = v => v / 255;
@@ -55,7 +56,7 @@
       c(L.paper[0]), c(L.paper[1]), c(L.paper[2]), L.mode, L.reach, L.reachK, L.soft, L.opac,
       L.hatch, L.hatchScale, L.cross, L.grain, L.lineB, L.lineK, L.lineSoft, L.lineOp,
       L.lineVar, L.warp, L.misreg, L.smudge, c(L.ink[0]), c(L.ink[1]), c(L.ink[2]), L.neutral,
-      L.sketch, L.accent, L.truth ?? .45, 0,
+      L.sketch, L.accent, L.truth ?? .45, L.light ?? 0,
     ]);
   };
 
@@ -194,7 +195,7 @@
       col *= mix(vec3(1.), pig, d * P[1].a);
     } else {                                            // one stick on toned paper, and chalk for what's lighter than the sheet
       float N = max(P[5].a, uBgL), t = lum(c);
-      float da = pow(clamp((N - t) / N, 0., 1.), .85), la = N < .995 ? clamp((t - N) / (1. - N), 0., 1.) : 0.;
+      float da = pow(clamp((N - t) / N, 0., 1.), .85) * (1. - P[6].w), la = N < .995 ? clamp((t - N) / (1. - N), 0., 1.) : 0.;
       float s2 = mix(1., hs.g, P[2].z * smoothstep(.3, .85, da));
       float d = dry(h, da, da * s * s2, P);
       float ch = dep(h * .85 + T.g * .15, .22 + 1.02 * la, P[1].z) * smoothstep(.01, .12, la);
@@ -365,7 +366,7 @@
     const v = show.view, k = Math.floor(show.t * 8);
     // the paper is pinned to the world, so the loop's jump back to the start would make the grain pop for a
     // frame. In the empty walk-off it slides a little instead, until it lines up with the opening frame
-    const per = A.L.mode === 2 ? 8 * Math.max(1, Math.floor(v.unit * 1.7 + .5)) / v.unit : PERIOD, xT = show.startState?.char.x ?? 0, r = (((xT % per) + per * 1.5) % per) - per / 2, u = isFinite(show.T) ? Math.min(1, Math.max(0, (show.t - show.T + 5) / 5)) : 0;
+    const per = A.L.mode === 2 ? 8 * Math.max(1, Math.floor(v.unit * 1.7 + .5)) / v.unit : PERIOD, xT = show.startState?.char.x ?? 0, r = (((xT % per) + per * 1.5) % per) - per / 2, w0 = st.page ? st.page[2] : show.T - 5, u = isFinite(show.T) ? Math.min(1, Math.max(0, (show.t - w0) / (show.T - w0))) : 0;
     gl.uniform1f(g.U.pan, r * u * u * (3 - 2 * u));
     gl.uniform2f(g.U.res, cw, ch); gl.uniform3f(g.U.view, v.ox, v.oy, v.unit); gl.uniform2f(g.U.boil, hash(k + .1), hash(k + .7));
     gl.uniform1f(g.U.bg, hexL(st.paperAt ? st.paperAt(show.t, show) : st.paper || '#ffffff'));
@@ -407,5 +408,41 @@
     ctx.stroke();
   }
 
-  window.Sketch = { frame, hatch, hand, LOOKS, override: null, ready: () => Promise.all([document.fonts.load('40px "Kevin Serif Bold"'), document.fonts.load('40px "Kevin Sans"')]).catch(() => {}) };
+  // a lumpy shape (a bush, a cloud, a pile) as one outline: stroke the circles first, then fill over them
+  function lump(ctx, circles, fill, width = 5) {
+    ctx.fillStyle = fill; ctx.lineWidth = width * 2; ctx.beginPath();
+    for (const [x, y, r] of circles) { ctx.moveTo(x + r, y); ctx.arc(x, y, r, 0, 7); }
+    ctx.stroke(); ctx.fill(); ctx.lineWidth = width;
+  }
+  // tufts of grass at the foot of things, so nothing just sits on the ground
+  function grass(ctx, spots, col = '#2f9a4a') {
+    const old = ctx.strokeStyle; ctx.strokeStyle = col; ctx.lineWidth = 4; ctx.beginPath();
+    for (const [x, y] of spots) { ctx.moveTo(x - 7, y); ctx.lineTo(x - 11, y - 12); ctx.moveTo(x, y + 1); ctx.lineTo(x + 1, y - 16); ctx.moveTo(x + 7, y); ctx.lineTo(x + 12, y - 11); }
+    ctx.stroke(); ctx.strokeStyle = old;
+  }
+  // a floor that comes toward us in tiles, so the bottom of a tall frame is a place. cx is where the lines meet
+  function tiles(ctx, x0, x1, cx, c1, c2, seed = 0) {
+    const f = y => 1 + (y - 620) * .0042, Y = r => 628 + 26 * r + 7 * r * r, W = 82, n = Math.ceil((x1 - x0) / W);
+    ctx.lineWidth = 3;
+    for (let r = 0; r < 7; r++) for (let k = 0; k < n; k++) {
+      const y0 = Y(r), y1 = Y(r + 1), X = (i, y) => cx + (x0 + i * W - cx) * f(y);
+      ctx.fillStyle = (r + k + seed) % 2 ? c1 : c2; ctx.beginPath(); ctx.moveTo(X(k, y0), y0); ctx.lineTo(X(k + 1, y0), y0); ctx.lineTo(X(k + 1, y1), y1); ctx.lineTo(X(k, y1), y1); ctx.closePath(); ctx.fill(); ctx.stroke();
+    }
+  }
+  // the colour reveal: each spot { x, y, R, t0, dur } scribbles the second medium outward, row by row, like a
+  // kid filling in a shape. Call it from story.mix
+  function reveal(m, spots, t, o = {}) {
+    const xmin = o.xmin ?? -1e5, xmax = o.xmax ?? 1e5, gap = 34; m.lineWidth = 44;
+    for (const s of spots) {
+      const u = Math.min(1, Math.max(0, (t - s.t0) / s.dur)), R = s.R * (1 - (1 - u) ** 3); if (R < 6) continue;
+      const rows = Math.ceil(2 * R / gap); m.beginPath();
+      for (let i = 0; i <= rows; i++) {
+        const y = -R + i * gap, w = Math.sqrt(Math.max(0, R * R - y * y)) * (.85 + .24 * hash(i * 1.7 + s.x)), a = Math.max(xmin, s.x - w), b = Math.min(xmax, s.x + w), yy = s.y + y * (s.k ?? .86);
+        if (i === 0) m.moveTo(a, yy); else if (i % 2) { m.lineTo(a, yy); m.lineTo(b, yy + gap / 2); } else { m.lineTo(b, yy); m.lineTo(a, yy + gap / 2); }
+      }
+      m.stroke();
+    }
+  }
+
+  window.Sketch = { frame, hatch, hand, lump, grass, tiles, reveal, LOOKS, override: null, ready: () => Promise.all([document.fonts.load('40px "Kevin Serif Bold"'), document.fonts.load('40px "Kevin Sans"')]).catch(() => {}) };
 })();

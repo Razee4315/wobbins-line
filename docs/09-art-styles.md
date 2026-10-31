@@ -5,8 +5,8 @@
 Before making an episode in a style, read **Making it look hand-drawn** below. The texture alone doesn't do it.
 
 ```js
-style: 'charcoal',                          // pencil, crayon, graphite, charcoal, riso
-style: { a: 'graphite', b: 'crayon' },      // two media in one film, with mix(S, m, t, v) painting where b shows
+style: 'pencil',                            // pencil, crayon, graphite, sketch (lighter graphite), charcoal, riso
+style: { a: 'sketch', b: 'crayon' },        // two media in one film, with mix(S, m, t, v) painting where b shows
 style: t => t < 10 ? null : 'pencil',       // change over time; null is the classic flat line
 style: { base: 'pencil', hatch: .3 },       // a look with some settings changed
 ```
@@ -44,7 +44,7 @@ The result is drawn back onto the normal canvas, so the player, contact sheets, 
 - **Charcoal:** set `paper` to about `#c8c4bc`, which is bare sheet. Darker is charcoal, lighter is chalk. **Keep it light:** night is about `#8a867f`, never near black, and the paper should show through (the user's note). Keep lines dark and use chalk for stars and highlights. Light is charcoal lifted off the page, so a glow just raises the tone. Strong colours survive as pastel; use one, once. Put a rubbed-out patch behind captions on a mid-tone (Power Cut's `drawOverlay`). If a scene really must be dark, use `c.ink`, `c.hairColor` and `capInk: t => ...` for chalk lines and words.
 - **Coloured pencil:** pale sky colours become hand shading. Keep them pale: a mid-tone full-screen sky gets busy. Use `Sketch.hatch(ctx, x, y, w, h, { gap, width })` for cast shadows.
 - **Crayon:** bright flat colours. Draw lumpy shapes with `stroke()` first and `fill()` after, at double line width, so they read as one outline.
-- **Mix:** paint the whole scene in full colour; the graphite side greys it for free. `mix(S, m, t, v)` draws in world units in `#0f0`; scribbled strokes give a crayon edge. Don't let it reach within 650 of the loop's ends.
+- **Mix:** paint the whole scene in full colour; the pencil side greys it for free. Use `a: 'sketch'` so words stay readable. In `mix(S, m, t) { Sketch.reveal(m, S.sp, t); }`, each spot `{ x, y, R, t0, dur }` scribbles colour outward. Colour must come from something Wobbin does: a hop, a word, a dance. Change a spot's `R` each frame to make colour grow or snap back (Dance Break). Paint a surprise, like a mural, only after its spot starts, or it shows up in pencil early.
 - **Riso:** white is bare paper. Keep to the three inks' range, and set `c.ink` to the key blue `#344a80`. Use it flat. The user didn't like the isometric 3D version (`legacy/pilots/midnight-snack.html`, with the engine's `view()` and `place()` hooks).
 
 ## Making it look hand-drawn
@@ -62,6 +62,7 @@ The user's test: does it look drawn, or does it look placed by a computer? These
 - Draw lumpy shapes as one outline: stroke first at double width, then fill.
 - Add a few marks that show a hand was there: some roof tiles, bark, a leaf or two. Suggest texture, don't fill it in.
 - Add one small living thing to a still scene: chimney smoke, a swaying lamp, a bird.
+- Use the helpers: `Sketch.hand`, `lump`, `grass`, `tiles`, `hatch`, `reveal`.
 
 **Protect the acting.**
 - Nothing crosses Wobbin's eye, ever. It's at about 132 above the ground, 32 forward of centre.

@@ -35,8 +35,7 @@
   <aside>
     <a class="back" href="../index.html">&larr; All shorts</a>
     <h1>Sketchbook</h1>
-    <p class="sub">Season 9 pilots. Each story has its own medium, so you can pick the ones to continue.</p>
-    <h2>The pilots</h2>
+    <p class="sub">The art-style seasons. Seasons 10 and 11 open on the hook.</p>
     <div id="eps"></div>
     <h2>Try a look on any episode</h2>
     <div class="try">
@@ -50,22 +49,24 @@
   <main><iframe id="view" title="Episode player" allow="autoplay"></iframe></main>
 </div>
 <script>
-  const PILOTS = [
-    ['new-pencil', 'New Pencil', 'Every look in turn'],
-    ['power-cut', 'Power Cut', 'Charcoal + chalk'],
-    ['the-menu', 'The Menu', 'Pen + coloured pencil'],
-    ['puddles', 'Puddles', 'Graphite into crayon'],
+  const GROUPS = [
+    ['Season 11 · colour in', [['small-wins', 'Small Wins', 'A foot of colour, one win at a time'], ['say-hi', 'Say Hi', 'A silent bus'], ['dance-break', 'Dance Break', 'Colour that snaps back'], ['scribble', 'Scribble', 'One flower on a grey wall'], ['call-mum', 'Call Mum', '4 missed calls']]],
+    ['Season 10 · errands', [['one-trip', 'One Trip', 'Ten bags, one head'], ['hiding', 'Hiding', 'Someone you know'], ['the-angle', 'The Angle', 'The charger'], ['the-mosquito', 'The Mosquito', '3 am'], ['payday', 'Payday', 'Coins on little legs']]],
+    ['Season 9 · sketchbook', [['new-pencil', 'New Pencil', 'Every look in turn'], ['power-cut', 'Power Cut', 'Charcoal + chalk'], ['the-menu', 'The Menu', 'Pen + coloured pencil'], ['puddles', 'Puddles', 'Graphite into crayon']]],
   ];
   const OLD = ['the-gap', 'rain-check', 'yes', 'last-minute', 'perfect', 'seen', 'what-if', 'battery', 'bloom', 'comfort-zone', 'cant-sleep', 'the-chair', 'water-yourself', 'small-talk'];
   const view = document.getElementById('view'), eps = document.getElementById('eps'), ep = document.getElementById('ep');
-  const pick = id => { view.src = '../' + id + '.html'; for (const b of eps.children) b.setAttribute('aria-pressed', b.dataset.id === id); };
-  for (const [id, name, look] of PILOTS) {
-    const b = document.createElement('button'); b.className = 'ep'; b.dataset.id = id; b.innerHTML = `<b>${name}</b><span>${look}</span>`;
-    b.onclick = () => pick(id); eps.appendChild(b);
+  const pick = id => { view.src = '../' + id + '.html'; for (const b of eps.querySelectorAll('.ep')) b.setAttribute('aria-pressed', b.dataset.id === id); };
+  for (const [title, list] of GROUPS) {
+    const h = document.createElement('h2'); h.textContent = title; eps.appendChild(h);
+    for (const [id, name, look] of list) {
+      const b = document.createElement('button'); b.className = 'ep'; b.dataset.id = id; b.innerHTML = `<b>${name}</b><span>${look}</span>`;
+      b.onclick = () => pick(id); eps.appendChild(b);
+    }
   }
   for (const id of OLD) { const o = document.createElement('option'); o.value = id; o.textContent = id.replace(/-/g, ' '); ep.appendChild(o); }
-  document.getElementById('go').onclick = () => { view.src = `../${ep.value}.html?style=${document.getElementById('look').value}`; for (const b of eps.children) b.setAttribute('aria-pressed', false); };
-  pick('power-cut');
+  document.getElementById('go').onclick = () => { view.src = `../${ep.value}.html?style=${document.getElementById('look').value}`; for (const b of eps.querySelectorAll('.ep')) b.setAttribute('aria-pressed', false); };
+  pick('one-trip');
 </script>
 </body>
 </html>

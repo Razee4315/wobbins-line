@@ -1,0 +1,135 @@
+/* the-angle: extracted from ../the-angle.html by scripts/sync-shorts.py. Do not edit here. */
+(function () {
+  const Shorts = Object.assign(Object.create(window.Shorts), { play: story => { (window.WL_STORIES ||= {})['the-angle'] = story; } });
+  // Pen and coloured pencil. Everyone has that one charger. Opens on Wobbin frozen mid-pose, holding the cable up with
+  // the tuft, because it only charges at this exact angle: a fly, the cat, a delivery at the door, and the angle
+  // goes. A friend, a pizza, a new cable. Button: the cat moves onto the new one.
+  const { lerp, seg, sine, outBack, hash, mix, clamp, GROUND, INK } = Shorts;
+  const hand = (...a) => Sketch.hand(...a), hatch = (...a) => Sketch.hatch(...a), tiles = (...a) => Sketch.tiles(...a), lump = (...a) => Sketch.lump(...a);
+  const V = 150, SLIP = 14.3, FIX = 18.3, LEAVE = 24.6, OUT = LEAVE + 1.4, LOOP = OUT + 1;
+  const WOOD = '#c98f5a', ROSE = '#e8a0a0', SAGE = '#a9c9a4', SLATE = '#7fa3b8', SAND = '#e6c78e';
+  const SOCKET = [-96, GROUND - 92], PHONE = 262, PY = GROUND - 88;
+  const PCT = t => t < 1.5 ? 1 : t < SLIP ? 1 + Math.floor((t - 1.5) / 4.4) : t < FIX ? 3 : Math.min(100, 3 + Math.floor((t - FIX) * 22));
+
+  Shorts.play({
+    title: 'The Angle',
+    style: 'pencil',
+    accent: '#c9503f',
+    hook: 1.5,
+    page: [.8, OUT - 1.2, OUT],
+    wash: 0,
+    loopAfter: LOOP,
+    paper: '#ffffff',
+    captions: [
+      [.2, 3, "don't. *move.*", null, false],
+      [3.2, 5, 'it only charges *at this angle.*'],
+      [6, 7.4, 'no. *no no no.*'],
+      [8.9, 10.2, 'not *now.*'],
+      [11.7, 12.9, 'pizza! door!', null, { pitch: 1.3 }],
+      [13.1, 14.1, "i *can't.*"],
+      [15.9, 17.7, 'you know a new one is *two dollars?*', null, { pitch: 1.3 }],
+      [19.5, 23.6, 'fix the small thing. *it costs nothing.*'],
+    ],
+    init(S) {
+      S.bo = S.addChar({ x: 0, walk: V });
+      S.pal = S.addChar({ x: 740, hair: 'curl', hairColor: '#9a5a3a', fill: '#ffe0c8', blush: ROSE, face: -1 }); S.pal.hidden = true; S.pal.gain = .5;
+      S.pose = 0; S.fly = { x: 0, y: 0 }; S.cat = 0;
+    },
+    update(S, t, dt) {
+      const bo = S.bo, pal = S.pal;
+      S.plan(bo, t, [
+        [0, { x: 92, speed: V, accel: 900 }],
+        [.55, () => bo.jump(30, -360)],
+        [1, { tilt: -.2, crouch: .1, eye: 'flat', lookX: 1, lookY: .3 }],
+        [5.8, { eye: 'wide', lookX: .2, lookY: -.8 }],
+        [7.4, { eye: 'squeeze', lookY: 0, lookX: 1 }], [7.9, { eye: 'flat', lookX: 1, lookY: .3 }],
+        [8.8, { eye: 'wide' }], [10.2, { eye: 'flat', tilt: -.24 }],
+        [11.7, { eye: 'wide', lookX: 1, lookY: 0 }], [13.1, { eye: 'sad', tilt: -.3, crouch: .16 }],
+        [SLIP, { tilt: .1, crouch: 0, eye: 'wide' }], [SLIP, () => { S.sfx('powerDown', { g: .6 }, bo.x); S.shake(3); }],
+        [15.2, { sit: 1, tilt: .06, eye: 'sad', lookY: .4 }],
+        [15.8, { lookX: 1, lookY: 0 }], [17.8, { eye: 'flat' }],
+        [18, { sit: 0, tilt: 0 }],
+        [FIX, { eye: 'wide', lookY: .2 }], [FIX, () => { S.sfx('ding', { pitch: 1568, g: .14 }, PHONE); bo.q.v -= 1.6; }],
+        [19, { eye: 'happy', lookX: 1, lookY: .2 }],
+        [23.8, { eye: 'flat' }],
+        [LEAVE, { x: 1e6, speed: V, accel: 450, eye: 'open', lookX: 0, lookY: 0 }], [LEAVE, () => bo.jump(780, -1080)],
+      ]);
+      S.plan(pal, t, [
+        [15.1, { x: 500, speed: 170, accel: 600, face: -1, eye: 'flat' }], [15.1, () => S.sfx('door', {}, 640)],
+        [17.7, { eye: 'happy' }],
+      ]);
+      pal.hidden = t < 15 || t > OUT;
+      if (t > 1.1) S.once('on', () => S.sfx('ding', { pitch: 1319, g: .12 }, PHONE));
+      if (t > 5) S.once('b1', () => S.sfx('hum', { notes: [7, 7], gap: .2, g: .02 }, bo.x));
+      if (t > 7.4) S.once('sw', () => S.sfx('tap', {}, bo.x));
+      if (t > 8.4) S.once('c', () => S.sfx('rustle', { n: 2 }, PHONE));
+      if (t > 10.4) S.once('c2', () => S.sfx('squish', {}, PHONE));
+      if (t > 11.5) S.once('door', () => S.sfx('ring', {}));
+      if (t > 12.6) S.once('door2', () => S.sfx('ring', {}));
+      if (t > 16) S.once('p', () => S.sfx('toss', {}));
+      if (t > FIX - .6) S.once('p2', () => S.sfx('catch', {}));
+      if (t > 19.6) S.once('q', () => S.sfx('pad', { root: 293.66, d: 3 }));
+      if (t > 23.7) S.once('cat', () => S.sfx('squish', {}, PHONE));
+      if (t > LEAVE) S.once('wh', () => S.sfx('whoosh', { d: .4, v: .5 }, bo.x));
+      if (t > .5 && t < 15) { S.camGoal.x = 126; S.camGoal.y = GROUND - 92; S.camGoal.z = 1.22; S.camGoal.kz = 3; }
+      else if (t >= 15 && t < LEAVE) { S.camGoal.x = 270; S.camGoal.y = GROUND - 80; S.camGoal.z = 1.02; S.camGoal.kx = 2; }
+    },
+    drawBack(S, ctx, t, v) {
+      // a warm room: wall, skirting board, tiled floor, a window, a shelf with a plant, a door on the right
+      ctx.fillStyle = '#f8e7c8'; ctx.fillRect(v.left - 20, v.top - 20, v.right - v.left + 40, GROUND - v.top + 24);
+      tiles(ctx, -330, 760, 200, '#efd6ab', '#fff4dd');
+      ctx.fillStyle = '#e7cda2'; ctx.fillRect(v.left - 20, GROUND - 40, v.right - v.left + 40, 42); ctx.lineWidth = 4; ctx.beginPath(); ctx.moveTo(v.left - 20, GROUND - 40); ctx.lineTo(v.right + 20, GROUND - 40); ctx.stroke();
+      ctx.lineWidth = 6; hand(ctx, [[20, GROUND - 400], [200, GROUND - 402], [202, GROUND - 240], [21, GROUND - 238]], { fill: '#cfe4ee', seed: 3 });
+      ctx.fillStyle = '#ffc44d'; ctx.lineWidth = 4; ctx.beginPath(); ctx.arc(150, GROUND - 350, 24, 0, 7); ctx.fill(); ctx.stroke();
+      lump(ctx, [[70, GROUND - 270, 26], [104, GROUND - 278, 34], [142, GROUND - 268, 24]], SAGE, 4);
+      ctx.lineWidth = 5; ctx.beginPath(); ctx.moveTo(110, GROUND - 400); ctx.lineTo(111, GROUND - 240); ctx.moveTo(21, GROUND - 320); ctx.lineTo(201, GROUND - 320); ctx.stroke();
+      ctx.fillStyle = WOOD; ctx.fillRect(8, GROUND - 240, 206, 12); ctx.strokeRect(8, GROUND - 240, 206, 12);
+      // framed picture of a cat, of course
+      ctx.lineWidth = 5; hand(ctx, [[-180, GROUND - 330], [-92, GROUND - 332], [-92, GROUND - 250], [-180, GROUND - 249]], { fill: '#f6e3a8', seed: 5 });
+      ctx.lineWidth = 3.5; ctx.fillStyle = '#f1b05f'; ctx.beginPath(); ctx.arc(-136, GROUND - 282, 15, 0, 7); ctx.moveTo(-150, GROUND - 292); ctx.lineTo(-146, GROUND - 306); ctx.lineTo(-136, GROUND - 298); ctx.lineTo(-126, GROUND - 306); ctx.lineTo(-122, GROUND - 292); ctx.fill(); ctx.stroke();
+      // the socket, low on the wall
+      ctx.lineWidth = 4; hand(ctx, [[SOCKET[0] - 22, SOCKET[1] - 20], [SOCKET[0] + 22, SOCKET[1] - 20], [SOCKET[0] + 22, SOCKET[1] + 22], [SOCKET[0] - 22, SOCKET[1] + 22]], { fill: '#fffaf0', seed: 7, wob: 1.2, over: 2 });
+      ctx.fillStyle = '#3a2f2a'; ctx.fillRect(SOCKET[0] + 12, SOCKET[1] - 8, 14, 16); ctx.strokeRect(SOCKET[0] + 12, SOCKET[1] - 8, 14, 16);
+      // a side table for the phone
+      ctx.lineWidth = 5; hand(ctx, [[PHONE - 66, GROUND - 78], [PHONE + 66, GROUND - 79], [PHONE + 66, GROUND - 66], [PHONE - 66, GROUND - 65]], { fill: WOOD, seed: 9, over: 3 });
+      ctx.beginPath(); ctx.moveTo(PHONE - 50, GROUND - 66); ctx.lineTo(PHONE - 60, GROUND + 1); ctx.moveTo(PHONE + 50, GROUND - 66); ctx.lineTo(PHONE + 60, GROUND + 1); ctx.stroke();
+      // the door the pizza comes through
+      const dOpen = sine(seg(t, 14.8, 15.3)) * (1 - sine(seg(t, 22, 22.6)));
+      ctx.fillStyle = '#6a5a62'; ctx.fillRect(610, GROUND - 240, 110, 240);
+      ctx.save(); ctx.translate(610, 0); ctx.scale(1 - dOpen * .84, 1); ctx.lineWidth = 6; hand(ctx, [[0, GROUND + 1], [0, GROUND - 240], [110, GROUND - 239], [110, GROUND + 1]], { fill: '#7fb8a8', seed: 13, over: 2 }); ctx.fillStyle = '#e7c35a'; ctx.beginPath(); ctx.arc(90, GROUND - 112, 7, 0, 7); ctx.fill(); ctx.lineWidth = 4; ctx.stroke(); ctx.restore();
+      hatch(ctx, PHONE - 66, GROUND - 64, 132, 14, { gap: 7, width: 2.4 });
+      // the old cable, wrapped in tape where it's bent
+      const bo = S.bo, tuft = bo.tuft || { x: bo.x, y: bo.y - 90 }, slipped = t > SLIP, pl = [SOCKET[0] + 22, SOCKET[1]], ph = [PHONE - 18, PY - 14];
+      const hold = t < .7 ? [lerp(pl[0], ph[0], .5), GROUND - 30] : slipped ? [lerp(pl[0], ph[0], .5) + 20, GROUND - 2] : [tuft.x, tuft.y - 2];
+      ctx.lineWidth = 5; ctx.strokeStyle = '#efe9dd'; ctx.beginPath(); ctx.moveTo(pl[0], pl[1]); ctx.quadraticCurveTo(pl[0] + 40, GROUND - 6, hold[0], hold[1]); ctx.quadraticCurveTo(hold[0] + 60, hold[1] - 20, slipped ? ph[0] - 40 : ph[0], slipped ? GROUND - 10 : ph[1]); ctx.stroke();
+      ctx.strokeStyle = INK; ctx.lineWidth = 2; ctx.stroke();
+      ctx.fillStyle = '#d7dde0'; ctx.lineWidth = 3.5; ctx.beginPath(); ctx.arc(hold[0], hold[1], 8, 0, 7); ctx.fill(); ctx.stroke();
+      if (t > FIX - .2) { ctx.lineWidth = 6; ctx.strokeStyle = '#4fae62'; ctx.beginPath(); ctx.moveTo(pl[0], pl[1] + 8); ctx.quadraticCurveTo(pl[0] + 120, GROUND - 2, ph[0], PY - 4); ctx.stroke(); ctx.strokeStyle = INK; }
+      // the phone on the table
+      ctx.lineWidth = 5; hand(ctx, [[PHONE - 21, PY + 8], [PHONE - 18, PY - 76], [PHONE + 26, PY - 75], [PHONE + 23, PY + 8]], { fill: '#2c2a33', seed: 15, wob: 1.2, over: 1 });
+    },
+    drawFront(S, ctx, t, v) {
+      const pct = PCT(t), on = t > 1.1 && t < SLIP || t > FIX, x = PHONE + 2, y = PY - 40, cat = S.bo;
+      // the phone's screen, drawn big enough to read on a phone
+      ctx.lineWidth = 4; ctx.fillStyle = on ? '#e9f6df' : '#fbe3df'; ctx.beginPath(); ctx.roundRect(x - 17, y - 30, 34, 62, 5); ctx.fill(); ctx.stroke();
+      // the big battery above it: this is the whole story
+      const by = PY - 148;
+      ctx.lineWidth = 5; hand(ctx, [[x - 66, by - 34], [x + 62, by - 35], [x + 62, by + 34], [x - 66, by + 34]], { fill: '#fffaf0', seed: 19, wob: 1.2, over: 2 });
+      ctx.fillStyle = INK; ctx.fillRect(x + 62, by - 12, 10, 24);
+      const f = clamp(pct / 100), fillW = 116 * Math.max(.06, f); ctx.fillStyle = pct < 10 ? '#e8503f' : '#58c26e'; ctx.fillRect(x - 60, by - 28, fillW, 56);
+      ctx.font = '700 38px "Kevin Sans", sans-serif'; ctx.textAlign = 'center'; ctx.fillStyle = INK; ctx.fillText(pct + '%', x, by + 13); ctx.textAlign = 'start';
+      if (on && Math.sin(t * 7) > -.2) { ctx.fillStyle = '#ffc23e'; ctx.lineWidth = 3.5; ctx.beginPath(); ctx.moveTo(x + 44, by - 62); ctx.lineTo(x + 26, by - 34); ctx.lineTo(x + 40, by - 34); ctx.lineTo(x + 28, by - 8); ctx.lineTo(x + 56, by - 42); ctx.lineTo(x + 42, by - 42); ctx.closePath(); ctx.fill(); ctx.stroke(); }
+      // a fly, walking on Wobbin's forehead, well above the eye
+      const bo = S.bo, a = seg(t, 4.9, 5.7), b = seg(t, 7.3, 7.7);
+      if (a > 0 && b < 1) { const home = bo.toWorld(-2 + Math.sin(t * 2.2) * 8 * bo.fw, -46), fx = lerp(bo.x - 240, home.x, sine(a)) + b * 220, fy = lerp(GROUND - 300, home.y, sine(a)) - b * 240 + Math.sin(t * 18) * (1 - a + b) * 12; ctx.fillStyle = INK; ctx.beginPath(); ctx.ellipse(fx, fy, 7, 5, 0, 0, 7); ctx.fill(); ctx.lineWidth = 2.4; ctx.beginPath(); ctx.ellipse(fx - 3, fy - 6, 6, 3, -.4, 0, 7); ctx.moveTo(fx + 8, fy - 6); ctx.ellipse(fx + 3, fy - 6, 6, 3, .4, 0, 7); ctx.stroke(); }
+      // the cat: paws the cable, and ends up asleep on the phone
+      const cIn = sine(seg(t, 8.2, 9)), cOut = sine(seg(t, 10.3, 11)), end = sine(seg(t, 23.3, 23.7));
+      const onTable = (cIn * (1 - cOut) || end) > .01;
+      if (onTable) { const k = end > .01 ? end : cIn * (1 - cOut), cx = lerp(PHONE + 260, PHONE + 20, k), cy = GROUND - 100 - Math.sin(k * Math.PI) * 30, tap = end > .01 ? 0 : Math.max(0, Math.sin(t * 8)) * 12; ctx.lineWidth = 4; ctx.fillStyle = '#f1b05f'; ctx.beginPath(); ctx.ellipse(cx, cy, 44, 22, 0, 0, 7); ctx.fill(); ctx.stroke(); ctx.beginPath(); ctx.arc(cx - 38, cy - 12, 17, 0, 7); ctx.moveTo(cx - 52, cy - 22); ctx.lineTo(cx - 50, cy - 40); ctx.lineTo(cx - 38, cy - 28); ctx.lineTo(cx - 26, cy - 40); ctx.lineTo(cx - 24, cy - 22); ctx.fill(); ctx.stroke(); ctx.beginPath(); ctx.moveTo(cx + 40, cy - 2); ctx.quadraticCurveTo(cx + 76, cy - 4, cx + 68, cy - 32 + Math.sin(t * 3) * 6); ctx.stroke(); ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(cx - 48, cy - 13); ctx.lineTo(cx - 41, cy - 13); ctx.moveTo(cx - 35, cy - 13); ctx.lineTo(cx - 28, cy - 13); ctx.moveTo(cx - 50, cy + 16); ctx.lineTo(cx - 62 - tap, cy + 14 - tap * .4); ctx.stroke(); }
+      // the pizza on the friend's head, and the new cable looped over the box
+      const pal = S.pal;
+      if (!pal.hidden) { const p = pal.top(), o = seg(t, 22.2, 22.8); ctx.save(); ctx.translate(p.x, p.y + 2); ctx.rotate(-.05); ctx.lineWidth = 4; hand(ctx, [[-54, 0], [-54, -20], [54, -19], [54, 0]], { fill: '#f0d2a6', seed: 21, wob: 1.2, over: 2 }); ctx.font = '700 15px "Kevin Sans", sans-serif'; ctx.textAlign = 'center'; ctx.fillStyle = '#c9503f'; ctx.fillText('PIZZA', 0, -6); ctx.textAlign = 'start'; ctx.restore(); if (t < FIX - .7) { ctx.lineWidth = 5; ctx.strokeStyle = '#4fae62'; ctx.beginPath(); ctx.arc(p.x + 22, p.y - 32, 13, 0, 7); ctx.stroke(); ctx.strokeStyle = INK; } }
+      if (t > 16 && t < FIX) { const k = seg(t, FIX - .9, FIX), P = pal.top(), ax = P.x + 22, ay = P.y - 32, xx = lerp(ax, PHONE - 16, k), yy = lerp(ay, PY - 8, k) - Math.sin(k * Math.PI) * 120; if (k > 0) { ctx.lineWidth = 5; ctx.strokeStyle = '#4fae62'; ctx.beginPath(); ctx.arc(xx, yy, 13, 0, 7); ctx.stroke(); ctx.strokeStyle = INK; } }
+    },
+  });
+})();

@@ -1,0 +1,138 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Say Hi</title>
+</head>
+<body>
+<script src="sfx.js?v=13"></script>
+<script src="engine2.js?v=13"></script>
+<script src="sketch.js?v=3"></script>
+<script>
+// Graphite into crayon. A bus where nobody has said a word in six years: a row of faces lit by phones. Wobbin says
+// "hi". Every head turns. Terrible silence. Then an old voice answers, and the colour passes along the seats, one
+// hello at a time, until the driver honks and the whole bus is crayon. Button: a new passenger gets the full welcome.
+const { lerp, seg, sine, outBack, hash, mix, clamp, GROUND, INK } = Shorts;
+const hand = (...a) => Sketch.hand(...a), lump = (...a) => Sketch.lump(...a);
+const V = 150, HI = 3.6, LEAVE = 22.4, OUT = LEAVE + 1.4, LOOP = OUT + 1;
+const K = ['#ff5a4d', '#ffb12e', '#ffe03d', '#3fc66b', '#3f9be8', '#a06be0'];
+const SEATS = [-96, -266, -436, -606];
+const CAST = [{ hair: 'curl', hairColor: '#a06be0', fill: '#ffc9dc', blush: '#ff8a7a' }, { hair: 'antenna', hairColor: '#3fc66b', fill: '#bfe6ff' }, { hair: 'tuft', hairColor: '#e8504a', fill: '#ffe08a', blush: '#ff8a7a' }, { hair: 'curl', hairColor: '#3f9be8', fill: '#c9efc0' }];
+const HELLO = [8.1, 10.5, 11.3, 12.1];
+
+function pop(S, x, R) {
+  S.sp.push({ x, y: GROUND - 150, R, t0: S.t, dur: .7 });
+  S.burst(x, GROUND - 170, 12, K, { speed: 420, size: 12, life: .7, gravity: 1100 });
+  S.sfx('sparkle', { n: 3 }, x);
+}
+
+Shorts.play({
+  title: 'Say Hi',
+  style: { a: 'sketch', b: 'crayon' },
+  accent: '#e8503f',
+  hook: 1.8,
+  page: [.8, OUT - 1.2, OUT],
+  wash: 0,
+  loopAfter: LOOP,
+  paper: '#ffffff',
+  captions: [
+    [.2, 3.3, 'nobody has spoken on this bus *in six years.*', null, false],
+    [3.5, 4.4, '...*hi.*'],
+    [5.6, 7.2, 'what have i done.'],
+    [8.2, 9.3, 'hello, dear.', null, { pitch: .85 }],
+    [10.4, 10.9, 'hi!', null, { pitch: 1.4 }],
+    [11.2, 11.7, 'hey.', null, { pitch: 1.15 }],
+    [12, 12.6, 'hiya!', null, { pitch: 1.3 }],
+    [13, 14.2, 'HELLO, EVERYONE!', null, { pitch: .72 }],
+    [15.2, 19.2, "say hi. *it's contagious.*"],
+  ],
+  init(S) {
+    S.bo = S.addChar({ x: 0, walk: V }); S.bo.space = 0;
+    S.row = SEATS.map((x, i) => { const c = S.addChar({ x, face: 1, ...CAST[i] }); c.hidden = true; c.space = 0; c.gain = .4; c.cmd.sit = 1; c.sit.x = 1; return c; });
+    S.driver = S.addChar({ x: 436, hair: 'tuft', hairColor: '#a56a3a', fill: '#ffd9b0', face: 1 }); S.driver.hidden = true; S.driver.space = 0; S.driver.cmd.sit = 1; S.driver.sit.x = 1;
+    S.new = S.addChar({ x: 276, hair: 'antenna', hairColor: '#7b5cff', fill: '#e6dcff', face: -1 }); S.new.hidden = true; S.new.space = 0; S.new.gain = .4;
+    S.sp = [];
+  },
+  mix(S, m, t) { Sketch.reveal(m, S.sp, t); },
+  update(S, t, dt) {
+    const bo = S.bo, D = S.driver, N = S.new;
+    S.plan(bo, t, [
+      [0, { x: 86, speed: V, accel: 900 }],
+      [.9, { face: -1, lookX: .6, eye: 'open' }],
+      [HI, { eye: 'wide' }], [HI, () => { S.sfx('tick', {}, bo.x); bo.q.v -= 1.6; }],
+      [4.6, { eye: 'flat', crouch: .12, lookX: .2, lookY: .5 }], [5.6, { eye: 'sad' }],
+      [8.2, { eye: 'wide', lookX: 1, lookY: 0, crouch: 0 }], [9, { eye: 'happy' }],
+      [13, { eye: 'wide', face: 1 }], [13.8, { eye: 'happy', face: -1 }],
+      [14.7, () => bo.jump(0, -680)],
+      [LEAVE - .4, { face: 1 }],
+      [LEAVE, { x: 1e6, speed: V, accel: 450, eye: 'open', lookX: 0 }], [LEAVE, () => { bo.jump(800, -1070); S.sfx('whoosh', { d: .5, v: .5 }, bo.x); }],
+    ]);
+    S.row.forEach((c, i) => {
+      const at = HELLO[i];
+      S.plan(c, t, [
+        [0, { sit: 1, face: 1, lookY: .9, lookX: .4, eye: 'open' }],
+        [HI + .35 + i * .12, { lookY: 0, lookX: 1, eye: 'wide' }], [6.8 - i * .08, { lookY: .9, lookX: .4, eye: 'open' }],
+        [at - .2, { lookY: 0, lookX: 1, eye: 'happy' }],
+      ]);
+      if (t > at) S.once('h' + i, () => { pop(S, SEATS[i], 240); S.sfx('pluck', { pitch: 523 + i * 110 }, SEATS[i]); c.q.v -= 2; });
+      c.hidden = t < .35 || t > OUT;
+      if (t > 14.7) S.once('j' + i, () => c.jump(0, -520 - i * 40));
+    });
+    S.plan(D, t, [[0, { sit: 1, face: 1 }], [12.8, { face: -1, eye: 'happy' }], [18.8, { face: 1 }]]);
+    D.hidden = t < .7 || t > OUT - .1;
+    if (t > HI) S.once('hi', () => { pop(S, 86, 170); S.sfx('tock', { f: 420 }); });
+    if (t > 4.15) S.once('turn', () => S.sfx('whoosh', { d: .3, v: .3 }));
+    if (t > 13) S.once('honk', () => { S.sfx('honk', {}); S.shake(5); pop(S, -150, 1400); S.sfx('swell', { root: 392 }); S.sp[S.sp.length - 1].dur = 1.2; });
+    if (t > 14.4) S.once('song', () => S.sfx('musicbox', { notes: [4, 5, 7, 9, 7, 5, 4, 2], gap: .42, oct: 1, g: .05 }));
+    // the button: someone new gets on, looking at a phone
+    S.plan(N, t, [[19.3, { x: 276, face: -1, lookY: .9 }], [20.4, { lookY: 0, eye: 'wide' }], [20.4, () => { N.q.v -= 3; S.sfx('gasp', {}, N.x); }], [20.6, () => N.jump(0, -520)], [21.5, { eye: 'happy' }]]);
+    N.hidden = t < 19.3 || t > OUT - .1;
+    if (t > 15.3) S.once('q', () => S.sfx('pad', { root: 293.66, d: 3.6 }));
+    if (t > 19.3) S.once('door', () => S.sfx('door', {}, 276));
+    if (t > 20.3) S.once('all', () => { S.sfx('laugh', { n: 3 }); });
+    // the shot: the whole row of faces, then close on each new hello
+    if (t > .5 && t < 7.8) { S.camGoal.x = -236; S.camGoal.y = GROUND - 120; S.camGoal.z = .76; S.camGoal.kx = 4; S.camGoal.kz = 3; }
+    else if (t >= 7.8 && t < 10) { S.camGoal.x = -30; S.camGoal.y = GROUND - 110; S.camGoal.z = .94; S.camGoal.kx = 2; S.camGoal.kz = 2; }
+    else if (t >= 10 && t < 12.6) { S.camGoal.x = lerp(-180, -520, sine(seg(t, 10.2, 12.2))); S.camGoal.y = GROUND - 110; S.camGoal.z = .94; S.camGoal.kx = 2.4; S.camGoal.kz = 2; }
+    else if (t >= 12.6 && t < LEAVE) { S.camGoal.x = -180; S.camGoal.y = GROUND - 120; S.camGoal.z = .72; S.camGoal.kx = 2; S.camGoal.kz = 1.4; }
+  },
+  drawBack(S, ctx, t, v) {
+    // outside the windows: a town going by. It moves, so the still bus feels like it's driving
+    const drift = -t * 90, W = 1800, wrap = x => ((x + drift) % W + W) % W - 900;
+    ctx.fillStyle = '#9ed8f7'; ctx.fillRect(v.left - 20, v.top - 20, v.right - v.left + 40, GROUND - v.top + 24);
+    lump(ctx, [[wrap(120), 266, 30], [wrap(120) + 44, 250, 42], [wrap(120) + 90, 266, 30]], '#ffffff', 4);
+    for (let i = 0; i < 7; i++) { const x = wrap(i * 260), w = 120 + hash(i) * 70, h = 130 + hash(i + .4) * 130, c = K[(i * 2) % 6]; ctx.lineWidth = 5; ctx.fillStyle = mix(c, '#ffffff', .4); ctx.fillRect(x, GROUND - h - 60, w, h + 60); ctx.strokeRect(x, GROUND - h - 60, w, h + 60); ctx.fillStyle = '#ffe9a6'; for (let r = 0; r < 2; r++) for (let k = 0; k < 2; k++) { ctx.fillRect(x + 16 + k * 50, GROUND - h - 40 + r * 56, 30, 34); ctx.strokeRect(x + 16 + k * 50, GROUND - h - 40 + r * 56, 30, 34); } }
+    // the bus, in section. Its body is a thick wall with windows cut out of it
+    const B0 = -860, B1 = 480, roof = GROUND - 400, sill = GROUND - 190;
+    ctx.fillStyle = '#ff7a4d'; ctx.beginPath(); ctx.moveTo(B0, roof); ctx.lineTo(B1, roof); ctx.lineTo(B1, GROUND + 30); ctx.lineTo(B0, GROUND + 30); ctx.closePath();
+    for (let i = 0; i < 6; i++) { const x = B0 + 40 + i * 210; ctx.moveTo(x, roof + 44); ctx.lineTo(x, sill); ctx.lineTo(x + 170, sill); ctx.lineTo(x + 170, roof + 44); ctx.closePath(); }
+    ctx.lineWidth = 7; ctx.fill('evenodd'); ctx.stroke();
+    ctx.lineWidth = 4; ctx.strokeStyle = '#7a3a22'; ctx.beginPath(); ctx.moveTo(B0, roof + 20); ctx.lineTo(B1, roof + 20); ctx.stroke(); ctx.strokeStyle = INK;
+    // the floor comes toward us, and the road below
+    ctx.fillStyle = '#d9c7a4'; ctx.fillRect(B0, GROUND + 4, B1 - B0, 26);
+    ctx.fillStyle = '#b8b0a4'; ctx.fillRect(v.left - 20, GROUND + 30, v.right - v.left + 40, 800);
+    ctx.lineWidth = 8; ctx.strokeStyle = '#ffe9a6'; ctx.setLineDash([54, 44]); ctx.lineDashOffset = t * 90; ctx.beginPath(); ctx.moveTo(v.left, GROUND + 190); ctx.lineTo(v.right, GROUND + 190); ctx.stroke(); ctx.setLineDash([]); ctx.strokeStyle = INK;
+    for (const x of [-620, 280]) { ctx.lineWidth = 6; ctx.fillStyle = '#3f3a44'; ctx.beginPath(); ctx.arc(x, GROUND + 32, 58, 0, 7); ctx.fill(); ctx.stroke(); ctx.fillStyle = '#c8cdd2'; ctx.beginPath(); ctx.arc(x, GROUND + 32, 24, 0, 7); ctx.fill(); ctx.stroke(); const a = t * 5; ctx.lineWidth = 4; ctx.beginPath(); ctx.moveTo(x + Math.cos(a) * 20, GROUND + 32 + Math.sin(a) * 20); ctx.lineTo(x - Math.cos(a) * 20, GROUND + 32 - Math.sin(a) * 20); ctx.stroke(); }
+    // seats: one behind each passenger
+    for (const x of SEATS) { ctx.lineWidth = 5; hand(ctx, [[x - 72, GROUND - 18], [x - 88, GROUND - 170], [x - 58, GROUND - 170], [x - 40, GROUND - 46], [x + 62, GROUND - 46], [x + 62, GROUND - 18]], { fill: '#3f9be8', seed: x * .1, wob: 1.4, over: 2 }); ctx.lineWidth = 5; ctx.beginPath(); ctx.moveTo(x - 30, GROUND - 18); ctx.lineTo(x - 30, GROUND + 3); ctx.moveTo(x + 50, GROUND - 18); ctx.lineTo(x + 50, GROUND + 3); ctx.stroke(); }
+    // the pole Wobbin stands by, and the bell cord along the ceiling
+    ctx.lineWidth = 7; ctx.strokeStyle = '#e7c35a'; ctx.beginPath(); ctx.moveTo(22, roof + 24); ctx.lineTo(22, GROUND + 3); ctx.stroke(); ctx.strokeStyle = INK;
+    // the door by Wobbin, and the driver's wheel at the front
+    ctx.lineWidth = 6; ctx.fillStyle = '#d9f1ff'; ctx.fillRect(220, roof + 40, 110, GROUND - roof - 40); ctx.strokeRect(220, roof + 40, 110, GROUND - roof - 40); ctx.beginPath(); ctx.moveTo(275, roof + 40); ctx.lineTo(275, GROUND); ctx.stroke();
+    ctx.lineWidth = 7; ctx.beginPath(); ctx.ellipse(440, GROUND - 124, 12, 34, -.2, 0, 7); ctx.stroke();
+  },
+  drawFront(S, ctx, t, v) {
+    // the phones, glowing in every lap, going down one by one as people start talking
+    S.row.forEach((c, i) => {
+      if (c.hidden) return;
+      const k = sine(seg(t, HELLO[i], HELLO[i] + .3)), x = c.x + 62, y = lerp(GROUND - 96, GROUND - 40, k);
+      ctx.lineWidth = 4; hand(ctx, [[x - 13, y + 24], [x - 13, y - 24], [x + 13, y - 24], [x + 13, y + 24]], { fill: '#d9f1ff', seed: i + 40, wob: 1, over: 1 });
+    });
+    if (!S.new.hidden && t < 20.6) { const x = S.new.x - 62, y = GROUND - 100; ctx.lineWidth = 4; hand(ctx, [[x - 13, y + 24], [x - 13, y - 24], [x + 13, y - 24], [x + 13, y + 24]], { fill: '#d9f1ff', seed: 49, wob: 1, over: 1 }); }
+    if (t > 20.6 && t < 21.5) { const u = seg(t, 20.6, 21.5), x = S.new.x - 62 + u * 80, y = GROUND - 100 - Math.sin(u * Math.PI) * 180 + u * u * 70; ctx.lineWidth = 4; ctx.save(); ctx.translate(x, y); ctx.rotate(u * 8); hand(ctx, [[-13, 24], [-13, -24], [13, -24], [13, 24]], { fill: '#d9f1ff', seed: 49, wob: 1, over: 1 }); ctx.restore(); }
+  },
+});
+</script>
+</body>
+</html>

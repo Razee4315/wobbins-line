@@ -643,8 +643,10 @@
       layer(st.drawSky);
       if (!st.noGround) { this.ink(ctx); if (ctx.sketch) ctx.floor(v, st.lineAt ? x => st.lineAt(x, t, this) : x => this.groundAt(x), st.ground ? 10 : 80, ctx.wash); this.drawGround(ctx, v); }
       layer(st.drawBack);
+      const edge = st.page && this.pageEdge(v, t);
+      if (edge) this.drawPage(ctx, v, edge);
       this.ink(ctx); ctx.cel?.('#f00');
-      for (const c of this.chars) if (!c.hidden) { if (st.place) st.place(this, ctx, c, () => this.drawChar(ctx, c)); else this.drawChar(ctx, c); }
+      for (const c of this.chars) if (!c.hidden && !(edge && c !== this.focus && (edge.side > 0 ? c.x > edge.x : c.x < edge.x))) { if (st.place) st.place(this, ctx, c, () => this.drawChar(ctx, c)); else this.drawChar(ctx, c); }
       ctx.cel?.(null);
       layer(st.drawFront);
       const finish = st.paperFinish !== false && !st.clear && !ctx.sketch;   // the site's own scenes opt out
@@ -670,6 +672,23 @@
     // so whites are never screen-white and the frame feels printed rather than rendered
     drawPaper(ctx, cw, ch) {
       ctx.save(); ctx.globalCompositeOperation = 'multiply'; ctx.drawImage(paperTexture(cw, ch), 0, 0); ctx.restore();
+    }
+
+    // the fast open (story.page = [inEnd, outStart, outEnd]): instead of a long walk in and out over empty line, the
+    // scene scribbles itself in ahead of Bo and rubs itself out behind, so the loop only needs a moment of bare paper
+    pageEdge(v, t) {
+      const [a, b, c] = this.story.page, x = u => lerp(v.left - 130, v.right + 130, sine(u));
+      if (t < a) return { x: x(seg(t, .02, a)), side: 1 };
+      return t > b ? { x: x(seg(t, b, c)), side: -1 } : null;
+    }
+    drawPage(ctx, v, E) {
+      const far = E.side > 0 ? v.right + 300 : v.left - 300, y0 = v.top - 60, y1 = v.bottom + 60, P = [];
+      for (let y = y0, i = 0; y < y1; y += 15, i++) P.push([E.x + Math.sin(i * .31) * 34 + (hash(i * 1.7) - .5) * 30 + (i % 2 ? 11 : -11), y]);
+      ctx.save(); ctx.globalAlpha = 1; ctx.fillStyle = (this.story.paperAt ? this.story.paperAt(this.t, this) : this.story.paper) || PAPER;
+      ctx.beginPath(); ctx.moveTo(far, y0); for (const p of P) ctx.lineTo(p[0], p[1]); ctx.lineTo(far, y1); ctx.closePath(); ctx.fill();
+      ctx.strokeStyle = '#8f8a84'; ctx.lineWidth = 3.5; ctx.lineJoin = 'round'; ctx.beginPath(); P.forEach((p, i) => i ? ctx.lineTo(p[0], p[1]) : ctx.moveTo(p[0], p[1])); ctx.stroke();
+      ctx.restore();
+      this.ink(ctx); this.drawGround(ctx, v);
     }
 
     drawGround(ctx, v) {

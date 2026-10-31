@@ -1,0 +1,177 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>One Trip</title>
+</head>
+<body>
+<script src="sfx.js?v=13"></script>
+<script src="engine2.js?v=13"></script>
+<script src="sketch.js?v=3"></script>
+<script>
+// Pen and coloured pencil. Opens on the bags already raining down onto Wobbin's head from the car boot: one trip,
+// whatever it takes. The gate, the cat, the key under the mat. The stack sways on a spring and every near miss is
+// bigger, until it all goes. Then the last orange rolls back and taps a foot.
+const { lerp, seg, sine, outBack, hash, mix, clamp, spring, GROUND, INK } = Shorts;
+const hand = (...a) => Sketch.hand(...a), hatch = (...a) => Sketch.hatch(...a), lump = (...a) => Sketch.lump(...a), grass = (...a) => Sketch.grass(...a);
+const V = 150, DROP = 15.3, LEAVE = 24.3, OUT = LEAVE + 1.4, LOOP = OUT + 1;
+const WOOD = '#c98f5a', SAND = '#e6c78e', ROSE = '#e8a0a0', SAGE = '#a9c9a4', SLATE = '#7fa3b8', BRICK = '#e0a184', CREAM = '#fff9ec';
+const BAGS = [['#e6c78e', 'leek'], ['#d9e7ef', 'milk'], ['#f3c9b6', 'bread'], ['#e6c78e', 'carrot'], ['#cfe3c8', 'leek'], ['#f6e3a8', 'milk'], ['#e6c78e', 'bread'], ['#d9e7ef', 'carrot'], ['#f3c9b6', 'leek'], ['#e6c78e', 'bread']];
+const FRUIT = ['#ffa33a', '#ffa33a', '#e8503f', '#9fd46a', '#ffa33a'];
+
+function bag(ctx, x, y, rot, b, i) {
+  ctx.save(); ctx.translate(x, y); ctx.rotate(rot); ctx.lineWidth = 4;
+  const [c, what] = b;
+  if (what === 'leek') { ctx.fillStyle = '#9fd46a'; ctx.beginPath(); ctx.moveTo(-8, -26); ctx.lineTo(-20, -60); ctx.lineTo(-4, -58); ctx.lineTo(4, -26); ctx.fill(); ctx.stroke(); }
+  if (what === 'bread') { ctx.fillStyle = '#e9b777'; ctx.beginPath(); ctx.roundRect(4, -62, 15, 44, 7); ctx.fill(); ctx.stroke(); }
+  if (what === 'milk') { ctx.fillStyle = '#ffffff'; ctx.beginPath(); ctx.moveTo(-14, -26); ctx.lineTo(-14, -46); ctx.lineTo(-6, -54); ctx.lineTo(4, -46); ctx.lineTo(4, -26); ctx.fill(); ctx.stroke(); }
+  if (what === 'carrot') { ctx.fillStyle = '#ffa33a'; ctx.beginPath(); ctx.moveTo(-2, -26); ctx.lineTo(10, -58); ctx.lineTo(18, -26); ctx.fill(); ctx.stroke(); }
+  hand(ctx, [[-34, 0], [-37, -30], [37, -29], [34, 0]], { fill: c, seed: i * 3 + 1, wob: 1.6, over: 2 });
+  ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(-22, -29); ctx.quadraticCurveTo(-14, -42, -6, -29); ctx.moveTo(6, -29); ctx.quadraticCurveTo(14, -42, 22, -29); ctx.moveTo(-26, -8); ctx.lineTo(-10, -9); ctx.stroke();
+  ctx.restore();
+}
+const stackN = t => Math.min(BAGS.length, Math.floor(seg(t, .55, 2.6) * BAGS.length + .999));
+
+Shorts.play({
+  title: 'One Trip',
+  style: 'pencil',
+  accent: '#c9503f',
+  hook: 1.55,
+  page: [.8, OUT - 1.2, OUT],
+  wash: 0,
+  loopAfter: LOOP,
+  paper: '#ffffff',
+  captions: [
+    [.2, 3.1, 'one trip. *only one trip.*', null, false],
+    [5.4, 6.8, 'the *gate.*'],
+    [8.6, 10, '...a *cat.*'],
+    [11.5, 13, 'the key is *under the mat.*'],
+    [15.6, 16.8, '*no.*'],
+    [18.1, 19.3, 'two trips?', null, { pitch: 1.3 }],
+    [19.7, 23.4, 'two trips never hurt *anyone.*'],
+  ],
+  init(S) {
+    S.bo = S.addChar({ x: 0, walk: V });
+    S.pal = S.addChar({ x: 850, hair: 'curl', hairColor: '#9a5a3a', fill: '#ffe0c8', blush: ROSE, face: -1 }); S.pal.gain = .5; S.pal.hidden = true;
+    S.sway = { x: 0, v: 0 }; S.bagsLeft = BAGS.length; S.fall = []; S.fruit = []; S.lastN = 0;
+  },
+  update(S, t, dt) {
+    const bo = S.bo, pal = S.pal, W = S.sway;
+    S.plan(bo, t, [
+      [0, { x: 92, speed: V, accel: 900 }],
+      [.7, { eye: 'squeeze', crouch: .06 }], [2.6, { crouch: .17, eye: 'wide' }],
+      [3.2, { eye: 'flat', x: 332, speed: 120, accel: 300 }],
+      [5.3, { eye: 'open', lookY: .3, lookX: 1 }],
+      [6.0, { x: 396, speed: 70 }], [6.1, () => { bo.feet[0].rot = -.4; S.sfx('thump', { g: .3 }, 340); W.v += 1.4; }],
+      [6.9, { x: 500, speed: 120, lookY: 0, lookX: 0 }],
+      [8.5, { eye: 'wide', lookY: .8, lookX: 1 }],
+      [9.5, () => { bo.jump(170, -470, 0, false); W.v -= 2.4; }],
+      [9.6, { x: 640, speed: 110, eye: 'squeeze' }],
+      [11.4, { eye: 'open', lookX: 1, lookY: 1, crouch: .3, tilt: .2 }],
+      [13.1, { crouch: .42, tilt: .34, eye: 'squeeze' }],
+      [14.4, { eye: 'wide', tilt: .46 }],
+      [DROP, { eye: 'wide', crouch: 0, tilt: 0, lookY: 0, lookX: 0 }],
+      [15.7, { eye: 'flat' }],
+      [17, { lookX: 1 }], [19.3, { eye: 'happy' }],
+      [23.3, { eye: 'wide', lookX: -.6, lookY: .9 }],
+      [LEAVE, { x: 1e6, speed: V, accel: 450, eye: 'happy', lookX: 0, lookY: 0 }], [LEAVE, () => bo.jump(620, -1060)],
+    ]);
+    S.plan(pal, t, [
+      [17.1, { x: 890, speed: 140, face: -1, eye: 'open' }], [17.1, () => S.sfx('door', {}, 800)],
+      [19.4, { eye: 'happy' }],
+    ]);
+    pal.hidden = t < 17 || t > OUT;
+    // bags thud on, one after another, each with a beat of its own
+    const n = stackN(t);
+    if (n > S.lastN && t < 4) { S.lastN = n; W.v += (n % 2 ? .9 : -.9); bo.q.v += .7; S.sfx('thump', { g: .16 + n * .012 }, bo.x); }
+    // the stack: a spring dragged about by what Wobbin does. More and more out of control as it goes on
+    const lean = clamp(-bo.vx * .0009 - bo.axs * .00022, -.5, .5) + bo.rot.x * .9 + (t > 11.4 && t < DROP ? (t - 11.4) * .05 + Math.sin(t * 5) * .03 * (t - 11.4) : 0);
+    spring(W, lean, 26, .16, dt);
+    if (t > 5.1) S.once('pop1', () => S.sfx('tock', { f: 420 }, 400));
+    if (t > 8.6) S.once('meow', () => { S.sfx('slip', {}, 560); });
+    if (t > 10.3) S.once('a1', () => S.sfx('slip', {}, bo.x));
+    if (t > 12.4) S.once('a2', () => S.sfx('creak', {}, bo.x));
+    if (t > DROP) S.once('crash', () => {
+      S.bagsLeft = 0; S.shake(7); S.sfx('crash', {}, bo.x); S.sfx('thump', { g: .4 }, bo.x);
+      const top = bo.top();
+      BAGS.forEach((b, i) => S.fall.push({ b, i, x: top.x + 20, y: top.y - i * 30, vx: 70 + i * 34 + hash(i) * 130 - 90, vy: -240 - hash(i + .5) * 260, r: 0, vr: (hash(i + .2) - .4) * 7, g: 0 }));
+      FRUIT.forEach((c, i) => S.fruit.push({ c, x: top.x + 30, y: top.y - 90, vx: -320 + i * 130, vy: -520 - i * 40, r: 0, rest: 0 }));
+    });
+    for (const q of S.fall) { if (q.g) continue; q.vy += 1700 * dt; q.x += q.vx * dt; q.y += q.vy * dt; q.r += q.vr * dt; if (q.y > GROUND) { q.y = GROUND; q.g = 1; q.r = clamp(q.r, -1.2, 1.2) * .25 + (q.i % 2 ? .28 : -.22); } }
+    for (const f of S.fruit) { f.vy += 1500 * dt; f.x += f.vx * dt; f.y += f.vy * dt; if (f.y > GROUND - 15) { f.y = GROUND - 15; f.vy *= -.42; f.vx *= .8; if (Math.abs(f.vy) < 60) f.vy = 0; } f.r += f.vx * dt * .03; f.vx *= 1 - dt * .5; }
+    // the button: one orange takes its time coming back
+    if (t > 21.4) { const f = S.fruit[0]; if (f) { const go = sine(seg(t, 21.4, 23.3)); f.x = lerp(290, bo.x - 40, go); f.y = GROUND - 15; f.vx = 0; f.r = go * 9; } }
+    if (t > 23.3) S.once('tap', () => { S.sfx('tap', {}, bo.x); bo.q.v += 1.8; });
+    if (t > 19.8) S.once('q', () => S.sfx('pad', { root: 293.66, d: 3 }));
+    // the camera stays close and moves with the stack
+    if (t > .5 && t < 4) { S.camGoal.x = 150; S.camGoal.y = GROUND - 90; S.camGoal.z = .9; S.camGoal.kz = 3; }
+    else if (t >= 4 && t < 15.3) { S.camGoal.x = bo.x + 60; S.camGoal.y = GROUND - 110; S.camGoal.z = .86; S.camGoal.kz = 2; }
+    else if (t >= 15.3 && t < LEAVE) { S.camGoal.x = 690; S.camGoal.y = GROUND - 40; S.camGoal.z = .8; S.camGoal.kx = 3; S.camGoal.kz = 2; }
+  },
+  drawSky(S, ctx, t, v) {
+    ctx.fillStyle = '#e4f0f4'; ctx.fillRect(v.left - 20, v.top - 20, v.right - v.left + 40, GROUND - v.top + 24);
+    lump(ctx, [[260, 262, 34], [300, 240, 46], [352, 256, 36]], '#ffffff', 4);
+    lump(ctx, [[640, 212, 28], [676, 196, 38], [718, 212, 28]], '#ffffff', 4);
+  },
+  drawBack(S, ctx, t, v) {
+    // the pavement and the grass verge fill the bottom of the frame
+    ctx.fillStyle = '#d9d2c6'; ctx.fillRect(v.left - 20, GROUND + 4, v.right - v.left + 40, 60);
+    ctx.fillStyle = '#bfe3a8'; ctx.fillRect(v.left - 20, GROUND + 64, v.right - v.left + 40, 800);
+    ctx.lineWidth = 4; ctx.beginPath(); ctx.moveTo(v.left - 20, GROUND + 64); ctx.lineTo(v.right + 20, GROUND + 64); for (let x = -40; x < 1000; x += 132) { ctx.moveTo(x, GROUND + 6); ctx.lineTo(x - 16, GROUND + 62); } ctx.stroke();
+    // far houses, then the car with its boot up, at the left
+    ctx.lineWidth = 4; hand(ctx, [[-96, GROUND], [-96, GROUND - 124], [40, GROUND - 126], [40, GROUND]], { fill: '#f3dcc4', seed: 5 });
+    hand(ctx, [[-112, GROUND - 124], [-28, GROUND - 188], [56, GROUND - 124]], { fill: ROSE, seed: 6 });
+    ctx.lineWidth = 6; ctx.fillStyle = SLATE; ctx.beginPath(); ctx.moveTo(-280, GROUND - 32); ctx.lineTo(-280, GROUND - 88); ctx.lineTo(-190, GROUND - 92); ctx.lineTo(-150, GROUND - 156); ctx.lineTo(-28, GROUND - 156); ctx.lineTo(10, GROUND - 92); ctx.lineTo(42, GROUND - 88); ctx.lineTo(44, GROUND - 32); ctx.closePath(); ctx.fill(); ctx.stroke();
+    ctx.fillStyle = '#e8f2f6'; ctx.beginPath(); ctx.moveTo(-138, GROUND - 146); ctx.lineTo(-100, GROUND - 146); ctx.lineTo(-100, GROUND - 96); ctx.lineTo(-170, GROUND - 96); ctx.closePath(); ctx.moveTo(-88, GROUND - 146); ctx.lineTo(-36, GROUND - 146); ctx.lineTo(-10, GROUND - 96); ctx.lineTo(-88, GROUND - 96); ctx.closePath(); ctx.fill(); ctx.lineWidth = 4; ctx.stroke();
+    ctx.lineWidth = 5; ctx.fillStyle = '#3f3a44'; for (const x of [-200, -30]) { ctx.beginPath(); ctx.arc(x, GROUND - 30, 32, 0, 7); ctx.fill(); ctx.stroke(); ctx.fillStyle = '#cfd4da'; ctx.beginPath(); ctx.arc(x, GROUND - 30, 13, 0, 7); ctx.fill(); ctx.stroke(); ctx.fillStyle = '#3f3a44'; }
+    // the open boot
+    ctx.fillStyle = shadeOf(SLATE); ctx.beginPath(); ctx.moveTo(42, GROUND - 92); ctx.lineTo(118, GROUND - 176); ctx.lineTo(132, GROUND - 170); ctx.lineTo(46, GROUND - 78); ctx.closePath(); ctx.fill(); ctx.stroke();
+    // a low fence, the gate, and the path up to the house
+    const openG = sine(seg(t, 6.0, 6.4));
+    ctx.lineWidth = 4;
+    for (let x = 150; x < 372; x += 34) { hand(ctx, [[x, GROUND + 1], [x, GROUND - 58], [x + 11, GROUND - 72], [x + 22, GROUND - 58], [x + 22, GROUND + 1]], { fill: CREAM, seed: x, wob: 1.4, over: 1 }); }
+    ctx.lineWidth = 4; ctx.beginPath(); ctx.moveTo(146, GROUND - 40); ctx.lineTo(372, GROUND - 40); ctx.moveTo(146, GROUND - 18); ctx.lineTo(372, GROUND - 18); ctx.stroke();
+    ctx.save(); ctx.translate(376, GROUND); ctx.scale(1 - openG * 1.7, 1); ctx.lineWidth = 4; hand(ctx, [[0, 1], [0, -74], [62, -74], [62, 1]], { fill: '#f4d7b0', seed: 9, wob: 1.3, over: 2 }); ctx.beginPath(); ctx.moveTo(0, -2); ctx.lineTo(62, -60); ctx.stroke(); ctx.restore();
+    ctx.fillStyle = WOOD; ctx.lineWidth = 4; ctx.fillRect(438, GROUND - 82, 12, 83); ctx.strokeRect(438, GROUND - 82, 12, 83);
+    grass(ctx, [[156, GROUND - 1], [244, GROUND - 1], [340, GROUND - 1], [468, GROUND - 1], [596, GROUND - 1]]);
+    // the house: walls down to the ground, a bush at the corner, a step, the mat
+    ctx.lineWidth = 6; hand(ctx, [[636, GROUND + 3], [636, GROUND - 286], [980, GROUND - 284], [980, GROUND + 3]], { fill: BRICK, seed: 21 });
+    ctx.lineWidth = 3; ctx.beginPath(); for (const [x, y] of [[660, 44], [700, 120], [860, 60], [930, 170], [770, 230], [900, 248]]) { ctx.moveTo(x, GROUND - y); ctx.lineTo(x + 26, GROUND - y); ctx.moveTo(x + 8, GROUND - y + 13); ctx.lineTo(x + 34, GROUND - y + 13); } ctx.stroke();
+    ctx.lineWidth = 6; hand(ctx, [[608, GROUND - 284], [808, GROUND - 416], [1008, GROUND - 282]], { fill: '#d97a5c', seed: 22, over: 9 });
+    ctx.lineWidth = 3.5; ctx.beginPath(); for (const [x, y] of [[730, 320], [790, 350], [850, 326], [800, 300], [900, 300]]) { ctx.moveTo(x, GROUND - y); ctx.quadraticCurveTo(x + 10, GROUND - y + 7, x + 20, GROUND - y); } ctx.stroke();
+    ctx.lineWidth = 5; hand(ctx, [[660, GROUND - 230], [730, GROUND - 231], [731, GROUND - 160], [661, GROUND - 159]], { fill: '#fdeeb5', seed: 23, over: 3 });
+    ctx.lineWidth = 3.5; ctx.beginPath(); ctx.moveTo(695, GROUND - 230); ctx.lineTo(696, GROUND - 160); ctx.moveTo(661, GROUND - 195); ctx.lineTo(730, GROUND - 195); ctx.stroke();
+    const dOpen = sine(seg(t, 17, 17.5));
+    ctx.fillStyle = '#5b4a52'; ctx.fillRect(772, GROUND - 176, 94, 176);
+    ctx.lineWidth = 6; ctx.save(); ctx.translate(772, 0); ctx.scale(1 - dOpen * .8, 1); hand(ctx, [[0, GROUND + 1], [0, GROUND - 176], [94, GROUND - 175], [94, GROUND + 1]], { fill: '#7fb8a8', seed: 24, over: 2 }); ctx.fillStyle = '#e7c35a'; ctx.beginPath(); ctx.arc(78, GROUND - 84, 6, 0, 7); ctx.fill(); ctx.lineWidth = 4; ctx.stroke(); ctx.restore();
+    hatch(ctx, 640, GROUND - 282, 336, 14, { gap: 7, width: 2.4 });
+    lump(ctx, [[626, GROUND - 22, 28], [656, GROUND - 14, 20]], '#8fce7c', 4);
+    ctx.lineWidth = 4; ctx.fillStyle = '#c9a26a'; ctx.beginPath(); ctx.ellipse(738, GROUND + 8, 58, 9, 0, 0, 7); ctx.fill(); ctx.stroke();
+    // the cat, not moving for anybody
+    const cx = 560, cat = t > 9.5 ? Math.sin(Math.min(1, (t - 9.5) * 2) * Math.PI) * 10 : 0, wag = Math.sin(t * 3) * 6;
+    ctx.lineWidth = 4; ctx.fillStyle = '#f1b05f'; ctx.beginPath(); ctx.ellipse(cx, GROUND - 22 - cat, 42, 21, 0, 0, 7); ctx.fill(); ctx.stroke();
+    ctx.beginPath(); ctx.arc(cx + 38, GROUND - 34 - cat, 16, 0, 7); ctx.fill(); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(cx + 26, GROUND - 46 - cat); ctx.lineTo(cx + 28, GROUND - 60 - cat); ctx.lineTo(cx + 38, GROUND - 50 - cat); ctx.lineTo(cx + 48, GROUND - 60 - cat); ctx.lineTo(cx + 50, GROUND - 46 - cat); ctx.fill(); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(cx - 40, GROUND - 20 - cat); ctx.quadraticCurveTo(cx - 72, GROUND - 26 - cat, cx - 66 + wag, GROUND - 52 - cat); ctx.stroke();
+    ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(cx + 30, GROUND - 35 - cat); ctx.lineTo(cx + 37, GROUND - 35 - cat); ctx.moveTo(cx + 42, GROUND - 35 - cat); ctx.lineTo(cx + 49, GROUND - 35 - cat); ctx.stroke();
+    // what fell
+    for (const q of S.fall) bag(ctx, q.x, q.y, q.r, q.b, q.i);
+    for (const f of S.fruit) { ctx.fillStyle = f.c; ctx.lineWidth = 4; ctx.beginPath(); ctx.arc(f.x, f.y, 14, 0, 7); ctx.fill(); ctx.stroke(); ctx.beginPath(); ctx.moveTo(f.x + Math.cos(f.r) * 9, f.y + Math.sin(f.r) * 9); ctx.lineTo(f.x + Math.cos(f.r) * 13, f.y + Math.sin(f.r) * 13); ctx.stroke(); }
+    // the key's little corner, sticking out from under the mat
+    if (t > 11) { ctx.fillStyle = '#e7c35a'; ctx.lineWidth = 3.5; ctx.beginPath(); ctx.arc(702, GROUND + 7, 6, 0, 7); ctx.fill(); ctx.stroke(); }
+  },
+  drawFront(S, ctx, t, v) {
+    if (t < .55 || S.bagsLeft === 0) return;
+    const bo = S.bo, top = bo.top(), n = stackN(t), W = S.sway.x;
+    for (let i = 0; i < n; i++) {
+      const k = i / (BAGS.length - 1), bend = W * (i * 30) * (.5 + k), born = (.55 + i * (2.05 / BAGS.length));
+      const u = seg(t, born - .22, born), yIn = (1 - u * u) * -320, xIn = (1 - u) * -120;
+      bag(ctx, top.x + bend + xIn + (hash(i * 3.3) - .5) * 9, top.y + 4 - i * 30 + yIn + Math.abs(W) * i * i * 1.2, bo.rot.x * .6 + W * (.25 + k * .9) + (hash(i * 1.1) - .5) * .1, BAGS[i], i);
+    }
+  },
+});
+function shadeOf(c) { return Shorts.mix(c, '#2a2238', .22); }
+</script>
+</body>
+</html>

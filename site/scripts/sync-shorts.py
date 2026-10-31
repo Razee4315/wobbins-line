@@ -21,7 +21,9 @@ ENGINE2 = ['one-more', 'the-hill', 'bloom', 'hurry', 'what-if',
            'the-other-line', 'why-was-i-here', 'lost', 'small-talk', 'cant-sleep',
            'just-in-case', 'heavy', 'fine', 'comfort-zone', 'inner-voice',
            'the-chair', 'two-minutes', 'did-i-lock-it', 'water-yourself', 'slow-walker',
-           'new-pencil', 'power-cut', 'the-menu', 'puddles']
+           'new-pencil', 'power-cut', 'the-menu', 'puddles',
+           'one-trip', 'hiding', 'the-angle', 'the-mosquito', 'payday',
+           'small-wins', 'say-hi', 'dance-break', 'scribble', 'call-mum']
 
 VIEW_OLD = """      const unit = Math.min(cw / (portrait ? 640 : 1200), ch / (portrait ? 640 * 16 / 9 : 600)) * this.cam.z.x;
       const gy = ch * (portrait ? .64 : .7);"""

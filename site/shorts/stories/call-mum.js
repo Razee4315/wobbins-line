@@ -1,0 +1,120 @@
+/* call-mum: extracted from ../call-mum.html by scripts/sync-shorts.py. Do not edit here. */
+(function () {
+  const Shorts = Object.assign(Object.create(window.Shorts), { play: story => { (window.WL_STORIES ||= {})['call-mum'] = story; } });
+  // Pencil into crayon. A phone hopping across a table with a little ring of colour round it: "4 missed calls." Wobbin
+  // keeps saying later, the day goes grey and quiet, and the ringing stops, which is worse. A kid's drawing on the
+  // fridge. Then a call, "hi mum", and the whole flat floods with crayon. "did you eat?" Button: she texts.
+  const { lerp, seg, sine, outBack, hash, mix, clamp, GROUND, INK } = Shorts;
+  const hand = (...a) => Sketch.hand(...a), lump = (...a) => Sketch.lump(...a), tiles = (...a) => Sketch.tiles(...a);
+  const V = 150, HI = 13.7, LEAVE = 23, OUT = LEAVE + 1.4, LOOP = OUT + 1, TX = 300;
+  const K = ['#ff5a4d', '#ffb12e', '#ffe03d', '#3fc66b', '#3f9be8', '#a06be0'];
+  const RINGS = [[.5, 3.1], [5.3, 6.9], [8.5, 9.8]];
+  const ringing = t => RINGS.some(([a, b]) => t > a && t < b);
+  const called = t => Math.min(6, 3 + RINGS.filter(([a]) => t > a).length);
+  const phoneX = t => TX + 26 + (t < 3.1 ? seg(t, .5, 3.1) * 66 : 66) + (t > 5.3 ? seg(t, 5.3, 6.9) * -42 : 0) + (t > 8.5 ? seg(t, 8.5, 9.8) * 40 : 0);
+
+  Shorts.play({
+    title: 'Call Mum',
+    style: { a: 'sketch', b: 'crayon' },
+    accent: '#e8503f',
+    hook: 1.5,
+    page: [.8, OUT - 1.2, OUT],
+    wash: 0,
+    loopAfter: LOOP,
+    paper: '#ffffff',
+    captions: [
+      [.2, 3, '4 missed calls. *mum.*', null, false],
+      [3.2, 4.2, '*later.*'],
+      [5.5, 6.9, 'busy. *so busy.*'],
+      [8.7, 9.8, '*tomorrow.*'],
+      [11, 12.2, '...'],
+      [HI, 14.7, 'hi, *mum.*'],
+      [14.9, 15.8, 'did you eat?', null, { pitch: 1.25 }],
+      [15.9, 16.8, 'are you warm?', null, { pitch: 1.25 }],
+      [16.9, 17.8, 'are you sleeping?', null, { pitch: 1.25 }],
+      [18.1, 22.4, 'call her back. *she just wants to know you ate.*'],
+    ],
+    init(S) {
+      S.bo = S.addChar({ x: 0, walk: V }); S.bo.space = 0;
+      S.sp = []; S.pulse = 0;
+    },
+    mix(S, m, t) { Sketch.reveal(m, S.sp, t); },
+    update(S, t, dt) {
+      const bo = S.bo;
+      S.plan(bo, t, [
+        [0, { x: 130, speed: V, accel: 1000 }],
+        [.75, { sit: 1, lookX: 1, lookY: .4, eye: 'flat' }],
+        [3.2, { lookX: 1, lookY: .5, eye: 'flat' }],
+        [4.3, { lookY: .2 }],
+        [5.6, { eye: 'squeeze' }], [7, { eye: 'flat' }],
+        [8.7, { eye: 'flat', lookX: 1, lookY: .5 }],
+        [10.1, { eye: 'open', lookX: -1, lookY: -.2, tilt: -.04 }],
+        [11, { eye: 'sad', lookX: -1 }],
+        [12.3, { eye: 'open', lookX: 1, lookY: .5, tilt: 0 }],
+        [12.9, () => { S.sfx('tap', {}, bo.x); bo.q.v += 1.2; }],
+        [HI, { eye: 'happy', sit: 0, lookX: 1, lookY: 0 }],
+        [15, () => bo.jump(0, -420)], [16, () => bo.jump(0, -420)], [17, () => bo.jump(0, -420)],
+        [LEAVE, { x: 1e6, speed: V, accel: 450, eye: 'happy', lookX: 0, lookY: 0 }], [LEAVE, () => bo.jump(520, -780)],
+      ]);
+      // each ring: a soft buzz, a hop along the table, and a small ring of colour that dies away
+      const ring = Math.floor(t * 3.2);
+      if (ringing(t) && ring !== S.pulse) { S.pulse = ring; S.sfx('ring', {}, phoneX(t)); S.sp.push({ x: phoneX(t), y: GROUND - 128, R: 120, t0: t, dur: .4, fade: t + .9 }); }
+      S.sp = S.sp.filter(s => !s.fade || t < s.fade);
+      if (t > 3.2) S.once('l1', () => S.sfx('tock', { f: 420 }, bo.x));
+      if (t > 4.4) S.once('type', () => S.sfx('typing', {}));
+      // when the ringing stops, the only colour left in the flat is the old drawing on the fridge
+      if (t > 10.3) S.once('fr', () => { S.sfx('heart', { g: .22 }); S.sp.push({ x: -30, y: GROUND - 270, R: 96, t0: t, dur: .7, k: .8 }); });
+      if (t > HI - .1) S.once('hi', () => { S.sp = [{ x: phoneX(t), y: GROUND - 128, R: 1300, t0: t, dur: 1.5 }]; S.sfx('swell', { root: 392 }); S.sfx('sparkle', { n: 8 }); S.burst(phoneX(t), GROUND - 140, 20, K, { speed: 460, size: 12, life: .9, gravity: 900 }); });
+      if (t > 18.2) S.once('q', () => S.sfx('pad', { root: 293.66, d: 3.6 }));
+      if (t > 22.5) S.once('txt', () => { S.sfx('ding', { pitch: 1568, g: .14 }, TX); bo.q.v -= 1.4; });
+      if (t > .5 && t < 10.1) { S.camGoal.x = 248; S.camGoal.y = GROUND - 110; S.camGoal.z = 1.12; S.camGoal.kz = 3; }
+      else if (t >= 10.1 && t < 12.3) { S.camGoal.x = 80; S.camGoal.y = GROUND - 140; S.camGoal.z = 1.2; S.camGoal.kx = 2.6; S.camGoal.kz = 2; }
+      else if (t >= 12.3 && t < 18) { S.camGoal.x = 248; S.camGoal.y = GROUND - 110; S.camGoal.z = t < HI ? 1.1 : .9; S.camGoal.kx = 2.6; S.camGoal.kz = 1.6; }
+      else if (t >= 18 && t < LEAVE) { S.camGoal.x = 240; S.camGoal.y = GROUND - 110; S.camGoal.z = .94; }
+    },
+    drawBack(S, ctx, t, v) {
+      // a small flat: wall, skirting, floor. Outside, the day goes by while Wobbin doesn't call
+      ctx.fillStyle = '#ffd9b8'; ctx.fillRect(v.left - 20, v.top - 20, v.right - v.left + 40, GROUND - v.top + 24);
+      tiles(ctx, -260, 720, 240, '#d6a36a', '#f1cf9c');
+      ctx.fillStyle = '#f0a878'; ctx.fillRect(v.left - 20, GROUND - 40, v.right - v.left + 40, 42); ctx.lineWidth = 4; ctx.beginPath(); ctx.moveTo(v.left - 20, GROUND - 40); ctx.lineTo(v.right + 20, GROUND - 40); ctx.stroke();
+      const eve = sine(seg(t, 3, 12));
+      ctx.lineWidth = 6; hand(ctx, [[180, GROUND - 400], [400, GROUND - 402], [402, GROUND - 216], [181, GROUND - 214]], { fill: mix('#9ed8f7', '#7a6fb8', eve), seed: 3 });
+      ctx.save(); ctx.beginPath(); ctx.rect(180, GROUND - 400, 220, 186); ctx.clip(); const sy = lerp(GROUND - 356, GROUND - 200, eve); ctx.fillStyle = eve > .75 ? '#fff6d0' : '#ffc44d'; ctx.lineWidth = 4; ctx.beginPath(); ctx.arc(330, sy, 28, 0, 7); ctx.fill(); ctx.stroke(); ctx.fillStyle = mix('#49c06a', '#3a4a78', eve); ctx.fillRect(180, GROUND - 240, 220, 40); for (let i = 0; i < 4; i++) { ctx.fillRect(190 + i * 54, GROUND - 270 - hash(i) * 40, 42, 90); ctx.strokeRect(190 + i * 54, GROUND - 270 - hash(i) * 40, 42, 90); } ctx.restore();
+      ctx.lineWidth = 5; ctx.beginPath(); ctx.moveTo(290, GROUND - 400); ctx.lineTo(291, GROUND - 216); ctx.moveTo(181, GROUND - 310); ctx.lineTo(401, GROUND - 310); ctx.stroke();
+      ctx.fillStyle = '#c98f5a'; ctx.fillRect(168, GROUND - 216, 244, 12); ctx.strokeRect(168, GROUND - 216, 244, 12);
+      // the wall clock runs fast
+      ctx.lineWidth = 6; ctx.fillStyle = '#ffffff'; ctx.beginPath(); ctx.arc(510, GROUND - 340, 36, 0, 7); ctx.fill(); ctx.stroke(); ctx.lineWidth = 4; const h = t * .9; ctx.beginPath(); ctx.moveTo(510, GROUND - 340); ctx.lineTo(510 + Math.sin(h) * 20, GROUND - 340 - Math.cos(h) * 20); ctx.moveTo(510, GROUND - 340); ctx.lineTo(510 + Math.sin(h * 12) * 28, GROUND - 340 - Math.cos(h * 12) * 28); ctx.stroke();
+      // the fridge, with the old drawing held on by a magnet
+      ctx.lineWidth = 6; hand(ctx, [[-120, GROUND + 1], [-120, GROUND - 320], [60, GROUND - 319], [60, GROUND + 1]], { fill: '#bfe6ff', seed: 5 }); ctx.lineWidth = 5; ctx.beginPath(); ctx.moveTo(-120, GROUND - 210); ctx.lineTo(60, GROUND - 209); ctx.moveTo(40, GROUND - 190); ctx.lineTo(40, GROUND - 130); ctx.stroke();
+      const dx = -30, dy = GROUND - 270;
+      ctx.lineWidth = 4; hand(ctx, [[dx - 62, dy - 52], [dx + 62, dy - 50], [dx + 60, dy + 50], [dx - 60, dy + 52]], { fill: '#fffaf0', seed: 7, wob: 2 });
+      // a child's drawing: a big round one and a small round one, side by side, and a heart between them
+      ctx.lineWidth = 4; ctx.fillStyle = '#ffc9dc'; ctx.beginPath(); ctx.arc(dx - 26, dy - 6, 22, 0, 7); ctx.fill(); ctx.stroke(); ctx.fillStyle = '#ffffff'; ctx.beginPath(); ctx.arc(dx + 26, dy + 8, 13, 0, 7); ctx.fill(); ctx.stroke(); ctx.beginPath(); ctx.moveTo(dx - 30, dy + 16); ctx.lineTo(dx - 34, dy + 34); ctx.moveTo(dx - 20, dy + 16); ctx.lineTo(dx - 16, dy + 34); ctx.moveTo(dx + 22, dy + 21); ctx.lineTo(dx + 20, dy + 34); ctx.moveTo(dx + 30, dy + 21); ctx.lineTo(dx + 32, dy + 34); ctx.stroke();
+      ctx.fillStyle = '#ff5a4d'; ctx.font = '700 22px "Kevin Sans", sans-serif'; ctx.textAlign = 'center'; ctx.fillText('mum + me', dx, dy - 32); ctx.textAlign = 'start';
+      ctx.fillStyle = '#ff5a4d'; ctx.beginPath(); ctx.arc(dx - 4, dy - 6, 4, 0, 7); ctx.arc(dx + 4, dy - 6, 4, 0, 7); ctx.fill(); ctx.beginPath(); ctx.moveTo(dx - 8, dy - 4); ctx.lineTo(dx, dy + 6); ctx.lineTo(dx + 8, dy - 4); ctx.fill();
+      ctx.fillStyle = '#ffe03d'; ctx.lineWidth = 4; ctx.beginPath(); ctx.arc(dx, dy - 54, 7, 0, 7); ctx.fill(); ctx.stroke();
+      // the table, the laptop, a cold cup, and the chair behind Wobbin
+      ctx.lineWidth = 6; hand(ctx, [[176, GROUND - 106], [540, GROUND - 107], [540, GROUND - 92], [176, GROUND - 91]], { fill: '#d4985c', seed: 9 });
+      ctx.lineWidth = 5; ctx.beginPath(); ctx.moveTo(204, GROUND - 92); ctx.lineTo(196, GROUND + 1); ctx.moveTo(512, GROUND - 92); ctx.lineTo(520, GROUND + 1); ctx.stroke();
+      hand(ctx, [[60, GROUND - 40], [46, GROUND - 170], [78, GROUND - 170], [90, GROUND - 58], [172, GROUND - 58], [172, GROUND - 40]], { fill: '#3f9be8', seed: 11, wob: 1.4, over: 2 }); ctx.beginPath(); ctx.moveTo(84, GROUND - 40); ctx.lineTo(80, GROUND + 1); ctx.moveTo(160, GROUND - 40); ctx.lineTo(164, GROUND + 1); ctx.stroke();
+      hand(ctx, [[220, GROUND - 106], [214, GROUND - 190], [312, GROUND - 190], [306, GROUND - 106]], { fill: '#3a3f4a', seed: 13, wob: 1.2, over: 2 });
+      ctx.fillStyle = '#ffffff'; ctx.lineWidth = 5; ctx.fillRect(470, GROUND - 144, 40, 38); ctx.strokeRect(470, GROUND - 144, 40, 38); ctx.beginPath(); ctx.arc(512, GROUND - 126, 12, -1.3, 1.3); ctx.stroke();
+    },
+    drawFront(S, ctx, t, v) {
+      const bo = S.bo, x = phoneX(t), buzz = ringing(t) ? Math.sin(t * 56) * 3 : 0, up = ringing(t) ? Math.abs(Math.sin(t * 9)) * 9 : 0, y = GROUND - 106 - up;
+      // the phone, stood up against the laptop's height so it reads on a small screen
+      ctx.lineWidth = 5; ctx.save(); ctx.translate(x + buzz, y); ctx.rotate(buzz * .02); hand(ctx, [[-30, 0], [-30, -92], [30, -92], [30, 0]], { fill: '#2c2a33', seed: 15, wob: 1, over: 1 }); ctx.fillStyle = ringing(t) || t > HI ? '#fff4d0' : '#cfd4da'; ctx.fillRect(-24, -86, 48, 80);
+      if (t < HI) {
+        ctx.font = '700 15px "Kevin Sans", sans-serif'; ctx.textAlign = 'center'; ctx.fillStyle = INK; ctx.fillText('MUM', 0, -66);
+        ctx.font = '700 34px "Kevin Sans", sans-serif'; ctx.fillStyle = '#e8503f'; ctx.fillText(String(called(t)), 0, -28); ctx.textAlign = 'start';
+      } else {
+        ctx.lineWidth = 3.5; ctx.fillStyle = '#ffc9dc'; ctx.beginPath(); ctx.arc(0, -48, 24, 0, 7); ctx.fill(); ctx.stroke(); ctx.fillStyle = INK; ctx.beginPath(); ctx.arc(-8, -52, 3.4, 0, 7); ctx.arc(8, -52, 3.4, 0, 7); ctx.fill(); ctx.beginPath(); ctx.arc(0, -46, 9, .3, 2.84); ctx.stroke();
+      }
+      ctx.restore();
+      // what mum's voice is made of: little hearts, soup and a scarf floating out of the phone
+      if (t > 14.8 && t < 18.2) for (let i = 0; i < 6; i++) { const p = (t * .55 + i / 6) % 1, px = x + 50 + i * 16 + Math.sin(p * 8 + i) * 16, py = y - 96 - p * 170; ctx.globalAlpha = Math.sin(p * Math.PI); Shorts.sprite(ctx, Shorts.SPRITES.heart, px, py, 3.2, { X: K[i % 3] }); ctx.globalAlpha = 1; }
+      // the button: mum's text
+      if (t > 22.5 && t < LEAVE + .4) { const u = outBack(seg(t, 22.5, 22.8)); ctx.save(); ctx.translate(x + 20, y - 150); ctx.scale(u, u); ctx.lineWidth = 4; hand(ctx, [[-96, 26], [-96, -26], [96, -26], [96, 26]], { fill: '#fffaf0', seed: 17, wob: 1.4, over: 2 }); ctx.font = '700 22px "Kevin Sans", sans-serif'; ctx.textAlign = 'center'; ctx.fillStyle = INK; ctx.fillText('eat something.', 0, 8); ctx.textAlign = 'start'; ctx.restore(); }
+    },
+  });
+})();

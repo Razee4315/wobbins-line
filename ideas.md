@@ -90,6 +90,30 @@ If a look wins, more stories that suit each one:
 - Coloured pencil: the corner shop, a packed lunch, the school bus, grandma's kitchen.
 - Crayon mix: the first day of school, a blank wall and a kid, a grey office and one plant.
 
+## Season 10 · errands (built 2026-10-31)
+
+Pen + coloured pencil, picked by the user and a friend. Everyday annoyances, hook first. See `docs/10-hooks.md`.
+
+| Episode | Frame one | Turn | Quote |
+|---|---|---|---|
+| One Trip | ten bags raining onto Wobbin's head | it all falls, and a neighbour offers two trips | two trips never hurt anyone. |
+| Hiding | "oh no. someone i know." | backs into someone else who is hiding | everyone is hiding from someone. say hi. |
+| The Angle | frozen in a pose, holding the cable up with the tuft | a friend says a new one is two dollars | fix the small thing. it costs nothing. |
+| The Mosquito | bolt upright in bed, bzzz circling | gives up and gets a net | you can't win every fight. get a net. |
+| Payday | bouncing on a heap of coins | the last coin buys one ice cream, two spoons | broke by five. happy anyway. |
+
+## Season 11 · colour in (built 2026-10-31)
+
+Pencil into crayon, the Puddles idea: colour only comes when Wobbin does something. Warmer stories, about small joys and people.
+
+| Episode | Frame one | What makes the colour | Quote |
+|---|---|---|---|
+| Small Wins | a hop, and colour bursts off matching socks | each tiny win | small wins count. so count them. |
+| Say Hi | a silent row of faces on a bus | each hello, seat by seat | say hi. it's contagious. |
+| Dance Break | a foot tapping under a grey desk | dancing, and it snaps back when the boss looks | dance a little. nobody minds. |
+| Scribble | one crayon flower on a long grey wall | rubbing it, then everyone drawing | some walls are just waiting. |
+| Call Mum | a phone hopping across a table: 4 missed calls | answering her | call her back. she just wants to know you ate. |
+
 ## Backlog (fresh ideas)
 
 - **Burnout** — Bo is a candle-flame keeper, lighting everyone else's lanterns until Bo's own flame is a flicker; Bo finally lights its own first. *"you can't pour from an empty cup."*
@@ -114,7 +138,7 @@ If a look wins, more stories that suit each one:
 
 ### Daily-life research (2026-10-31)
 
-Parked until the user picks a look. The surveys below come mostly from the US, UK and Australia, and some are press
+The surveys below come mostly from the US, UK and Australia, and some are press
 write-ups or narrow samples, so use them for themes, not numbers. What keeps coming up: noise and interruptions, phones,
 tiredness, cancelled plans, money, and chores.
 
@@ -127,7 +151,7 @@ tiredness, cancelled plans, money, and chores.
 | Lonely people cancel plans far more often (69% against 29%) | [APA Stress in America 2025](https://www.apa.org/pubs/reports/stress-in-america/2025) |
 | Money, chores, commutes and the charm of the mundane are the recurring themes in short video. Blog-level commentary only | [Rolling Stone on Boring TikTok](https://www.pressreader.com/usa/rolling-stone-usa/20220705/282299618858892) |
 
-Story seeds, each with the small true detail that makes it land:
+Story seeds, each with the small true detail that makes it land. One Trip, Hiding, The Angle, The Mosquito, Payday and Small Wins are built (Seasons 10 and 11). Just a Second and Knock Knock are still free:
 
 - **The Mosquito** (charcoal). Lights on: gone. Lights off: back. *Detail:* the buzz stops the moment the light clicks on, and Wobbin slowly pulls the blanket over everything but one ear.
 - **Hiding** (coloured pencil). Someone you know, aisle three. Wobbin studies a cereal box very hard. *Detail:* the box is upside down. *Turn:* they're hiding too, behind the same shelf.

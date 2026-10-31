@@ -20,6 +20,14 @@ Prints each loop's length and seam error, which parts of Wobbin's state differ a
 any other character still within 650 units of Wobbin at the seam. All 33 take about 17 seconds.
 It checks the simulation only; use the contact sheets below to check how it looks.
 
+## Is it fast enough?
+
+```bash
+node tools/pace.js one-trip hiding     # opening, words in frame one, longest gap, wait at the end
+```
+
+See `10-hooks.md`.
+
 ## Characters touching, and beats that went missing
 
 ```bash
