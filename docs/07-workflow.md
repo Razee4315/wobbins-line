@@ -81,7 +81,7 @@ With `python tools/dev_server.py . tools/out` running, open any episode page and
 
 ```js
 await import('/tools/export.js');
-exportAll();                        // all 52 into exports/NN - Title/ (4K MP4, cover PNG, caption.txt): a bulk render, so only when asked
+exportAll();                        // all 57 into exports/NN - Title/ (4K MP4, cover PNG, caption.txt): a bulk render, so only when asked
 exportAll({ from: 39, to: 52 });    // a range (run halves in two tabs to go faster)
 exportAll({ only: ['the-chair'], video: false });   // covers and captions only (seconds)
 ```

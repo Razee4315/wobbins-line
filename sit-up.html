@@ -1,0 +1,145 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Sit Up</title>
+</head>
+<body>
+<script src="sfx.js?v=13"></script>
+<script src="engine2.js?v=13"></script>
+<script src="sketch.js?v=3"></script>
+<script>
+// Pencil into crayon, and the only episode that talks to you. One eye, straight down the lens: you. yes, you. Wobbin
+// does an impression of how you're holding your phone. A bird points out that you're leaving. Shoulders down, jaw
+// loose, and each thing you fix colours in a bit more of the world. Then Wobbin goes too far (your tongue), says sorry,
+// and one big breath colours everything. Button: pass it on.
+const { lerp, seg, sine, outBack, hash, mix, clamp, GROUND, INK } = Shorts;
+const hand = (...a) => Sketch.hand(...a), lump = (...a) => Sketch.lump(...a), grass = (...a) => Sketch.grass(...a);
+const V = 150, IN = 14.9, OUTB = 16.3, LEAVE = 23.9, OUT = LEAVE + 1.4, LOOP = OUT + 1;
+const LOOK = { a: 'sketch', b: 'crayon' }, CLOSEUP = { a: { base: 'sketch', grain: 3, hatchScale: 3 }, b: { base: 'crayon', grain: 3 } };
+const K = ['#ff5a4d', '#ffb12e', '#ffe03d', '#3fc66b', '#3f9be8', '#a06be0'], BX = 300, PERCH = GROUND - 142;
+
+const on = (x, y, z, f = .5) => [x, y + (.64 - f) * 1138 / z, z];   // a spot in the frame: f is how far down it sits
+const CLOSE = on(122, GROUND - 134, 4.6, .5), EYE = on(122, GROUND - 134, 3.4, .5), MID = on(170, GROUND - 170, 1.45, .56), BIRD = on(214, GROUND - 170, 1.3, .58), WIDE = on(190, GROUND - 180, 1.06, .6);
+const SHOTS = [
+  [1.45, ...CLOSE], [2.9, ...MID], [4.2, ...on(190, GROUND - 120, 1.6, .56)], [5.5, ...BIRD], [7, ...on(122, GROUND - 140, 2.5, .52)], [8.1, ...EYE],
+  [9.4, ...BIRD], [10.7, ...EYE], [11.9, ...BIRD], [12.1, ...on(122, GROUND - 140, 2.5, .52)], [13.4, ...on(BX, PERCH - 20, 3, .52)],
+  [14.8, ...on(150, GROUND - 180, 1.3, .57)], [17.6, ...EYE], [18.8, ...WIDE], [21.9, ...on(BX - 10, GROUND - 170, 1.5, .56)],
+];
+function cut(S, t) {
+  if (t >= LEAVE) return;
+  let s = null; for (const q of SHOTS) if (t >= q[0]) s = q;
+  if (!s) return;
+  const c = S.cam; c.x.x = s[1]; c.y.x = s[2]; c.z.x = s[3]; c.x.v = c.y.v = c.z.v = 0; S.camGoal.x = s[1]; S.camGoal.y = s[2]; S.camGoal.z = s[3];
+}
+function pop(S, x, y, R, dur, n) {
+  S.sp.push({ x, y, R, t0: S.t, dur });
+  S.burst(x, y + 20, n, K, { speed: 420, size: 13, life: .8, gravity: 1200 });
+  S.sfx('sparkle', { n: 4 }, x);
+}
+
+// close up, the paper's shader blurs lines by the camera's zoom and thin letters fade, so thicken them for those shots
+function bold(s, x, y) { const l = this.l, caption = this.on && this.m.fillStyle === '#0000ff'; if (caption) { l.strokeStyle = this.p.fillStyle; l.lineJoin = 'round'; l.lineWidth = l.canvas.width * .0042; l.strokeText(s, x, y); } Object.getPrototypeOf(this).fillText.call(this, s, x, y); }
+
+Shorts.play({
+  title: 'Sit Up',
+  // close up, the paper's tooth gets a finer grain, or it eats the words
+  style: (t, S) => S.cam.z.x > 3 ? CLOSEUP : LOOK,
+  accent: '#e8503f',
+  hook: 1.5,
+  page: [.8, OUT - 1.2, OUT],
+  wash: 0,
+  loopAfter: LOOP,
+  paper: '#ffffff',
+  captions: [
+    [.2, 2.9, 'you. *yes, you.*', null, false],
+    [2.95, 4.2, "you're *slouching.*"],
+    [4.3, 5.5, 'neck like *this.*'],
+    [5.7, 6.9, "they're *leaving.*", null, { pitch: 1.6 }],
+    [7, 8, 'no no. *stay.*'],
+    [8.15, 9.4, 'drop your *shoulders.*'],
+    [9.5, 10.6, 'they did it!', null, { pitch: 1.6 }],
+    [10.75, 11.9, 'unclench your *jaw.*'],
+    [12.15, 13.4, 'now you can feel *your tongue.*'],
+    [13.5, 14.7, 'why would you *say that?*', null, { pitch: 1.6 }],
+    [14.85, 16.2, 'sorry. *big breath in...*'],
+    [OUTB + .05, 17.5, '*...and out.*'],
+    [17.65, 18.7, 'there you are.'],
+    [18.9, 21.7, 'you sat up. *we saw that.*'],
+    [21.95, 23.8, 'send this to *someone slouching.*', null, { pitch: 1.6 }],
+  ],
+  init(S) {
+    S.bo = S.addChar({ x: 0, walk: V });
+    S.sp = []; S.lands = 0;
+  },
+  mix(S, m, t, v) { const e = S.pageEdge(v, t); Sketch.reveal(m, S.sp, t, { xmin: e && e.side < 0 ? e.x : -1e5 }); },
+  drawOverlay(S, ctx) { if (ctx.sketch) { if (S.cam.z.x > 1.7) ctx.fillText = bold; else delete ctx.fillText; } },
+  update(S, t, dt) {
+    const bo = S.bo, front = { face: .06, lookX: 0, lookY: 0 };
+    S.plan(bo, t, [
+      [0, { x: 120, speed: V, accel: 900 }],
+      [.7, { ...front, eye: 'open' }],
+      [2.9, { eye: 'flat' }],
+      [4.2, { face: 1, tilt: .62, crouch: .26, eye: 'flat', lookX: .7, lookY: 1 }],
+      [5.6, { eye: 'open', lookX: 1, lookY: -.5 }],
+      [5.9, { tilt: 0, crouch: 0 }],
+      [6.95, { ...front, eye: 'wide' }],
+      [8.1, { eye: 'open' }],
+      [9.4, { eye: 'happy', face: .3 }], [9.45, () => { pop(S, 120, GROUND - 30, 300, .9, 16); S.sfx('chime', { n: 7, g: .12 }); bo.jump(0, -520); }],
+      [10.6, { ...front, eye: 'open' }],
+      [11.95, { eye: 'happy' }], [11.95, () => { pop(S, BX, GROUND - 130, 300, .9, 14); S.sfx('chime', { n: 8, g: .12 }); bo.jump(0, -420); }],
+      [12.1, { eye: 'flat', ...front }],
+      [13.45, { eye: 'wide', face: 1, lookX: 1, lookY: -.3 }],
+      [14.8, { ...front, eye: 'sad' }], [IN, { eye: 'closed', crouch: -.2 }],
+      [OUTB, { crouch: .16, eye: 'happy' }], [OUTB + .5, { crouch: 0 }],
+      [17.6, { eye: 'happy', ...front }],
+      [18.9, () => bo.jump(0, -640)], [21, () => bo.jump(0, -460)],
+      [21.9, { face: 1, lookX: 1, lookY: -.4, eye: 'happy' }],
+      [LEAVE, { x: 1e6, speed: V, accel: 450, lookX: 0, lookY: 0 }], [LEAVE, () => bo.jump(640, -1000)],
+    ]);
+    if (t > 5.05) S.once('f1', () => S.sfx('flap', {}, BX));
+    if (t > 5.35) S.once('f2', () => S.sfx('flap', {}, BX));
+    if (t > 4.25) S.once('dem', () => S.sfx('creak', {}, bo.x));
+    if (t > 5.6) S.once('tw', () => S.sfx('tweet', {}, BX));
+    if (t > 8.1) S.once('b', () => S.sfx('tap', {}, bo.x));
+    if (t > 10.7) S.once('b2', () => S.sfx('tap', {}, bo.x));
+    if (t > 12.15) S.once('sly', () => S.sfx('slip', {}, bo.x));
+    if (t > 13.45) S.once('tw2', () => S.sfx('tweet', { k: 1.2 }, BX));
+    if (t > IN) S.once('in', () => { S.sfx('breathIn', { d: 1.2 }); S.sp.push({ x: 150, y: GROUND - 340, R: 420, t0: IN, dur: 1.3 }); });
+    if (t > OUTB) S.once('out', () => { S.sfx('breathOut', { d: 1.2 }); pop(S, 170, GROUND - 90, 1900, 1.6, 40); S.sfx('swell', { root: 392 }); S.sfx('birds', { d: 7, g: .8 }); });
+    if (t > 18.9) S.once('q', () => S.sfx('pad', { root: 293.66, d: 3 }));
+    if (t > 23.1) S.once('fl', () => S.sfx('flap', {}, BX));
+    if (t > .2 && t < 2.9) { S.camGoal.x = MID[0]; S.camGoal.y = MID[1]; S.camGoal.z = MID[2]; S.camGoal.kx = 7; S.camGoal.kz = 6; }
+    if (t >= LEAVE) { S.camGoal.kx = 14; S.camGoal.kz = 8; }
+    cut(S, t);
+  },
+  drawBack(S, ctx, t, v) {
+    // everything is always painted in full colour. The mask decides what shows as crayon
+    ctx.fillStyle = '#9ed8f7'; ctx.fillRect(v.left - 20, v.top - 20, v.right - v.left + 40, GROUND - v.top + 24);
+    ctx.lineWidth = 5; ctx.fillStyle = '#ffe03d'; ctx.beginPath(); ctx.arc(420, GROUND - 390, 58, 0, 7); ctx.fill(); ctx.stroke();
+    ctx.strokeStyle = '#ffb12e'; ctx.lineWidth = 10; ctx.beginPath(); for (let i = 0; i < 12; i++) { const a = i / 12 * 6.283; ctx.moveTo(420 + Math.cos(a) * 76, GROUND - 390 + Math.sin(a) * 76); ctx.lineTo(420 + Math.cos(a) * 102, GROUND - 390 + Math.sin(a) * 102); } ctx.stroke(); ctx.strokeStyle = INK;
+    lump(ctx, [[-120, 170, 30], [-74, 152, 42], [-26, 170, 30]], '#ffffff', 5); lump(ctx, [[640, 200, 28], [684, 184, 38], [730, 200, 28]], '#ffffff', 5);
+    // far hills with a little house, then the near field
+    lump(ctx, [[-260, GROUND + 90, 300], [220, GROUND + 190, 340], [700, GROUND + 110, 320]], '#a5e07f', 5);
+    ctx.lineWidth = 5; hand(ctx, [[-66, GROUND - 170], [-66, GROUND - 236], [22, GROUND - 237], [22, GROUND - 170]], { fill: '#ffe08a', seed: 3 });
+    hand(ctx, [[-84, GROUND - 234], [-22, GROUND - 290], [40, GROUND - 234]], { fill: '#ef6a4c', seed: 4, over: 5 });
+    ctx.fillStyle = '#8fd878'; ctx.fillRect(v.left - 20, GROUND + 4, v.right - v.left + 40, 800);
+    for (let i = 0; i < 34; i++) { const x = -420 + i * 64 + hash(i) * 30, y = GROUND + 44 + hash(i + .4) * 300; ctx.fillStyle = K[i % 5]; for (let k = 0; k < 5; k++) { const a = k * 1.257; ctx.beginPath(); ctx.arc(x + Math.cos(a) * 9, y + Math.sin(a) * 9, 7, 0, 7); ctx.fill(); } ctx.fillStyle = '#ffe03d'; ctx.beginPath(); ctx.arc(x, y, 5, 0, 7); ctx.fill(); }
+    // the tree, growing out of the ground, and the fence the bird lands on
+    ctx.lineWidth = 6; hand(ctx, [[-208, GROUND + 3], [-196, GROUND - 170], [-176, GROUND - 170], [-162, GROUND + 3]], { fill: '#a56a3a', seed: 5, over: 3 });
+    lump(ctx, [[-186, GROUND - 270, 86], [-246, GROUND - 200, 54], [-126, GROUND - 200, 54]], '#49c06a', 6);
+    ctx.lineWidth = 3.5; ctx.beginPath(); for (const [x, y] of [[-210, 300], [-160, 250], [-230, 220], [-130, 200]]) { ctx.moveTo(x, GROUND - y); ctx.quadraticCurveTo(x + 10, GROUND - y - 8, x + 20, GROUND - y); } ctx.stroke();
+    ctx.lineWidth = 5; for (let x = BX - 90; x < 760; x += 90) hand(ctx, [[x - 11, GROUND + 3], [x - 11, GROUND - 124], [x + 11, GROUND - 124], [x + 11, GROUND + 3]], { fill: '#c98f5a', seed: x, wob: 1.2, over: 2 });
+    ctx.lineWidth = 5; ctx.beginPath(); ctx.moveTo(BX - 110, GROUND - 92); ctx.lineTo(780, GROUND - 92); ctx.moveTo(BX - 110, GROUND - 42); ctx.lineTo(780, GROUND - 42); ctx.stroke();
+    grass(ctx, [[-180, GROUND + 3], [BX - 90, GROUND + 3], [BX, GROUND + 3], [BX + 90, GROUND + 3], [80, GROUND + 3]]);
+    // the phone in the grass, for the impression
+    if (t > 4) { ctx.lineWidth = 4; hand(ctx, [[196, GROUND + 2], [206, GROUND - 56], [244, GROUND - 52], [234, GROUND + 3]], { fill: '#2c2a33', seed: 8, wob: 1, over: 1 }); ctx.fillStyle = '#9ed8f7'; ctx.beginPath(); ctx.moveTo(204, GROUND - 4); ctx.lineTo(212, GROUND - 48); ctx.lineTo(238, GROUND - 45); ctx.lineTo(229, GROUND - 2); ctx.closePath(); ctx.fill(); }
+    // the bird lands on the post at about the moment people leave
+    const a = seg(t, 5.05, 5.6), b = seg(t, 23.1, 23.9), x = lerp(780, BX, sine(a)) + b * 500, y = lerp(GROUND - 520, PERCH, sine(a)) - Math.sin(a * Math.PI) * 30 - b * 300;
+    if (t > 5.05 && t < 23.9) Shorts.bird(ctx, x, y, 7, { X: '#3f9be8', O: '#ffb12e' }, 1, (a < 1 || b > 0) ? 9 : 0, -1);
+  },
+});
+</script>
+</body>
+</html>

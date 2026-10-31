@@ -1,6 +1,13 @@
 /* Every episode of Wobbin's Line. Numbered in release order; the page lists seasons newest first.
    poster: the moment (seconds) used as the card's still frame and where hover previews start. */
 window.WL_SEASONS = [
+  { n: 12, title: 'Send this', episodes: [
+    { id: 'the-beep', title: 'The Beep', theme: 'the 2 am microwave', accent: '#c9503f', poster: 16.1, line: 'The clock is running, mum hears everything, and the cat has found a glass. Stop it at 0:01, or else.', quote: 'nobody thanks you for stopping it at 0:01.' },
+    { id: 'on-my-way', title: 'On My Way', theme: 'the friend who is always late', accent: '#c9503f', poster: 9.6, line: '\u201c5 minutes away.\u201d Cut to the bed, the shower, the cereal. A snail bets it will get there first, and it does.', quote: '5 minutes means an hour. you wait anyway.' },
+    { id: 'not-hungry', title: 'Not Hungry', theme: 'the friend who eats your fries', accent: '#c9503f', poster: 9.5, line: 'A long curl of hair creeps over the table whenever Wobbin looks away, and the little flag in the fries counts down.', quote: 'order two. they\u2019re never \u201cnot hungry\u201d.' },
+    { id: 'missed-the-bus', title: 'Missed the Bus', theme: 'running for the bus', accent: '#c9503f', poster: 12.45, line: 'By one second, and the driver saw. Then a red light, just up there. Wobbin chases it all the way to work.', quote: 'missed the bus. beat the bus.' },
+    { id: 'sit-up', title: 'Sit Up', theme: 'how you\u2019re sitting right now', accent: '#e8503f', poster: 12.8, line: 'One eye, looking straight at you. Shoulders down, jaw loose, one big breath, and the world colours itself in.', quote: 'you sat up. we saw that.' },
+  ] },
   { n: 11, title: 'Colour in', episodes: [
     { id: 'small-wins', title: 'Small Wins', theme: 'tiny good things', accent: '#e8503f', poster: 9.9, line: 'Matching socks, toast not burnt, the bus on time. Every small win scribbles a bit more of the world into colour.', quote: 'small wins count. so count them.' },
     { id: 'say-hi', title: 'Say Hi', theme: 'talking to strangers', accent: '#e8503f', poster: 17, line: 'Nobody has spoken on this bus in six years. Wobbin says hi, and the colour passes along the seats.', quote: 'say hi. it\u2019s contagious.' },

@@ -114,6 +114,18 @@ Pencil into crayon, the Puddles idea: colour only comes when Wobbin does somethi
 | Scribble | one crayon flower on a long grey wall | rubbing it, then everyone drawing | some walls are just waiting. |
 | Call Mum | a phone hopping across a table: 4 missed calls | answering her | call her back. she just wants to know you ate. |
 
+## Season 12 · send this (built 2026-10-31)
+
+The first test of the lessons from Digital Income Project (`docs/10-hooks.md`). Five new hooks, hard cuts, hecklers at 4 to 6 seconds, and a reason to send every one to a friend. The research is under **Daily-life research (Season 12)** below.
+
+| Episode | Hook | Frame one | Heckler | Why you'd send it | Quote |
+|---|---|---|---|---|---|
+| The Beep | a clock on screen | 0:16 and falling, 2 am, Wobbin frozen by the microwave | the cat, pushing a glass off a shelf | to whoever stops it at 0:01 | nobody thanks you for stopping it at 0:01. |
+| On My Way | a number, then a twist | "i'm 5 minutes away." then, cut: still in bed | a snail: "bet i get there first." | to your 5-minutes-away friend | 5 minutes means an hour. you wait anyway. |
+| Not Hungry | the result first | the empty box, and a friend still chewing | a pigeon: "i'd watch those fries." | to whoever eats your food | order two. they're never "not hungry". |
+| Missed the Bus | a loss, at the second it happens | the doors closing on Wobbin's nose | none, the driver is the conflict | to whoever runs for every bus | missed the bus. beat the bus. |
+| Sit Up | Wobbin talks to you | one eye, looking straight at you: "you. yes, you." | a bird: "they're leaving." | to someone slouching right now | you sat up. we saw that. |
+
 ## Backlog (fresh ideas)
 
 - **Burnout** — Bo is a candle-flame keeper, lighting everyone else's lanterns until Bo's own flame is a flicker; Bo finally lights its own first. *"you can't pour from an empty cup."*
@@ -161,6 +173,35 @@ Story seeds, each with the small true detail that makes it land. One Trip, Hidin
 - **Knock Knock** (crayon). An unexpected knock. The whole house freezes mid-step. *Detail:* the eye slowly turning toward the door, and one foot still in the air.
 - **Payday** (coloured pencil). Coins arrive, each bill hops out of the wallet, one coin is left by evening. *Detail:* the last coin checks the empty wallet, then looks at Wobbin.
 - **Small Wins** (graphite into crayon, the Puddles trick). A grey morning, and each tiny win colours in a bit more: the bus waiting, the warm side of the toast, the green light. *Detail:* the colour starts as one small scribble, right where the win happened.
+
+### Daily-life research (Season 12, 2026-10-31)
+
+Searched for what people complain about now, and for proof of each small true detail. The search couldn't reach Reddit threads directly, so Reddit here means round-ups of them. Most polls are commercial or regional, so they show that a thing is common, not how common. Nobody has surveyed some of the funniest details (stopping the microwave at 0:01), and there the evidence is years of people joking about it in public.
+
+| What people said | Source | What it became |
+|---|---|---|
+| The 2026 mood: food and essentials cost too much, about half name it first. Also someone you don't want to talk to (46%), an unexpected knock (44%), noise when you want silence (43%) | [Talker Research](https://talkerresearch.com/20-things-that-americans-find-annoying-about-modern-life/) | Noise at the wrong moment: The Beep |
+| Spotty wifi, unknown callers, forgotten passwords, a dying battery, ads you can't skip. Britons say they complain about three times a day. Commissioned by O2 | [StudyFinds on the O2 poll](https://studyfinds.com/poor-wifi-connection-unknown-callers-top-list-of-biggest-modern-inconveniences/) | Saved for later: see the unused list below |
+| "Robot tests" and useless wifi lead a list of tech woes | [The Scotsman](https://www.scotsman.com/read-this/robot-tests-useless-wi-fi-and-broken-phones-top-our-modern-tech-woes-8175392) | Saved for later |
+| By 8:36 am people know if the day is ruined. Lost keys 26%, forgot phone 25%, overslept 19%, stubbed toe 17% | [Talker Research via KOSI](https://kosi101.com/average-person-knows-if-their-day-has-been-ruined-by-836am) | The running-late mood behind Missed the Bus |
+| "I'm on my way!" is one of the most common white lies, and more than 62% admit saying they were somewhere they weren't. A OnePoll for 888poker, regional report | [Doncaster Free Press](https://www.doncasterfreepress.co.uk/news/revealed-the-most-common-white-lies-used-by-people-in-doncaster-475297) | On My Way |
+| 51% of drivers admit white lies when late, and traffic takes the blame. 20,500 AA members | [The AA](https://www.theaa.com/about-us/newsroom/fake-traffic-blamed-for-being-late) | On My Way ("on the bus!") |
+| A quarter of Brits say they're later than a decade ago because phones make it easy to tell people | [Luxe Watches poll](https://www.luxewatches.co.uk/how-brits-view-lateness/) | On My Way |
+| 84% of Kiwis have had chips stolen at a table, though only 5% call it the worst thing. The Coffee Club | [Hospitality Business](https://hospitalitybusiness.co.nz/?p=31716) | Not Hungry |
+| 49% are annoyed when food goes from their plate without asking, and 15% have argued over fries taken after "i'm not hungry". KFC poll | [995 QYK](https://995qyk.com/2023/11/06/top-foods-we-dont-want-to-share/) | Not Hungry |
+| "I stop the microwave with 1 second to go so I can feel like a bomb disposal expert": a joke going round since 2010, and people really do it to dodge the beeps | [Barry Popik's history of it](https://barrypopik.com/blog/i_stop_the_microwave) and [Reviewed on the beep](https://reviewed.com/ovens/features/hate-it-when-your-microwave-beeps-we-found-out-how-to-stop-it) | The Beep |
+| Being passed up by a bus is one of an agency's nine biggest complaint types. A video of a passenger chasing a bus went viral in Malaysia | [AC Transit feature](https://projects.journalism.berkeley.edu/actransit/higgins_feature.html) and [SAYS](https://says.com/my/news/maraliner-apologises-after-bus-driver-leaves-behind-running-passenger) | Missed the Bus |
+| 64% of Australians had neck pain in the past year, 80% of phone users who rarely take breaks. Chiropractors' association, so not neutral. A Saudi study of 421 found 65% with neck pain from phone use | [AAP](https://aapnews.aap.com.au/news/screen-misuse-blamed-for-painful-tech-neck-problems) and [PMC](https://pmc.ncbi.nlm.nih.gov/articles/PMC11316211) | Sit Up |
+| Group chats "feel like a part-time job" for 42% of Americans. Voice notes over a minute are too long for 75%. Sky found muffled audio (54%) and rambling (51%) top the complaints | [Secure Data Recovery](https://www.securedatarecovery.com/blog/group-messaging-feels-like-job), [Sky](https://skygroup.sky/article/voice-no-brits-call-time-on-long-voice-notes) | Saved for later |
+
+**Why these five.** A strong topic had to do four things: be known everywhere, not just in one country; read with the sound off; not repeat any of the 52; and give someone a person to send it to. The last one decided it. "My friend who is always 5 minutes away" and "my friend who eats my fries" are people. Passwords and wifi are only things.
+
+**Unused, still good:**
+- **Prove You're Human.** A guard at a door keeps asking Wobbin to click the traffic lights. Wobbin is a drawing, so it's a fair question. *"you pass. barely."*
+- **Long Voice Note.** A voice note arrives: 4:37. Wobbin listens through a whole day. The point is in the last second.
+- **New Password.** "it can't be one you've used before." 3 tries left.
+- **You're on Mute.** Wobbin gives the speech of a lifetime to a wall of little faces.
+- **Group Chat, Offline, Knock Knock and Just a Second** are still free in the lists above.
 
 ### What we keep learning
 

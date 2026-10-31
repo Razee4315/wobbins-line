@@ -1,0 +1,234 @@
+/* the-beep: extracted from ../the-beep.html by scripts/sync-shorts.py. Do not edit here. */
+(function () {
+  const Shorts = Object.assign(Object.create(window.Shorts), { play: story => { (window.WL_STORIES ||= {})['the-beep'] = story; } });
+  // Pen and coloured pencil, cut like a bomb film. 2 am, the clock on the microwave is already running, and mum hears
+  // everything. The cat starts on a glass, so Wobbin has to leave the microwave, catch it, and tiptoe back over the
+  // creaky floor. Stopped at 0:01. Then the light comes on. Button: the second that was left, and the cat's tail.
+  const { lerp, seg, sine, outBack, hash, mix, clamp, zzz, GROUND, INK } = Shorts;
+  const hand = (...a) => Sketch.hand(...a), hatch = (...a) => Sketch.hatch(...a), lump = (...a) => Sketch.lump(...a);
+  const V = 150, END = 16.9, STOP = 16.4, LIT = 17.9, TAIL = 22.9, LEAVE = 25.1, OUT = LEAVE + 1.4, LOOP = OUT + 1;
+  const BED = 2600, MW = [-262, -14], TOP = GROUND - 252, DISP = [-65, GROUND - 212], BTN = [-65, GROUND - 156], SHELF = GROUND - 236, CR1 = 380, CR2 = 220;
+  const ROSE = '#e8a0a0', RED = '#e8503f';
+  const left = t => t < STOP ? Math.ceil(END - t) : t < TAIL + 1 ? 1 : 0;
+
+  // a spot in the frame: f is how far down the picture it sits. The camera runs on springs, so a hard cut sets it directly
+  const on = (x, y, z, f = .5) => [x, y + (.64 - f) * 1138 / z, z];
+  const SHOTS = [
+    [2.9, ...on(...DISP, 3.2)], [3.7, ...on(BED - 70, GROUND - 130, 1.35, .56)],
+    [5.1, ...on(640, GROUND - 270, 2, .6)], [5.9, ...on(152, GROUND - 136, 3, .5)], [6.3, 'bo', GROUND - 90, 1.05],
+    [7.4, ...on(600, GROUND - 262, 2.8, .5)], [8.1, ...on(560, GROUND - 170, 1.45, .55)],
+    [9.2, ...on(...DISP, 3.2)], [9.7, 'bo', GROUND - 100, 1.25],
+    [11, ...on(CR1 - 20, GROUND - 40, 2.5, .55)], [11.3, ...on(BED - 70, GROUND - 130, 1.9, .56)], [11.8, 'bo', GROUND - 100, 1.25],
+    [13.1, ...on(CR2 - 32, GROUND - 124, 3, .5)], [13.6, ...on(BED - 70, GROUND - 150, 1.9, .56)],
+    [14.2, ...on(...DISP, 3.2)], [14.7, 'bo', GROUND - 120, 2.4, -32], [15, ...on(BED - 70, GROUND - 130, 1.35, .56)], [15.4, ...on(...DISP, 3.2)],
+    [15.9, ...on(-10, GROUND - 150, 1.5, .52)], [STOP, ...on(-40, GROUND - 188, 2.7, .5)],
+    [17.2, ...on(-5, GROUND - 150, 1.5, .52)], [LIT, ...on(44, GROUND - 170, 1.04, .57)],
+    [23.5, ...on(...DISP, 3.2)], [24, ...on(44, GROUND - 170, 1.04, .57)],
+  ];
+  function cut(S, t) {
+    if (t >= LEAVE) return;
+    let s = null; for (const q of SHOTS) if (t >= q[0]) s = q;
+    if (!s) return;
+    const c = S.cam, x = s[1] === 'bo' ? S.bo.x + (s[4] ?? 0) : s[1];
+    c.x.x = x; c.y.x = s[2]; c.z.x = s[3]; c.x.v = c.y.v = c.z.v = 0; S.camGoal.x = x; S.camGoal.y = s[2]; S.camGoal.z = s[3];
+  }
+
+  const SEGS = ['abcdef', 'bc', 'abged', 'abgcd', 'fgbc', 'afgcd', 'afgedc', 'abc', 'abcdefg', 'abcdfg'];
+  const LINES = { a: [0, 0, 1, 0], b: [1, 0, 1, .5], c: [1, .5, 1, 1], d: [0, 1, 1, 1], e: [0, .5, 0, 1], f: [0, 0, 0, .5], g: [0, .5, 1, .5] };
+  function digit(ctx, x, y, w, h, n) { ctx.beginPath(); for (const s of SEGS[n]) { const [a, b, c, d] = LINES[s]; ctx.moveTo(x + a * w, y + b * h); ctx.lineTo(x + c * w, y + d * h); } ctx.stroke(); }
+  function display(ctx, n, flash) {
+    ctx.lineWidth = 4; hand(ctx, [[DISP[0] - 45, DISP[1] - 25], [DISP[0] + 45, DISP[1] - 26], [DISP[0] + 45, DISP[1] + 24], [DISP[0] - 45, DISP[1] + 24]], { fill: '#2c2a33', seed: 8, wob: 1, over: 1 });
+    if (flash) return;
+    const old = ctx.strokeStyle; ctx.strokeStyle = '#ff6a4d'; ctx.lineWidth = 5.6; ctx.lineCap = 'round';
+    digit(ctx, DISP[0] - 36, DISP[1] - 15, 13, 30, 0); digit(ctx, DISP[0] + 1, DISP[1] - 15, 13, 30, Math.floor(n / 10)); digit(ctx, DISP[0] + 22, DISP[1] - 15, 13, 30, n % 10);
+    ctx.fillStyle = '#ff6a4d'; ctx.beginPath(); ctx.arc(DISP[0] - 11, DISP[1] - 7, 3, 0, 7); ctx.moveTo(DISP[0] - 8, DISP[1] + 8); ctx.arc(DISP[0] - 11, DISP[1] + 8, 3, 0, 7); ctx.fill();
+    ctx.strokeStyle = old;
+  }
+  function glass(ctx, x, y, r) {
+    ctx.save(); ctx.translate(x, y); ctx.rotate(r); ctx.lineWidth = 4; hand(ctx, [[-17, -56], [17, -56], [13, 0], [-13, 0]], { fill: '#e8f2f8', seed: 31, wob: .8, over: 1 });
+    ctx.fillStyle = '#b9d9ec'; ctx.beginPath(); ctx.moveTo(-15.5, -36); ctx.lineTo(15.5, -36); ctx.lineTo(13, -2); ctx.lineTo(-13, -2); ctx.closePath(); ctx.fill(); ctx.lineWidth = 2.6; ctx.beginPath(); ctx.moveTo(-15.5, -36); ctx.lineTo(15.5, -36); ctx.stroke(); ctx.restore();
+  }
+  function cat(ctx, x, y, f, t, paw = 0, tail = null) {
+    ctx.save(); ctx.translate(x, y); ctx.scale(f, 1); ctx.lineWidth = 4; ctx.fillStyle = '#f1b05f';
+    ctx.beginPath(); ctx.moveTo(-34, -4); if (tail) ctx.quadraticCurveTo(tail[0], tail[1], tail[2], tail[3]); else ctx.quadraticCurveTo(-70, -8, -62, -40 + Math.sin(t * 3) * 7); ctx.stroke();
+    ctx.beginPath(); ctx.ellipse(-4, -32, 35, 32, 0, 0, 7); ctx.fill(); ctx.stroke();
+    ctx.beginPath(); ctx.arc(24, -68, 22, 0, 7); ctx.moveTo(6, -80); ctx.lineTo(8, -102); ctx.lineTo(22, -90); ctx.lineTo(36, -102); ctx.lineTo(42, -80); ctx.fill(); ctx.stroke();
+    ctx.lineWidth = 3.4; ctx.beginPath(); ctx.moveTo(10, -70); ctx.lineTo(19, -70); ctx.moveTo(28, -70); ctx.lineTo(37, -70); ctx.stroke();
+    ctx.fillStyle = INK; ctx.beginPath(); ctx.arc(15, -68, 2.6, 0, 7); ctx.moveTo(35.6, -68); ctx.arc(33, -68, 2.6, 0, 7); ctx.fill();
+    ctx.fillStyle = '#f1b05f'; ctx.lineWidth = 4; ctx.beginPath(); ctx.ellipse(16 + paw * 22, -9, 12, 7, 0, 0, 7); ctx.fill(); ctx.stroke();
+    ctx.restore();
+  }
+
+  // close up, the paper's shader blurs lines by the camera's zoom and thin letters fade, so thicken them for those shots
+  function bold(s, x, y) { const l = this.l, caption = this.on && this.m.fillStyle === '#0000ff'; if (caption) { l.strokeStyle = this.p.fillStyle; l.lineJoin = 'round'; l.lineWidth = l.canvas.width * .0042; l.strokeText(s, x, y); } Object.getPrototypeOf(this).fillText.call(this, s, x, y); }
+
+  Shorts.play({
+    title: 'The Beep',
+    style: 'pencil',
+    accent: '#c9503f',
+    hook: 1.5,
+    page: [.8, OUT - 1.2, OUT],
+    wash: 0,
+    loopAfter: LOOP,
+    paper: '#ffffff',
+    captions: [
+      [.2, 2.9, "2 am. *don't let it beep.*", null, false],
+      [3.7, 5, 'mum hears *everything.*'],
+      [5.5, 6.7, 'no. *no no no.*'],
+      [8.8, 9.6, '*got it.*'],
+      [11, 11.9, '*creak.*'],
+      [13.1, 14, '*creeeak.*'],
+      [15, 15.9, '...*mum?*'],
+      [16.5, 17.7, '*0:01.*'],
+      [18.1, 20.2, 'i heard you tiptoeing. *make me one.*', null, { pitch: 1.3 }],
+      [20.5, 23.3, 'nobody thanks you for *stopping it at 0:01.*'],
+      [24, 25, '*beep.*'],
+    ],
+    init(S) {
+      S.bo = S.addChar({ x: 0, walk: V });
+      S.mum = S.addChar({ x: BED, hair: 'curl', hairColor: '#7a4a3a', fill: '#ffe0c8', blush: ROSE }); S.mum.gain = .3; S.mum.rot.x = -1.45; S.mum.hold(BED - 70, GROUND - 118);
+      S.pal = S.addChar({ x: 340, hair: 'curl', hairColor: '#7a4a3a', fill: '#ffe0c8', blush: ROSE, face: -1 }); S.pal.gain = .3; S.pal.hidden = true;
+      S.gl = { m: 'shelf', x: 640, y: SHELF, vx: 0, vy: 0, r: 0 }; S.sec = 99; S.catX = 698;
+    },
+    drawOverlay(S, ctx) { if (ctx.sketch) { if (S.cam.z.x > 1.7) ctx.fillText = bold; else delete ctx.fillText; } },
+    update(S, t, dt) {
+      const bo = S.bo, pal = S.pal, mum = S.mum, G = S.gl;
+      S.plan(bo, t, [
+        [0, { x: 120, speed: V, accel: 900 }],
+        [.8, { face: -1, eye: 'wide', lookX: 1, lookY: -.5, crouch: .08 }],
+        [3, { eye: 'flat', lookY: -.3 }],
+        [5.6, { eye: 'wide', face: 1, lookX: 1, lookY: -.7 }],
+        [6.2, { x: 544, speed: 300, accel: 1000, crouch: .1, eye: 'squeeze', lookY: 0 }],
+        [7.7, { eye: 'wide', lookX: .2, lookY: -1, crouch: .04 }],
+        [8.9, { eye: 'flat', lookY: -.7 }],
+        [9.5, { face: -1 }],
+        [9.7, { x: CR1, speed: 118, accel: 500, crouch: .15, eye: 'open', lookX: 1, lookY: -.5 }],
+        [11, { eye: 'wide' }], [11.7, { x: CR2, speed: 118, eye: 'flat' }],
+        [13.1, { eye: 'wide' }], [13.8, { x: 62, speed: 90, eye: 'squeeze' }],
+        [STOP - .3, { tilt: -.26 }], [STOP - .09, { tilt: .4 }],
+        [STOP, { eye: 'squeeze' }], [STOP + .25, { tilt: 0, crouch: 0, lookY: 0, eye: 'happy' }],
+        [17.3, () => bo.jump(0, -300)],
+        [LIT, { eye: 'wide', face: 1, lookX: 1, lookY: -.2 }],
+        [19, { eye: 'happy' }],
+        [23.9, { eye: 'wide', face: -1, lookX: 1, lookY: -.4 }],
+        [24.6, { eye: 'squeeze' }],
+        [LEAVE, { x: 1e6, speed: V, accel: 450, face: 1, eye: 'happy', lookX: 0, lookY: 0 }], [LEAVE, () => bo.jump(780, -1080)],
+      ]);
+      S.plan(mum, t, [
+        [.1, { eye: 'closed', tilt: -1.45 }],
+        [11.35, { tilt: -1.3 }], [11.8, { tilt: -1.42 }],
+        [13.5, { tilt: -.7, eye: 'flat', lookX: 1 }],
+      ]);
+      mum.hx = BED - 70; mum.hy = lerp(GROUND - 118, GROUND - 144, seg(t, 13.5, 13.9)); mum.hidden = t > 14.9;
+      S.plan(pal, t, [
+        [LIT, { eye: 'flat', x: 270, speed: 120 }], [19, { eye: 'happy' }],
+        [24, { eye: 'wide', lookY: -.3 }], [24.6, { eye: 'happy' }],
+      ]);
+      pal.hidden = t < LIT - .02 || t > OUT;
+
+      // the glass: nudged along the shelf, then it goes
+      const paws = [5.3, 6, 6.7, 7.4, 8.05];
+      if (G.m === 'shelf') { let k = 0; for (const a of paws) k += outBack(seg(t, a, a + .22)); G.x = 640 - k * 18; S.catX = 698 - k * 18; if (t > 8.2) { G.m = 'fall'; G.vx = -22; S.sfx('slip', {}, G.x); } paws.forEach((a, i) => { if (t > a) S.once('paw' + i, () => S.sfx('tap', { g: .5 }, G.x)); }); }
+      else if (G.m === 'fall') { G.vy += 1900 * dt; G.x += G.vx * dt; G.y += G.vy * dt; G.r -= dt * .9; const top = bo.top(); if (G.y > top.y + 8) { G.m = 'head'; G.r = 0; bo.q.v += 2; S.sfx('catch', {}, bo.x); S.sfx('thump', { g: .12 }, bo.x); S.shake(2.4); } }
+      else if (G.m === 'head' && t > STOP) { const top = bo.top(); G.m = 'air'; G.x = top.x; G.y = top.y; G.vx = -390; G.vy = -600; S.sfx('whoosh', { d: .3, v: .4 }, bo.x); }
+      else if (G.m === 'air') { G.vy += 1900 * dt; G.x += G.vx * dt; G.y += G.vy * dt; G.r -= dt * 5; if (G.vy > 0 && G.y >= TOP) { G.m = 'set'; G.y = TOP; G.t0 = t; S.sfx('tap', {}, G.x); } }
+      if (G.m === 'set') G.r = Math.sin((t - G.t0) * 16) * .16 * Math.exp(-(t - G.t0) * 4);
+
+      // one second at a time, and silence once it stops
+      const n = left(t); if (n !== S.sec) { S.sec = n; if (t > .3 && t < STOP) S.sfx('tick', {}, DISP[0]); }
+      if (t > 11) S.once('c1', () => { S.sfx('creak', {}, bo.x); S.sfx('creak', {}, bo.x); bo.q.v += .6; });
+      if (t > 13.1) S.once('c2', () => { S.sfx('creak', {}, bo.x); S.sfx('creak', {}, bo.x); S.sfx('creak', {}, bo.x); bo.q.v += 1; });
+      if (t > 14.9) S.once('bed', () => S.sfx('rustle', { n: 2 }));
+      if (t > STOP) S.once('stop', () => { S.sfx('tap', {}, BTN[0]); S.sfx('thump', { g: .08 }, BTN[0]); bo.q.v += 1.2; });
+      if (t > LIT) S.once('lit', () => { S.sfx('tap', {}, 280); S.sfx('door', {}, 340); });
+      if (t > 20.6) S.once('q', () => S.sfx('pad', { root: 293.66, d: 3 }));
+      if (t > TAIL) S.once('tail', () => S.sfx('tap', {}, BTN[0]));
+      for (const [i, a] of [TAIL + 1, TAIL + 1.3, TAIL + 1.6].entries()) if (t > a) S.once('b' + i, () => S.sfx('beep', { pitch: 880 }, DISP[0]));
+      if (t > 24.8) S.once('l', () => S.sfx('laugh', { n: 3 }, pal.x));
+      if (t > .2 && t < 2.9) { const [x, y, z] = on(-5, GROUND - 150, 1.5, .52); S.camGoal.x = x; S.camGoal.y = y; S.camGoal.z = z; S.camGoal.kx = 7; S.camGoal.kz = 6; }
+      if (t >= LEAVE) { S.camGoal.kx = 14; S.camGoal.kz = 8; }
+      cut(S, t);
+    },
+    drawBack(S, ctx, t, v) {
+      if (v.cx > 1500) return bedroom(S, ctx, t, v);
+      // the kitchen: blue with the lights off, warm with them on. Only the microwave is awake
+      const lit = t > LIT, tint = c => lit ? mix(c, '#ffe6b8', .45) : mix(c, '#b7b9e8', .4);
+      ctx.fillStyle = tint('#eee6d6'); ctx.fillRect(v.left - 20, v.top - 20, v.right - v.left + 40, GROUND - v.top + 24);
+      ctx.fillStyle = tint('#d8bf98'); ctx.fillRect(v.left - 20, GROUND + 2, v.right - v.left + 40, v.bottom - GROUND + 20);
+      ctx.lineWidth = 3; ctx.beginPath();
+      for (let i = -14; i < 22; i++) { const x = 180 + i * 74; ctx.moveTo(x, GROUND + 4); ctx.lineTo(180 + (x - 180) * 2.4, GROUND + 420); }
+      for (const [y, a] of [[52, 0], [124, 3], [226, 5]]) for (let i = -8; i < 12; i += 2) { const x = 180 + (i + a * .3) * 150; ctx.moveTo(x, GROUND + y); ctx.lineTo(x + 60, GROUND + y); }
+      ctx.stroke();
+      ctx.fillStyle = tint('#d9c7ad'); ctx.fillRect(v.left - 20, GROUND - 34, v.right - v.left + 40, 36); ctx.lineWidth = 4; ctx.beginPath(); ctx.moveTo(v.left - 20, GROUND - 34); ctx.lineTo(v.right + 20, GROUND - 34); ctx.stroke();
+      // the window, with the moon in it
+      ctx.lineWidth = 6; hand(ctx, [[-246, GROUND - 402], [-62, GROUND - 404], [-60, GROUND - 278], [-244, GROUND - 276]], { fill: lit ? '#8f97c8' : '#a4abd9', seed: 3 });
+      ctx.fillStyle = '#fff3c4'; ctx.lineWidth = 4; ctx.beginPath(); ctx.arc(-108, GROUND - 356, 21, 0, 7); ctx.fill(); ctx.stroke();
+      ctx.lineWidth = 5; ctx.beginPath(); ctx.moveTo(-152, GROUND - 404); ctx.lineTo(-151, GROUND - 277); ctx.moveTo(-244, GROUND - 338); ctx.lineTo(-61, GROUND - 339); ctx.stroke();
+      hand(ctx, [[-256, GROUND - 276], [-50, GROUND - 277], [-50, GROUND - 265], [-256, GROUND - 264]], { fill: tint('#c98f5a'), seed: 4, wob: 1, over: 2 });
+      // the counter, its cupboards, and the torn noodle packet
+      ctx.lineWidth = 6; hand(ctx, [[-520, GROUND + 2], [-520, GROUND - 92], [40, GROUND - 91], [40, GROUND + 2]], { fill: tint('#a9c9b4'), seed: 5 });
+      ctx.lineWidth = 4; for (const x of [-440, -300, -160]) hand(ctx, [[x, GROUND - 12], [x, GROUND - 78], [x + 124, GROUND - 78], [x + 124, GROUND - 12]], { seed: x, wob: 1.2, over: 2 });
+      ctx.fillStyle = INK; for (const x of [-322, -182, -42]) { ctx.beginPath(); ctx.arc(x, GROUND - 46, 4, 0, 7); ctx.fill(); }
+      ctx.lineWidth = 5; hand(ctx, [[-530, GROUND - 92], [50, GROUND - 93], [50, GROUND - 80], [-530, GROUND - 79]], { fill: tint('#e8dcc6'), seed: 6, wob: 1.2, over: 3 });
+      ctx.lineWidth = 4; hand(ctx, [[-372, GROUND - 93], [-304, GROUND - 93], [-296, GROUND - 158], [-318, GROUND - 150], [-336, GROUND - 162], [-352, GROUND - 150], [-368, GROUND - 160]], { fill: '#f0b84f', seed: 7, wob: 1.2, over: 1 });
+      // the microwave: the only lit thing in the house
+      const glow = t < STOP || (t > TAIL && t < TAIL + 1), spin = t * 1.4, wind = [MW[0] + 12, TOP + 16, 124, 124];
+      ctx.lineWidth = 6; hand(ctx, [[MW[0], GROUND - 93], [MW[0], TOP], [MW[1], TOP - 1], [MW[1], GROUND - 93]], { fill: tint('#dfe3e6'), seed: 9, over: 3 });
+      ctx.lineWidth = 5; hand(ctx, [[wind[0], wind[1]], [wind[0] + wind[2], wind[1]], [wind[0] + wind[2], wind[1] + wind[3]], [wind[0], wind[1] + wind[3]]], { fill: glow ? '#ffe28a' : '#7d7a8c', seed: 10, wob: 1.2, over: 2 });
+      const bx = wind[0] + 62, by = wind[1] + 96, sq = Math.cos(spin) * .1;
+      ctx.fillStyle = '#ffffff'; ctx.lineWidth = 4; ctx.beginPath(); ctx.ellipse(bx, by + 14, 52, 10, 0, 0, 7); ctx.fill(); ctx.stroke();
+      ctx.fillStyle = '#e8a06a'; ctx.beginPath(); ctx.moveTo(bx - 38 * (1 + sq), by - 22); ctx.quadraticCurveTo(bx - 34, by + 14, bx, by + 12); ctx.quadraticCurveTo(bx + 34, by + 14, bx + 38 * (1 - sq), by - 22); ctx.closePath(); ctx.fill(); ctx.stroke();
+      ctx.fillStyle = '#f6e3a8'; ctx.beginPath(); ctx.ellipse(bx, by - 22, 38, 8, 0, 0, 7); ctx.fill(); ctx.stroke();
+      ctx.lineWidth = 3; ctx.beginPath(); for (let i = 0; i < 4; i++) { const a = spin + i * 1.57, mx = bx + Math.cos(a) * 22; ctx.moveTo(mx - 9, by - 23); ctx.quadraticCurveTo(mx, by - 29, mx + 9, by - 23); } ctx.stroke();
+      if (glow) { ctx.lineWidth = 3; ctx.beginPath(); for (const o of [-16, 14]) { const w = Math.sin(t * 3 + o) * 5; ctx.moveTo(bx + o, by - 34); ctx.quadraticCurveTo(bx + o + w, by - 50, bx + o - w, by - 66); } ctx.stroke(); }
+      ctx.lineWidth = 3.5; ctx.beginPath(); ctx.moveTo(wind[0] + 132, wind[1] - 4); ctx.lineTo(wind[0] + 132, wind[1] + 130); ctx.stroke();
+      display(ctx, left(t), t > TAIL + 1 && Math.sin(t * 22) > 0);
+      // the stop button, pushed in by a forehead
+      const push = t > STOP ? (1 - seg(t, STOP + .25, STOP + .5)) * 3 : 0;
+      ctx.fillStyle = RED; ctx.lineWidth = 4; ctx.beginPath(); ctx.arc(BTN[0], BTN[1], 19 - push, 0, 7); ctx.fill(); ctx.stroke();
+      ctx.fillStyle = '#d7dde0'; ctx.beginPath(); ctx.arc(BTN[0] - 16, BTN[1] + 42, 9, 0, 7); ctx.moveTo(BTN[0] + 25, BTN[1] + 42); ctx.arc(BTN[0] + 16, BTN[1] + 42, 9, 0, 7); ctx.fill(); ctx.stroke();
+      // the door to the hall, and the switch beside it
+      ctx.fillStyle = lit ? '#fbe8bd' : '#6d6a88'; ctx.lineWidth = 6; hand(ctx, [[286, GROUND + 2], [286, GROUND - 266], [428, GROUND - 265], [428, GROUND + 2]], { fill: lit ? '#f4ddae' : '#6d6a88', seed: 12 });
+      ctx.lineWidth = 3.5; hand(ctx, [[240, GROUND - 158], [262, GROUND - 158], [262, GROUND - 126], [240, GROUND - 126]], { fill: '#fffaf0', seed: 13, wob: .8, over: 1 });
+      // the shelf, on two brackets, with jars at the safe end and the cat at the other
+      ctx.lineWidth = 5; hand(ctx, [[552, SHELF], [760, SHELF - 1], [760, SHELF + 13], [552, SHELF + 14]], { fill: tint('#c98f5a'), seed: 14, over: 2 });
+      ctx.lineWidth = 4; ctx.beginPath(); ctx.moveTo(590, SHELF + 14); ctx.lineTo(590, SHELF + 46); ctx.lineTo(616, SHELF + 14); ctx.moveTo(722, SHELF + 14); ctx.lineTo(722, SHELF + 46); ctx.lineTo(696, SHELF + 14); ctx.stroke();
+      ctx.lineWidth = 4; hand(ctx, [[790, SHELF - 300], [920, SHELF - 300], [920, SHELF - 120], [790, SHELF - 120]], { fill: '#fdeeb5', seed: 15, over: 2 });
+      const k = S.gl, paw = [5.3, 6, 6.7, 7.4, 8.05].reduce((a, p) => a + Math.sin(Math.PI * seg(t, p, p + .3)), 0);
+      if (t < 17.3) cat(ctx, S.catX, SHELF, -1, t, paw);
+      // the cat has moved to the warm top of the microwave, and its tail hangs down by the buttons
+      const hang = sine(seg(t, TAIL - .5, TAIL));
+      if (t > 17.3) cat(ctx, -150, TOP, -1, t, 0, [-92, 20, lerp(-68, -106, hang), lerp(46 + Math.sin(t * 2.6) * 8, 136, hang)]);
+      if (S.gl.m !== 'head') glass(ctx, S.gl.x, S.gl.y, S.gl.r);
+      // creaks: a board gives, and three little lines come off it
+      for (const [a, x, n] of [[11, CR1, 2], [13.1, CR2, 3]]) { const u = (t - a) / .55; if (u > 0 && u < 1) { ctx.lineWidth = 4 * (1 - u * .6); ctx.beginPath(); for (let i = 0; i < n + 1; i++) { const o = -24 + i * 24, y = GROUND + 2 - u * 26 - i % 2 * 4; ctx.moveTo(x + o - 6, y); ctx.quadraticCurveTo(x + o, y - 8, x + o + 6, y); } ctx.stroke(); } }
+      hatch(ctx, MW[0], TOP + 2, MW[1] - MW[0], 10, { gap: 7, width: 2.4 });
+    },
+    drawFront(S, ctx, t, v) {
+      if (v.cx > 1500) { if (t < 15) { blanket(ctx, 0); if (t < 11.3) zzz(ctx, BED - 130, GROUND - 210, t, 1); } else blanket(ctx, 1); return; }
+      if (S.gl.m === 'head') { const top = S.bo.top(); glass(ctx, top.x + 8, top.y + 6, S.bo.rot.x * .7); }
+    },
+  });
+  function blanket(ctx, off) {
+    ctx.lineWidth = 6;
+    if (off) hand(ctx, [[BED + 60, GROUND - 74], [BED + 188, GROUND - 76], [BED + 180, GROUND - 18], [BED + 70, GROUND - 22]], { fill: '#a9c9a4', seed: 41 });
+    else hand(ctx, [[BED - 46, GROUND - 176], [BED + 184, GROUND - 118], [BED + 184, GROUND - 22], [BED - 62, GROUND - 22]], { fill: '#a9c9a4', seed: 41 });
+  }
+  function bedroom(S, ctx, t, v) {
+    ctx.fillStyle = '#c9c7e8'; ctx.fillRect(v.left - 20, v.top - 20, v.right - v.left + 40, GROUND - v.top + 24);
+    ctx.fillStyle = '#b6a9c9'; ctx.fillRect(v.left - 20, GROUND + 2, v.right - v.left + 40, v.bottom - GROUND + 20);
+    ctx.lineWidth = 3; ctx.beginPath(); for (let i = -6; i < 8; i++) { const x = BED + i * 86; ctx.moveTo(x, GROUND + 4); ctx.lineTo(BED + (x - BED) * 2.4, GROUND + 420); } ctx.stroke();
+    // the window with a curtain, and the clock that says how late it is
+    ctx.lineWidth = 6; hand(ctx, [[BED + 130, GROUND - 420], [BED + 300, GROUND - 421], [BED + 302, GROUND - 260], [BED + 131, GROUND - 258]], { fill: '#9aa2d4', seed: 33 });
+    ctx.fillStyle = '#fff3c4'; ctx.lineWidth = 4; ctx.beginPath(); ctx.arc(BED + 248, GROUND - 366, 22, 0, 7); ctx.fill(); ctx.stroke();
+    hand(ctx, [[BED + 120, GROUND - 430], [BED + 166, GROUND - 430], [BED + 152, GROUND - 250], [BED + 120, GROUND - 250]], { fill: '#e8a0a0', seed: 34, wob: 1.2, over: 2 });
+    ctx.lineWidth = 5; hand(ctx, [[BED - 300, GROUND + 2], [BED - 300, GROUND - 92], [BED - 214, GROUND - 92], [BED - 214, GROUND + 2]], { fill: '#c98f5a', seed: 35 });
+    ctx.lineWidth = 4; hand(ctx, [[BED - 286, GROUND - 92], [BED - 286, GROUND - 136], [BED - 226, GROUND - 136], [BED - 226, GROUND - 92]], { fill: '#2c2a33', seed: 36, wob: 1, over: 1 });
+    ctx.fillStyle = '#ff6a4d'; ctx.font = '700 24px "Kevin Sans", sans-serif'; ctx.textAlign = 'center'; ctx.fillText('2:04', BED - 256, GROUND - 106); ctx.textAlign = 'start';
+    // the bed: headboard against the wall, legs on the floor, a pillow with a dent in it
+    ctx.lineWidth = 7; hand(ctx, [[BED - 206, GROUND + 2], [BED - 206, GROUND - 190], [BED - 176, GROUND - 190], [BED - 176, GROUND + 2]], { fill: '#a56a3a', seed: 37 });
+    ctx.lineWidth = 6; hand(ctx, [[BED - 180, GROUND - 22], [BED - 180, GROUND - 66], [BED + 188, GROUND - 66], [BED + 188, GROUND - 22]], { fill: '#fffaf0', seed: 38 });
+    ctx.beginPath(); ctx.moveTo(BED + 176, GROUND - 22); ctx.lineTo(BED + 176, GROUND + 2); ctx.moveTo(BED - 170, GROUND - 22); ctx.lineTo(BED - 170, GROUND + 2); ctx.stroke();
+    lump(ctx, [[BED - 136, GROUND - 90, 32], [BED - 96, GROUND - 88, 28]], '#ffffff', 4);
+  }
+})();

@@ -62,6 +62,7 @@ Shorts.play({
 - **Personal space is automatic:** nobody stops within 180 of anyone (`space: false` or `c.space = 0` to opt out). To get past someone, `S.leapfrog(a, b, key, vx)` (call every frame while it may happen). Lay out groups ~180 apart.
 - **Ink side characters:** `sun(ctx, x, y, px, { X })`, `moon(...)`, `cloud(...)` take the same arguments as `sprite()`; `butterfly(ctx, x, y, px, { X }, alpha, rate)` (rate ~12 flying, ~1 resting) and `bird(ctx, x, y, px, { X, O }, alpha, rate, dir)` (rate 0 = perched, dir -1 faces left). They breathe, blink and flap on their own. Keep pixel sprites for icons.
 - **Fast open:** `page: [.8, OUT - 1.2, OUT]` scribbles the scene in and rubs it out, so the loop needs no long walks. See `10-hooks.md`.
+- **Hard cuts:** a `SHOTS` list and a `cut()` function that sets the camera directly. Copy them from `the-beep.html`; `10-hooks.md` explains them. `face: .06` faces Wobbin straight at the viewer.
 - **Opening frame:** playback and MP4s start at `show.hook`, 0.7 s before the first caption. Set `hook: seconds` in the story if the odd thing appears at another moment.
 - **Helpers:** `PAL`, `SPRITES` (heart, sparkle, dot, cloud, flyA/flyB, birdA/birdB, check, note, star, moon, sun, bang, ask, bulb, d0–d7), `sprite(ctx, rows, x, y, px, colours, alpha)`, `zzz()`, `ramp()`, `mix()`, `lerp, seg, sine, outBack, outCubic, inCubic, clamp, hash, spring`, `GROUND = 620`, `STAND`, `BODY_H`, `GRAV`, `INK`, `PAPER`.
 

@@ -6,7 +6,7 @@ Current phase: **Phase 5 build**, revised after review (decision log 13–16).
 Never edit files outside `site/`. Episodes come in only through `scripts/sync-shorts.py`, which
 copies `../engine2.js`, `../sfx.js`, extracts each episode's story into `shorts/stories/<id>.js`.
 Re-run it after changing an episode.
-All 52 episodes (Season 1 included) run on engine2; the old Season 1 pages are kept in `../legacy/season1/`.
+All 57 episodes (Season 1 included) run on engine2; the old Season 1 pages are kept in `../legacy/season1/`.
 
 ## Required
 Palette: paper #FBF8F2 · ink #141210 · blue #3B7DD8 (+ per-episode accents on chips/cards only)

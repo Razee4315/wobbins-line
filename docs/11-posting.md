@@ -31,7 +31,7 @@ Names, bios and settings for these and every optional platform are in `12-accoun
 - Keep to the order until the user changes it.
 - **Don't post on your own.** Each post needs the user to say so.
 - **The older videos stay as they are.** After seeing the first stats the user chose not to re-cut them (2026-10-31).
-- **Hook-first episodes go first** (the user chose this on 2026-10-31): the ten from Seasons 10 and 11 are days 5 to 14, and the older videos moved to days 15 to 48. The four Season 9 pilots stay last, as days 49 to 52, and aren't exported yet.
+- **Hook-first episodes go first** (the user chose this on 2026-10-31): the ten from Seasons 10 and 11 are days 5 to 14, and the older videos moved to days 15 to 48. The four Season 9 pilots stay last, as days 49 to 52, and aren't exported yet. Season 12 (The Beep, On My Way, Not Hungry, Missed the Bus, Sit Up) was added at the very end as days 53 to 57, so no other day moved. It isn't exported yet either.
 - **The order:** `ORDER` in `tools/export.js` is the truth. If the table at the end of this page differs, trust `ORDER` and update the table. Episodes without a folder in `exports/` have to be exported first, and that's a render, so ask.
 
 ## What Claude can and can't do

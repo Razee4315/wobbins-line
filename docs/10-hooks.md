@@ -147,6 +147,30 @@ He says Reels are crowded and carousels have more room, and that they work witho
 - **Paying strangers to recover an account,** buying pages, or paying networks to reshare.
 - **Trending music, unless the user decides otherwise.** He says every viral video he showed had a trending song. That goes against "no music". If it's ever tried, try it on Instagram only, on one post, and compare.
 
+### What Season 12 used, and how hard cuts worked (2026-10-31)
+
+Season 12 is the first test of this section. None of it has been posted yet, so everything here is about what we could build. Whether it holds viewers is still unknown. Check the stats below once the episodes are out.
+
+| Episode | Hook | Second person | Heckler (video time) | Shots | Reason to send |
+|---|---|---|---|---|---|
+| The Beep | a clock on screen, counting in real time from 0:16 | mum, from 2.2 s | the cat, from 3.6 s | 24 | whoever stops it at 0:01 |
+| On My Way | a number, then a twist at 1.7 s | the friend, from the first cut | a snail's bet at 4.5 s | 15 | your 5-minutes-away friend |
+| Not Hungry | the result first, then "10 minutes earlier" | the friend, in frame one | a pigeon at 4.2 s | 22 | whoever eats your fries |
+| Missed the Bus | a loss at the second it happens | the driver, from 1.2 s | none, the driver is the conflict | 21 | whoever runs for every bus |
+| Sit Up | Wobbin talks to you | the viewer, in a way | a bird at 4.2 s: "they're leaving." | 15 | someone slouching right now |
+
+The asks are in `ASK` in `tools/export.js`, and all five name a person to send it to. Time cards ("25 minutes later") and showing the low point are in On My Way. A second twist is the button in three of them: the second left on the microwave, the note on the office door, and Wobbin saying "5 minutes away" to someone else.
+
+**Hard cuts work, and they cost the loop nothing.** All five have 15 to 24 cuts in about 25 seconds, a new shot every 1 to 1.7 seconds, and every seam is 0.00.
+
+- **How:** each episode has a `SHOTS` list of `[time, x, y, z]` and a small `cut()` at the end of `update`. It sets `S.cam.x.x`, `S.cam.y.x` and `S.cam.z.x`, zeroes their velocities, and sets `S.camGoal` to match, every step until the next shot. Copy it from `the-beep.html`. `x` can be a function, to track Wobbin or the bus (`missed-the-bus.html`).
+- **Why the seam survives:** the loop's start state is whatever the camera was doing at the end, so a cut only changes what happens in the middle. Stop cutting at `LEAVE` and let the springs take over. Set `S.camGoal.kx = 14` after that, or Wobbin outruns the slow camera and the seam is empty paper.
+- **The first shot stays on springs,** so the scribble-in doesn't jump. Pinning starts at the first cut.
+- **Characters can be in two places.** A second room goes far along the world (x = 3000), a story draws one room or the other by `v.cx`, and a held character (`hold()`) can move between rooms on a cut.
+- **Looking at the viewer:** `face: .06` gives a Wobbin who faces us, with the eye centred. It's used in On My Way, Missed the Bus and Sit Up.
+- **What cuts are best at:** saying something the picture alone can't. "on the bus!" cut to cereal is a joke only a cut can tell. The stand-off in Not Hungry and the countdown in The Beep are the same idea used for tension. Cuts in Sit Up are mostly just emphasis, and they do the least there.
+- **What goes wrong:** captions fade in close-ups, because the shader blurs lines by the camera's zoom. Each episode has a small `bold()` that thickens letters above zoom 1.7. Above zoom 3 in the mixed look, the paper's tooth gets blotchy as well, so Sit Up swaps to a finer grain there. Plan the caption's place in each shot: a sign or a window that was fine in the wide shot lands right behind the words in the next one.
+
 ### Protecting the show
 
 He says he lost 3 million followers to bans with no warning, and a Facebook business page was his only way to reach a person at Meta. So: link the Facebook Page to Instagram (it's on the user's list in `11-posting.md`), keep posting on all five platforms, and keep the website as the home nobody can delete.

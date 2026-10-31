@@ -1,6 +1,6 @@
 # 05 · Episodes
 
-All 52 episodes by EP number, the order they were made. Posting order is different: see `11-posting.md`. ★ = one of the user's favourites. Seasons on the site are listed newest first.
+All 57 episodes by EP number, the order they were made. Posting order is different: see `11-posting.md`. ★ = one of the user's favourites. Seasons on the site are listed newest first.
 
 | EP | Season | Episode | Theme | Quote | Notes |
 |---|---|---|---|---|---|
@@ -56,6 +56,11 @@ All 52 episodes by EP number, the order they were made. Posting order is differe
 | 50 | 11 | [Dance Break](../dance-break.html) | a little joy at work | dance a little. nobody minds. | Pencil into crayon, fast open |
 | 51 | 11 | [Scribble](../scribble.html) | leaving a mark | some walls are just waiting. | Pencil into crayon, fast open |
 | 52 | 11 | [Call Mum](../call-mum.html) | calling home | call her back. she just wants to know you ate. | Pencil into crayon, fast open |
+| 53 | 12 | [The Beep](../the-beep.html) | the 2 am microwave | nobody thanks you for stopping it at 0:01. | Pen + pencil. Hook: a clock on screen. Hard cuts, cat heckler |
+| 54 | 12 | [On My Way](../on-my-way.html) | the friend who is always late | 5 minutes means an hour. you wait anyway. | Pen + pencil. Hook: a number, then a twist. Hard cuts between places, snail heckler |
+| 55 | 12 | [Not Hungry](../not-hungry.html) | the friend who eats your fries | order two. they're never "not hungry". | Pen + pencil. Hook: the result first. Hard cuts, pigeon heckler |
+| 56 | 12 | [Missed the Bus](../missed-the-bus.html) | running for the bus | missed the bus. beat the bus. | Pen + pencil. Hook: a loss at the second it happens. Hard cuts |
+| 57 | 12 | [Sit Up](../sit-up.html) | how you're sitting right now | you sat up. we saw that. | Pencil into crayon. Hook: talks to you. Hard cuts, bird heckler |
 
 ## Seasons
 
@@ -72,6 +77,7 @@ All 52 episodes by EP number, the order they were made. Posting order is differe
 | 9 | Sketchbook (pilots) | 39–42 |
 | 10 | Errands (pen + coloured pencil) | 43–47 |
 | 11 | Colour in (pencil into crayon) | 48–52 |
+| 12 | Send this (hook lessons, hard cuts) | 53–57 |
 
 ## Posting log
 

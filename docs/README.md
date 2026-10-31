@@ -8,7 +8,7 @@ Everything we know about making this show, in one place. Read it before starting
 | [02-episode-guide.md](02-episode-guide.md) | How to write an episode: story shape, loop rules, engine cheat sheet, checklist |
 | [03-sound-guide.md](03-sound-guide.md) | How the sound works, the levels we settled on, every sound name |
 | [04-lessons-learned.md](04-lessons-learned.md) | A running log of mistakes and fixes, so we don't repeat them |
-| [05-episodes.md](05-episodes.md) | All 52 episodes: topic, quote, notes, plus the posting log and post links |
+| [05-episodes.md](05-episodes.md) | All 57 episodes: topic, quote, notes, plus the posting log and post links |
 | [06-preferences.md](06-preferences.md) | What the user loves and dislikes, in their own words where possible |
 | [07-workflow.md](07-workflow.md) | Tools and steps: testing, syncing the site, deploying, rendering, Instagram |
 | [08-audit.md](08-audit.md) | The full audit before posting: what's wrong, what's fixed, what to fix next |

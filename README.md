@@ -1,6 +1,6 @@
 # Wobbin's Line
 
-A tiny animated show drawn on one line. Wobbin walks onto the line, runs into something we all do, and walks off a little wiser. There are 52 looping episodes in 11 seasons, all simulated live in the browser.
+A tiny animated show drawn on one line. Wobbin walks onto the line, runs into something we all do, and walks off a little wiser. There are 57 looping episodes in 12 seasons, all simulated live in the browser.
 
 **Start with [docs/README.md](docs/README.md)**: the handbook (the show, how to write episodes, sound, lessons learned, all episodes, preferences, workflow).
 

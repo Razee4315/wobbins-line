@@ -94,3 +94,4 @@ Everything is in `LOOKS` at the top of `sketch.js`, with notes. The ones that ma
 - It needs WebGL2. Without it the page falls back to the flat look.
 - `sketch.js` can't run in the Node tools, so reference `Sketch` only inside draw functions: `const hatch = (...a) => Sketch.hatch(...a);`.
 - A story's own `drawImage` goes to the paint layer only.
+- Close-ups: lines blur with the camera's zoom, and the paper's tooth grows with it. Above zoom 1.7 thicken the captions (`bold()` in any Season 12 episode). Above zoom 3 in a mixed look, use a finer `grain` (`style` in `sit-up.html`).

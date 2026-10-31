@@ -12,7 +12,8 @@ export const ORDER = ['battery', 'the-chair', 'seen', 'water-yourself',
   'two-minutes', 'what-if', 'rain-check', 'slow-walker', 'lost', 'why-was-i-here', 'snooze', 'small-talk', 'tomorrow', 'one-more',
   'monday-mountain', 'busy', 'cant-sleep', 'fine', 'imposter', 'highlight-reel', 'the-other-line', 'just-in-case', 'heavy',
   'comfort-zone', 'inner-voice', 'decision', 'small-steps', 'reset', 'bloom', 'the-hill', 'hurry', 'the-seed', 'the-cloud',
-  'power-cut', 'the-menu', 'puddles', 'new-pencil'];
+  'power-cut', 'the-menu', 'puddles', 'new-pencil',
+  'the-beep', 'on-my-way', 'not-hungry', 'missed-the-bus', 'sit-up'];
 
 const TAGS = {
   battery: 'socialbattery introvert', 'the-chair': 'laundry adulting', seen: 'overthinking texting', 'water-yourself': 'selfcare drinkwater',
@@ -28,6 +29,7 @@ const TAGS = {
   'one-trip': 'groceries adulting', hiding: 'awkward introvert', 'the-angle': 'charger phonebattery', 'the-mosquito': 'mosquito cantsleep', payday: 'payday money',
   'small-wins': 'smallwins gratitude', 'say-hi': 'kindness strangers', 'dance-break': 'worklife joy', scribble: 'creativity art', 'call-mum': 'mum family',
   'power-cut': 'blackout stars', 'the-menu': 'food indecisive', puddles: 'innerchild play', 'new-pencil': 'trysomethingnew art',
+  'the-beep': 'microwave midnightsnack', 'on-my-way': 'latefriend bestfriend', 'not-hungry': 'fries foodie', 'missed-the-bus': 'bus commute', 'sit-up': 'posture techneck',
 };
 
 // one short question under the quote, to invite comments (episodes 1-3 went out without one)
@@ -48,6 +50,8 @@ const ASK = {
   'the-mosquito': 'who wins in your house?', payday: 'how long does yours last?', 'small-wins': "what's your small win today?", 'say-hi': 'when did a stranger last make your day?',
   'dance-break': 'what song gets your foot tapping?', scribble: 'what would you draw on the wall?', 'call-mum': 'when did you last call home?',
   'power-cut': 'what do you do when the power goes?', 'the-menu': "what's your usual?", puddles: 'what makes you feel like a kid again?', 'new-pencil': 'what new thing are you trying?',
+  'the-beep': 'who do you know who stops it at 0:01? send them this.', 'on-my-way': "who's your 5-minutes-away friend? send them this.", 'not-hungry': 'who eats your fries? send them this.',
+  'missed-the-bus': 'who runs for every bus? send them this.', 'sit-up': 'who do you know who needs to sit up? send them this.',
 };
 
 const W4 = 2160, H4 = 3840, FPS = 60, BITRATE = 24e6;

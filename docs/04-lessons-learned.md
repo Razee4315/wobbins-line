@@ -2,6 +2,19 @@
 
 A running log. Newest at the top. When something breaks, write down what happened and the fix.
 
+## 2026-10-31 · Season 12: hard cuts and the new hooks
+
+- **Hard cuts keep the seam at 0.00,** even with 24 in one episode. How to do them is in `10-hooks.md`.
+- **Captions fade when the camera is close.** The shader picks its line blur from the zoom, so the thin letters go first. Thicken them for those shots (`bold()` in any Season 12 episode). It has to check it's the caption pass, or it stays on and repaints the next frame's lines in the caption's colour. We saw that as a red bus.
+- **The mixed look gets blotchy past zoom 3.** Give close-ups a finer tooth: `style` can be a function of the camera, and `grain` and `hatchScale` go up in steps of .5.
+- **Check `tools/out` full-size frames for what's behind each caption.** The contact sheet hid a moon, a marquee, an awning, a street clock and a row of windows, all in the worst possible place.
+- **A lying character's eye turns with the body.** `flat` becomes two upright lines that read as "ID". Use `open` or `closed`, and remember that look directions turn too.
+- **A slow camera can lose Wobbin at the seam.** After a big exit hop, the default spring lags so far that the last second is empty paper. Tighten `camGoal.kx` after `LEAVE`.
+- **`drawFront` things show on the blank page.** A glass and a box of popcorn floated at the seam. Put props in `drawBack`, or check `S.pageEdge(v, t)` the way the engine does for friends.
+- **Wheels and door shots.** The bus's rear wheel sat right behind Wobbin's legs in the key shot. Before drawing a big prop, work out where Wobbin stands against it.
+- **`heart` is loud.** It measures −31 dB even at `g: .5`, above the chime. The stand-off in Not Hungry uses a soft `thump` instead.
+- **The Sit Up seam** changes more pixels than ordinary neighbouring frames, the same amount as Small Wins. It comes from the mixed look, not from cuts. The Beep's seam is about the same as neighbouring frames.
+
 ## 2026-10-31 · Moved Seasons 10 and 11 up the queue
 
 - **Folder numbers follow `ORDER`,** so moving episodes means renaming the folders and the numbers in their file names. Work from the highest number down so nothing gets overwritten.
