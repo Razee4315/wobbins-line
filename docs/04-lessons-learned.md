@@ -2,6 +2,19 @@
 
 A running log. Newest at the top. When something breaks, write down what happened and the fix.
 
+## 2026-10-31 · First real numbers from the posts
+
+Battery about 21 h old, The Chair about 8 h old. Small sample.
+
+| | Instagram views / likes / saves / shares / follows | Facebook views | YouTube views | TikTok views / likes / avg watch / finished |
+|---|---|---|---|---|
+| Battery (40 s) | 1,549 / 23 / 3 / 0 / 4 | 223 | 50 (+4 subs) | 83 / 12 / 5.9 s / 3.3% |
+| The Chair (49 s) | 1,304 / 11 / 0 / 3 / 0 | 280 | 6 | 94 / 3 / 4.3 s / 0% |
+
+- **Reach isn't the problem, the opening is.** Instagram showed both to 1,100+ strangers (99%+ non-followers), but TikTok says most viewers leave at 0:01 and almost nobody finishes.
+- Next to try: a clear hook in the first second (a bigger character and on-screen text), and shorter cuts.
+- Battery's feelings topic beat The Chair's chore topic, on two videos only. YouTube search was 30% of Battery's views, so plain descriptive titles are worth keeping.
+
 ## 2026-10-31 · 4K exports for daily posting, and a clean-up of the early episodes
 
 - **What "didn't make sense" in the early ones:** The Seed drew the tree's roots under the ground as
