@@ -67,7 +67,7 @@ python site/scripts/sync-shorts.py   # copies engine2.js, sfx.js and every story
 sh site/scripts/bump.sh              # cache-busting version bump for the site's own files
 ```
 
-If you change `engine2.js` or `sfx.js`, also bump the `?v=` on the episode pages (`sfx.js?v=N`, `engine2.js?v=N`) so browsers load the new version.
+If you change `engine2.js`, `sfx.js` or `sketch.js`, also bump the `?v=` on the episode pages (`sfx.js?v=N`, `engine2.js?v=N`) so browsers load the new version.
 
 ## Deploy
 
@@ -81,12 +81,12 @@ With `python tools/dev_server.py . tools/out` running, open any episode page and
 
 ```js
 await import('/tools/export.js');
-exportAll();                        // all 38 into exports/NN - Title/ (4K MP4, cover PNG, caption.txt)
-exportAll({ from: 20, to: 38 });    // a range (run halves in two tabs to go faster)
-exportAll({ video: false });        // covers and captions only (seconds)
+exportAll();                        // all 52 into exports/NN - Title/ (4K MP4, cover PNG, caption.txt): a bulk render, so only when asked
+exportAll({ from: 39, to: 52 });    // a range (run halves in two tabs to go faster)
+exportAll({ only: ['the-chair'], video: false });   // covers and captions only (seconds)
 ```
 
-`exports/` is git-ignored. `exports/POSTING-PLAN.md` explains the daily routine and the order.
+`exports/` is git-ignored. `11-posting.md` has the daily routine and the order.
 
 ### Brand kit (profile picture, banners, GIPHY stickers)
 

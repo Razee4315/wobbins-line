@@ -1,6 +1,6 @@
 # 05 · Episodes
 
-All 38 episodes in release order, plus Seasons 9 to 11 in the art styles. ★ = one of the user's favourites. Seasons on the site are listed newest first.
+All 52 episodes by EP number, the order they were made. Posting order is different: see `11-posting.md`. ★ = one of the user's favourites. Seasons on the site are listed newest first.
 
 | EP | Season | Episode | Theme | Quote | Notes |
 |---|---|---|---|---|---|

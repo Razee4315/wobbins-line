@@ -1,6 +1,6 @@
 # Wobbin's Line
 
-A tiny animated show drawn on one line. Wobbin walks onto the line, runs into something we all do, and walks off a little wiser. There are 38 looping episodes in 8 seasons, all simulated live in the browser.
+A tiny animated show drawn on one line. Wobbin walks onto the line, runs into something we all do, and walks off a little wiser. There are 52 looping episodes in 11 seasons, all simulated live in the browser.
 
 **Start with [docs/README.md](docs/README.md)**: the handbook (the show, how to write episodes, sound, lessons learned, all episodes, preferences, workflow).
 
@@ -11,7 +11,7 @@ A tiny animated show drawn on one line. Wobbin walks onto the line, runs into so
 - `ideas.md`: the episode backlog and notes.
 - `docs/`: the project handbook.
 - `tools/`: the dev server and contact-sheet helpers for checking episodes.
-- `brand/instagram/`: profile pictures, highlight covers, bio and captions.
+- `brand/instagram/`: the first profile pictures and highlight covers. For posting, see `docs/11-posting.md`.
 - `site/`: the website, which is static with no build step. See `site/CLAUDE.md` for its rules and `site/docs/` for the design docs.
 
 ## Working on it

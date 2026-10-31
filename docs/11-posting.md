@@ -14,21 +14,24 @@ The show's name is **Wobbin's Line** and the handle is `wobbinsline` everywhere.
 | TikTok | https://www.tiktok.com/@wobbinsline |
 | Pinterest (business, board "Wobbin's Line episodes") | https://www.pinterest.com/wobbinsline/ |
 
-Names, bios and settings for these and every optional platform are in `12-account-setup.md`. LinkedIn is out: the user said to ignore it.
+Names, bios and settings for these and every optional platform are in `12-account-setup.md`. Where the two differ, this page wins. LinkedIn is out: the user said to ignore it.
 
 **Still to do by the user** (last known 2026-10-31; ask or check before relying on it):
 - Link Facebook to Instagram: it needs the Instagram login. Until then each platform gets its own upload.
 - Add the website link on Instagram, and switch TikTok to a Business account. Both are phone-app only.
 - Do YouTube's one-time phone verification. It unlocks custom thumbnails and clickable links.
+- Decide whether the live bios should say Wobbin: the YouTube, Facebook and Pinterest ones say "Bo and friends", but Bo is only the name in the code.
 
 ## The plan
+
+**Two sets of numbers:** folders, days and `exports/` use the posting order below. `05-episodes.md` uses EP numbers, the order episodes were made. The Gap is day 5 but EP 03.
 
 - **One video a day at about 12 pm Pakistan time**, in the order at the end of this page.
 - The user sometimes says "post now". Do it, and mention how close it is to the last post. A few hours apart is the guideline.
 - Keep to the order until the user changes it.
 - **Don't post on your own.** Each post needs the user to say so.
 - **The older videos stay as they are.** After seeing the first stats the user chose not to re-cut them (2026-10-31).
-- **Open question:** that choice came before Seasons 10 and 11, which open on the hook. They are not in the order, in `tools/export.js` or in `exports/`, so they can't be posted yet. Ask the user where they should go. Don't assume.
+- **The order:** `ORDER` in `tools/export.js` is the truth. If the table at the end of this page differs, trust `ORDER` and update the table. Episodes without a folder in `exports/` have to be exported first, and that's a render, so ask.
 
 ## What Claude can and can't do
 
@@ -55,7 +58,7 @@ Claude posts through Claude in Chrome, in the user's logged-in browser.
    ffmpeg -i "NN Title 4K.mp4" -vf "scale=1080:1920:flags=lanczos" -c:v libx264 -preset slow -crf 17 -profile:v high -pix_fmt yuv420p -c:a aac -b:a 160k -movflags +faststart "NN Title 1080p.mp4"
    ```
 
-3. **Caption:** use `caption.txt` as it is, keeping the line breaks. From episode 04 it has a short question under the quote (`ASK` in `tools/export.js`). TikTok gets it on one line.
+3. **Caption:** use `caption.txt` as it is, keeping the line breaks. From day 4 it has a short question under the quote (`ASK` in `tools/export.js`). TikTok gets it on one line.
 
 ## Platform by platform
 

@@ -57,7 +57,7 @@ Collected from feedback so far. Add to it every time.
 ## Posting (2026-10-30 and 31)
 
 - One video a day at about 12 pm Pakistan time, though they often say "post now".
-- Captions very small. A short question under the quote from episode 04 on.
+- Captions very small. A short question under the quote from day 4 (Water Yourself) on.
 - Older videos stay as they are for now: they chose not to re-cut the openings after seeing the first stats.
 - LinkedIn is out.
 

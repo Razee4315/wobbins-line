@@ -1,5 +1,7 @@
 # 08 · Full audit before posting (2026-10-28)
 
+A snapshot from when there were 33 episodes, kept for history. Posting advice here is out of date: see `11-posting.md`.
+
 We watched all 33 episodes frame by frame (contact sheets at 16 points each), measured every
 sound, and read the engine, the sound code and every story. This is what holds the show back,
 what's already fixed, and the order to fix the rest.

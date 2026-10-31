@@ -28,6 +28,7 @@ Everything we know about making this show, in one place. Read it before starting
 - `site/`: the website, deployed to https://razee4315.github.io/wobbins-line/ on every push to `main`. Its own design docs are in `site/docs/`.
 - `brand/instagram/`: the first profile pictures and highlight covers. The live accounts use the brand kit in `exports/`.
 - `exports/`: videos, covers and captions for posting. Git-ignored, so only on the user's computer; see `11-posting.md`.
+- `pip-and-the-balloon.html`: the first draft, kept for reference. Not an episode.
 - `legacy/season1/`: the original Season 1 pages on the first engine, kept for reference.
 - `tools/`: the dev server and contact-sheet helper we use to check episodes.
 

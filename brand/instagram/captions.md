@@ -1,3 +1,5 @@
+> Old plan from before posting began, kept for reference. The real order and captions are in `docs/11-posting.md`.
+
 # First three posts
 
 Post these as Reels. Download each one from the site's player with **Download MP4 → 1080 × 1920**. It comes with sound and loops seamlessly.

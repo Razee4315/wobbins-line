@@ -1,6 +1,6 @@
 # 10 · Hooks and pace
 
-The user posts these on Instagram, TikTok, Facebook and YouTube Shorts, where people decide in a moment whether to keep watching. Their note (2026-10-31): the old episodes start slowly, with Wobbin walking until something happens, and people don't have that much patience. **Every new episode opens inside the problem.**
+The user posts these on Instagram, TikTok, Facebook, YouTube Shorts and Pinterest, where people decide in a moment whether to keep watching. Their note (2026-10-31): the old episodes start slowly, with Wobbin walking until something happens, and people don't have that much patience. **Every new episode opens inside the problem.**
 
 ## What the research says
 
@@ -90,7 +90,7 @@ Then look at frame one yourself, at full size.
 
 ## After posting
 
-Check these in each platform's analytics, and note what you find in `05-episodes.md`:
+Check these in each platform's analytics, and note what you find in `04-lessons-learned.md`:
 
 - YouTube Studio: **viewed vs swiped away**, and the retention curve's first 3 seconds.
 - Instagram: plays against reach, and average watch time.

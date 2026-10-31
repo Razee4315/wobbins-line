@@ -1,6 +1,6 @@
 # 12 · Account setup
 
-Names, bios and settings for every platform. The images are in `exports/00 - Brand kit/` (made by `tools/brand.js`). Instagram, Facebook, YouTube, TikTok and Pinterest are done; see `11-posting.md`.
+Names, bios and settings for every platform. The images are in `exports/00 - Brand kit/` (made by `tools/brand.js`). Instagram, Facebook, YouTube, TikTok and Pinterest are done. This was written before posting began: for how each post is made (titles, captions, covers), `11-posting.md` wins. Linking Facebook to Instagram was never finished, so each gets its own upload for now.
 
 Everything you need to set up each account: what to type and which image to upload.
 You sign up and log in; Claude can fill in the profile in the browser (with your OK before each save),
@@ -43,7 +43,7 @@ All episodes: https://razee4315.github.io/wobbins-line/
 
 ---
 
-## Main four (post every day)
+## Main accounts (Pinterest, under the extras below, is posted daily too)
 
 ### Instagram: new account
 - **Name** (30 max, and searchable, so add the keyword): `Wobbin's Line | animation`

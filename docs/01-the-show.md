@@ -4,6 +4,8 @@
 
 **Wobbin's Line** is a tiny animated show drawn on one line. Wobbin walks onto the line, runs into something we all do, and walks off a little wiser. Every episode is 30–50 seconds and loops seamlessly, made for Instagram Reels and YouTube Shorts.
 
+This describes the early episodes. From Season 10 they open straight on the hook and run about 25 seconds: see `10-hooks.md`.
+
 ## Where it came from
 
 The starting point was the minimalist style of the "Nuggets" short: one line, one character, almost nothing else. We kept that simplicity but made our own world, with relatable everyday struggles instead of one heavy theme.
