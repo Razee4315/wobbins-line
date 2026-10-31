@@ -75,7 +75,7 @@ All 38 episodes in release order, plus Seasons 9 to 11 in the art styles. ★ = 
 
 ## Posting log
 
-Track what has gone out here. Posting order and captions: `exports/POSTING-PLAN.md` (folder per day).
+Track what has gone out here. How to post, and what's next: `11-posting.md`.
 
 | Date | Platform | Episode | Notes |
 |---|---|---|---|
@@ -83,6 +83,15 @@ Track what has gone out here. Posting order and captions: `exports/POSTING-PLAN.
 | 2026-10-31 | Instagram, Facebook Page, YouTube Shorts, TikTok, Pinterest | 02 The Chair | Posted 2:42 am Pakistan time. 1080p copy at CRF 20 (CRF 17 came to 12 MB, over the 10 MB limit). |
 | 2026-10-31 | Instagram, Facebook Page, YouTube Shorts, TikTok, Pinterest | 03 Seen | Posted 10:27 am Pakistan time, at the user's request (7h45 after The Chair). |
 | 2026-10-31 | Instagram, Facebook Page, YouTube Shorts, TikTok, Pinterest | 04 Water Yourself | Posted about 10:52 am Pakistan time at the user's request, shortly after Seen. First caption with a question under the quote. |
+
+### Post links
+
+| Episode | Instagram | Facebook | YouTube | TikTok | Pinterest |
+|---|---|---|---|---|---|
+| 01 Battery | [reel](https://www.instagram.com/wobbinsline/reel/DfHIlK7Rp3E/) | [reel](https://www.facebook.com/reel/1444911004396629) | [short](https://youtube.com/shorts/ql4pR4fejG0) | [video](https://www.tiktok.com/@wobbinsline/video/7702374595222850824) | [pin](https://www.pinterest.com/pin/965388870229381770/) |
+| 02 The Chair | [reel](https://www.instagram.com/wobbinsline/reel/DfIj0sJx7CZ/) | [reel](https://www.facebook.com/reel/2022052121812054) | [short](https://youtube.com/shorts/Dh78IlKn9Hk) | [video](https://www.tiktok.com/@wobbinsline/video/7702579488458149128) | [pin](https://www.pinterest.com/pin/965388870229398869/) |
+| 03 Seen | [reel](https://www.instagram.com/wobbinsline/reel/DfJZSLrRMCz/) | [reel](https://www.facebook.com/reel/1721568589335263) | [short](https://youtube.com/shorts/25eKAlDmdj8) | [video](https://www.tiktok.com/@wobbinsline/video/7702699202484423944) | [pin](https://www.pinterest.com/pin/965388870229406059) |
+| 04 Water Yourself | [reel](https://www.instagram.com/wobbinsline/reel/DfJcEamRurj/) | [reel](https://www.facebook.com/reel/1515411497091738) | [short](https://youtube.com/shorts/LXBzIIEcKzg) | [video](https://www.tiktok.com/@wobbinsline/video/7702705354366356743) | [pin](https://www.pinterest.com/pin/965388870229406318) |
 
 ## Adding an episode
 

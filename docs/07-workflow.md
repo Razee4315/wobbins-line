@@ -97,20 +97,13 @@ await stickers();      // numbered PNG frames per sticker, see-through backgroun
 ```
 
 Join each sticker's frames into a GIF with ffmpeg (palettegen with `reserve_transparent=1`, then
-paletteuse), then delete the frames. `exports/00 - Brand kit/SETUP.md` has the name, bio and settings
-for every platform.
+paletteuse), then delete the frames. `12-account-setup.md` has the name, bio and settings for every platform.
 
 ## Render MP4s
 
 - **One at a time:** open the episode on the website, then Download MP4 (1080×1920, 2160×3840 or 3840×2160). Or on the episode page itself, Export MP4.
 - **In bulk:** possible with the dev server (each episode is about a minute at 1080×1920 in a background tab), but the user prefers not to unless asked.
 
-## Instagram
+## Posting
 
-Everything is in `brand/instagram/`:
-- `dp-blue.png` (recommended profile picture), `dp-paper.png`, `dp-block.png`
-- `hl-*.png` highlight covers (episodes, wobbin, quotes, making of, new)
-- `profile.md`: name, username (`wobbinsline`), bio, link, category
-- `captions.md`: captions, alt text and the posting order for the first posts
-
-When posting, log it in `docs/05-episodes.md`.
+Everything is in `11-posting.md`. `brand/instagram/` holds the first profile pictures and highlight covers; the live accounts use `exports/00 - Brand kit/`.
