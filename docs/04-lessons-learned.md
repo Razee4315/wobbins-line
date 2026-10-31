@@ -4,6 +4,12 @@ A running log. Newest at the top. When something breaks, write down what happene
 
 ## 2026-10-31 · Season 12: hard cuts and the new hooks
 
+- **`overlap.js` only compares centre points, so it's a list of places to look, not a verdict.** Testing the real body outlines across all 57 episodes, most of its flags never touch, and it missed one that did (Small Talk). Six episodes had real contact, now fixed: Yes, Battery, Small Talk, Puddles, Power Cut and Say Hi. What's left are grazes of 2 units or less, thinner than a drawn line (Battery, Dance Break, Fine, Slow Walker).
+- **Why bodies touched:**
+  - Personal space ignores anyone in the air, so a friend hopping lets the next one walk into them (Yes).
+  - Crouching widens a body, so two people crouching 180 apart overlap, and a jump's wind-up adds to it (Small Talk). Stand them about 205 apart.
+  - A hop needs a run-up too. Don't let a small hop land beside the person a bigger hop is meant to clear (Puddles), and work out where a long hop comes down (Power Cut).
+  - A hop keeps the speed it started with, so a runner who hops while still accelerating drops back and the group bunches up (Battery).
 - **Heavy: a friend landed on another friend.** When the tower fell, blue slid through pink for about half a second. Blue now gets a stronger throw. Personal space was quietly setting where pink, and so Wobbin, ended up, so changing the throw alone let Wobbin walk onto the crate and away from the balloon tower. Pink's mark now says that spot outright. If you move one character, compare everyone's positions before and after, not just the seam. The 0.1 s flag left at 30.6 s is blue still in the air beside pink, with clear space between them.
 - **The tools now read both line endings.** Git's `core.autocrlf` checks episodes out with Windows line endings, and six tools matched `<script>\n`, so 52 of the 57 episodes crashed them in a fresh worktree. They match `\r?\n` now, and the older notes below about CRLF breaking the tools no longer apply.
 - **Hard cuts keep the seam at 0.00,** even with 24 in one episode. How to do them is in `10-hooks.md`.

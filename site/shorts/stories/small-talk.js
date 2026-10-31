@@ -71,10 +71,10 @@
       ]);
       // the new stranger: strolls up, gets a "hi!" first, beams, and carries on to the bus stop
       S.plan(S.next, t, [
-        [28.6, { x: MEET + 160, speed: 120, accel: 320, face: -1 }],
+        [28.6, { x: MEET + 205, speed: 120, accel: 320, face: -1 }],
         [HI + .3, { lookX: .5, eye: 'wide' }], [HI + 1.0, { eye: 'open', lookX: 0 }],
         [HI + 1.8, { eye: 'happy' }], [HI + 1.85, { crouch: .2 }], [HI + 2.1, { crouch: 0 }], [HI + 2.1, () => S.next.jump(0, -340)],
-        [40.95, { crouch: .3, eye: 'happy' }], [41.6, { crouch: 0 }],                // ducks so Bo can hop over
+        [41.08, { crouch: .3, eye: 'happy' }], [41.6, { crouch: 0 }],                // ducks so Bo can hop over
         [LEAVE + .3, { x: -1e5, speed: 120, accel: 320, eye: 'open' }],
       ]);
       S.plan(pal, t, [

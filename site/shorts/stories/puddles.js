@@ -78,7 +78,7 @@
         [25.9, { eye: 'happy' }],
         [27.0, () => bo.jump(0, -640)], [27.9, () => bo.jump(0, -760)],
         [29.5, { lookX: -1 }], [33.7, { lookX: 1 }],
-        [LEAVE, { x: 1e6, speed: V, accel: 450, lookX: 0, eye: 'open' }], [LEAVE, () => bo.jump(250, -440)],
+        [LEAVE, { x: 1e6, speed: V, accel: 450, lookX: 0, eye: 'open' }], [LEAVE, () => { bo.jump(500, -1050); old.q.v += 2.5; S.sfx('whoosh', { d: .4, v: .5 }, bo.x); }],
         [LEAVE + 2, () => S.sfx('hum', { notes: [4, 5, 7, 9, 7], gap: .3, g: .04 }, bo.x)],
       ]);
       S.plan(kid, t, [

@@ -55,7 +55,7 @@ Shorts.play({
       { hair: 'curl', blush: PAL.pink, fill: '#ffe9f2' }, { hair: 'antenna', hairColor: PAL.blue, fill: '#e6f0ff' },
       { hairColor: PAL.orange, blush: '#ffb08a', fill: '#fff4d6' }, { hair: 'curl', hairColor: PAL.green, fill: '#e3fbef' },
     ];
-    S.friends = SPOTS.map((x, i) => S.addChar({ x: -680 - i * 210, face: 1, gain: .3, ...look[i] }));   // off screen behind Bo
+    S.friends = SPOTS.map((x, i) => S.addChar({ x: -680 - i * 250, face: 1, gain: .3, ...look[i] }));   // off screen behind Bo
     S.bo = S.addChar({ x: 0, walk: V }); S.focus = S.bo;
     S.beat = 0; S.beatN = 0; S.beatT0 = 0; S.notes = []; S.bubble = []; S.lastLevel = 4; S.blink = 0; S.breath = 0;
   },

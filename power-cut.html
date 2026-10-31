@@ -111,7 +111,7 @@ Shorts.play({
     if (t > 30.6) S.once('shoot', () => S.sfx('twinkle', { pitch: 2093 }));
     if (t > POWER) S.once('power', () => S.sfx('ding', { pitch: 1568, g: .14 }));
     // out over the neighbours in two big bounces
-    if (t > LEAVE && bo.mode === 'ground') for (const n of [pal, S.nb1]) { const g = n.x - bo.x; if (g > 0 && g < 175) S.once('hop' + n.idx, () => { bo.jump(400, -1050); n.q.v += 2.5; S.sfx('whoosh', { d: .4, v: .5 }, bo.x); }); }
+    if (t > LEAVE && bo.mode === 'ground') for (const n of [pal, S.nb1]) { const g = n.x - bo.x; if (g > 0 && g < 175) S.once('hop' + n.idx, () => { bo.jump(440, -1050); n.q.v += 2.5; S.sfx('whoosh', { d: .4, v: .5 }, bo.x); }); }
     // ice cream starts to go
     if (t > 17.2 && t < 19) { S.dropClock -= dt; if (S.dropClock <= 0) { S.dropClock = .34; S.drops.push({ x: 1402 + hash(t) * 22, y: GROUND - 118, v: 0 }); S.sfx('drip', { k: .9 }, 1400); } }
     for (const q of S.drops) { q.v += 1200 * dt; q.y += q.v * dt; }
