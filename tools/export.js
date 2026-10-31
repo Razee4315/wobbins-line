@@ -24,6 +24,22 @@ const TAGS = {
   'the-cloud': 'sadness feelings',
 };
 
+// one short question under the quote, to invite comments (episodes 1-3 went out without one)
+const ASK = {
+  'water-yourself': 'when did you last drink water?', 'the-gap': 'what are you still standing at the edge of?', 'last-minute': "what's your best last-minute save?",
+  'did-i-lock-it': 'how many times do you go back to check?', yes: "what did you say yes to that you wish you hadn't?", perfect: 'what have you redone way too many times?',
+  'two-minutes': 'what tiny task have you been avoiding for weeks?', 'what-if': "what's your biggest what-if right now?", 'rain-check': "be honest, what's the last plan you cancelled?",
+  'slow-walker': "what's the best thing you've noticed by slowing down?", lost: 'what do you lose the most?', 'why-was-i-here': 'how often does this happen to you?',
+  snooze: 'how many alarms do you set?', 'small-talk': "what's your go-to line for awkward silences?", tomorrow: 'what have you been starting "tomorrow" for months?',
+  'one-more': "what's your screen time today?", 'monday-mountain': "what's your mountain this week?", busy: 'who have you been meaning to call?',
+  'cant-sleep': 'what keeps you up at night?', fine: "who's your person when you're not fine?", imposter: "what's one thing you earned and still doubt?",
+  'highlight-reel': "what's one thing your feed never shows?", 'the-other-line': 'do you ever switch lines?', 'just-in-case': "what's the weirdest thing in your bag right now?",
+  heavy: 'who do you ask when you need help?', 'comfort-zone': "what's one small step out you're thinking about?", 'inner-voice': 'what would you tell a friend but never tell yourself?',
+  decision: 'what decision have you been putting off?', 'small-steps': 'what small thing are you doing every day?', reset: 'what helps you reset after a bad day?',
+  bloom: "who's been kind to you lately?", 'the-hill': 'what hill are you pushing up right now?', hurry: 'what are you rushing through right now?',
+  'the-seed': 'what are you waiting to see grow?', 'the-cloud': 'what helps on your rainy days?',
+};
+
 const W4 = 2160, H4 = 3840, FPS = 60, BITRATE = 24e6;
 window.EXP = { current: null, pct: 0, done: [], errors: [] };
 
@@ -79,7 +95,7 @@ export async function exportAll({ from = 1, to = 99, only = null, video = true }
       const st = await story(id), S0 = new Shorts.Show(st), loop = { T: S0.T, startState: S0.startState };
       await post(`${folder}/${base} cover.png`, await cover(st, loop, ep));
       const tags = ['wobbinsline', 'animation', 'relatable', ...TAGS[id].split(' ')].map(t => '#' + t).join(' ');
-      await post(`${folder}/caption.txt`, `${ep.quote}\n\n${tags}\n`);
+      await post(`${folder}/caption.txt`, `${ep.quote}\n${ASK[id] ? ASK[id] + '\n' : ''}\n${tags}\n`);
       if (video) {
         const blob = await Shorts.exportMP4(st, loop, { w: W4, h: H4, fps: FPS, loops: 1, bitrate: BITRATE }, p => EXP.pct = p);
         await post(`${folder}/${base} 4K.mp4`, blob);
