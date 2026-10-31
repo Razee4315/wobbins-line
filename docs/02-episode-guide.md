@@ -44,6 +44,7 @@ Shorts.play({
   ground: (x, t, S) => GROUND - height,    // optional terrain (hills, a crate to stand on)
   lineAt: () => GROUND,                    // optional: keep the drawn line flat even if ground isn't
   boil: true, boilAmt: 2.0,                // hand-drawn line boil (on by default)
+  style: 'charcoal',                       // an art style (needs sketch.js on the page): see 09-art-styles.md
   init(S) { S.bo = S.addChar({ x: 0, walk: V }); },
   update(S, t, dt) { S.plan(S.bo, t, [[0, { x: 600, speed: V, accel: 450 }], ...]); },
   drawSky(S, ctx, t, v) {}, drawBack(S, ctx, t, v) {}, drawFront(S, ctx, t, v) {},
@@ -70,11 +71,23 @@ Shorts.play({
 - **Yellow text on white is unreadable.** Use orange as the accent on light backgrounds; at night use a light accent like `#fff2a8`.
 - **Wide shots make characters tiny.** Prefer a camera that follows the action (`camGoal`) over one huge establishing shot.
 
+## Small details (the user's rule: "the small details make the difference")
+
+Go through the episode frame by frame and ask:
+
+- Is anything covering Wobbin's eye, even for a moment? Does the eye look at what matters?
+- Does everything touch the ground properly, and is everything held up by something?
+- Does anything pop in from nowhere? Where did it come from, and where does it go?
+- Is there a small true detail people will recognise from their own life (the upside-down cereal box, the key reached with a foot)?
+- Does it look drawn, or placed? See **Making it look hand-drawn** in `09-art-styles.md`.
+- Do captions read at phone size, clear of everything behind them?
+
 ## Checklist before calling it done
 
 - [ ] Hook in the first 5 seconds; it reads with the sound off.
 - [ ] Three escalations, a turn, a quote.
 - [ ] `seam error 0.00`; contact sheet checked (see `07-workflow.md`).
+- [ ] The small details above; key frames looked at full size.
 - [ ] `node tools/overlap.js <id> --wide` says ok: nobody overlapping or face to face.
 - [ ] Every field set in `update` is reset in `init` (or the second loop differs).
 - [ ] No props or friends in view at the start or end; colours match.

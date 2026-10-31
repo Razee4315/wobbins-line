@@ -22,8 +22,21 @@ Collected from feedback so far. Add to it every time.
 - **Hooks that hold attention** from the first second, so people keep watching and get the message.
 - **Everything in frame on a phone.**
 
+- **The art styles** (feedback on the pilots, 2026-10-31): loved almost all of them, in the user's words "amazing". New Pencil
+  was a favourite. The colour reveal in Puddles (jump, and the colour spreads) was a highlight. Liked the colours and feel of The Menu.
+- **Small details make the difference** (2026-10-31): "keep in mind the very small details". Check every frame like an artist would.
+- **More artistic, textured looks** (2026-10-31): pencil sketch, charcoal, coloured pencil, a 3D feel, and styles
+  combined, after Kevin Ngo's repos (doodle-bot, statechart-art, bot-house). Characters and scenes should look great.
+  Wants several versions on different stories to choose from, then to continue with the winner. Pilots are in Season 9.
+
 ## Doesn't like
 
+- **Isometric 3D** (2026-10-31): the riso house didn't work for the user, so it was dropped. Flat riso is fine.
+- **Charcoal that is too dark** (2026-10-31): "it's very dark at the very start, but it was becoming lighter. That thing I like."
+  Keep charcoal at the lighter, paper-showing tone. Never a nearly black frame.
+- **Things that look placed, not drawn** (2026-10-31): the house "is just standing on the ground and it's not attached to
+  the ground", which feels AI-ish. It has to look hand-drawn.
+- **Anything covering Wobbin's eye** (2026-10-31): the menu opened right over it. The eye does the acting, so it stays clear.
 - Anything that feels **"AI-ish" or programmed**: mechanical timing, identical repeats, robotic sounds. Hand-made warmth matters.
 - **Sad endings.** Viewers said every ending feels sad (2026-10-28). Endings should be warm and a
   little funny: a button after the quote, company, a happy walk-off.
@@ -40,6 +53,7 @@ Collected from feedback so far. Add to it every time.
 
 ## How they like to work
 
+- **Not too many options at once** (2026-10-31): lots of choices make it harder to decide. They ask a friend to help pick, then we continue with that.
 - Decisive: "do the best you can do, don't ask me questions" during long runs (often overnight).
 - Wants a push to the live site when something is finished, and asks for it in chat. Often leaves overnight
   runs ("I'm sleeping, have it live when I wake up").

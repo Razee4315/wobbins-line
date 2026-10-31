@@ -1,0 +1,230 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Power Cut</title>
+</head>
+<body>
+<script src="sfx.js?v=12"></script>
+<script src="engine2.js?v=12"></script>
+<script src="sketch.js?v=2"></script>
+<script>
+// Charcoal and white chalk on toned paper. The film ends, the power goes, and Wobbin panics through the
+// phone, the wifi and the fridge. Then a little flame at the window: everyone is outside, looking up.
+// The dark is real pressure on the page, so light is charcoal lifted off it, and flames are the only colour.
+// Button: the power comes back. Nobody moves. "...five more minutes."
+const { PAL, lerp, seg, sine, outBack, hash, mix, clamp, GROUND, INK } = Shorts;
+const V = 150, CUT = 8.7, LEAVE = 37.6, LOOP = LEAVE + 7.6;
+const HX0 = 700, HX1 = 1500, ROOF = GROUND - 410, CHALK = '#e6e1d7';
+const BASE = '#c8c4bc', DIM = '#afaba4', NIGHT = '#8a867f', FLAME = '#ff9d2e', POWER = 33.4;
+const dark = t => t < CUT ? 0 : t < CUT + .14 ? seg(t, CUT, CUT + .14) : 1 - sine(seg(t, 36.2, 44));
+const dim = t => sine(seg(t, 1.5, 6));
+const skyOf = t => mix(mix(BASE, DIM, dim(t) * (1 - seg(t, CUT, CUT + .1))), NIGHT, dark(t));
+const starsOf = t => sine(seg(t, 25.4, 28)) * (1 - sine(seg(t, 36.6, 41)));
+
+// a candle riding on a head, with its soft pool of light
+function candle(ctx, x, y, t, k, a) {
+  if (a <= 0) return;
+  const fl = .86 + .14 * Math.sin(t * 11 + k) * Math.sin(t * 7.3 + k * 2);
+  ctx.save(); ctx.globalAlpha = a;
+  const g = ctx.createRadialGradient(x, y - 26, 4, x, y - 26, 250 * fl);
+  g.addColorStop(0, 'rgba(255,190,110,.62)'); g.addColorStop(.3, 'rgba(235,190,140,.26)'); g.addColorStop(1, 'rgba(230,200,170,0)');
+  ctx.fillStyle = g; ctx.beginPath(); ctx.arc(x, y - 26, 250 * fl, 0, 7); ctx.fill();
+  ctx.fillStyle = '#efe9dd'; ctx.fillRect(x - 7, y - 24, 14, 26); ctx.lineWidth = 3; ctx.strokeStyle = INK; ctx.strokeRect(x - 7, y - 24, 14, 26);
+  ctx.fillStyle = FLAME; ctx.beginPath(); ctx.moveTo(x - 8, y - 34); ctx.quadraticCurveTo(x - 7, y - 50 - 5 * fl, x + Math.sin(t * 9 + k) * 2, y - 60 - 7 * fl); ctx.quadraticCurveTo(x + 8, y - 48, x + 8, y - 34); ctx.quadraticCurveTo(x, y - 25, x - 8, y - 34); ctx.fill();
+  ctx.fillStyle = '#fff3c9'; ctx.beginPath(); ctx.ellipse(x, y - 36, 3.6, 6, 0, 0, 7); ctx.fill();
+  ctx.restore();
+}
+
+Shorts.play({
+  title: 'Power Cut',
+  style: 'charcoal',
+  accent: '#c8540a',
+  hook: 5.9,
+  loopAfter: LOOP,
+  paperAt: skyOf,
+  captions: [
+    [6.3, 8.5, 'one more *episode...*'],
+    [9.9, 11, '...hello?'],
+    [12.1, 13.3, '*1%?!*'],
+    [14.1, 15.7, 'wifi? *wifi?!*'],
+    [17.4, 18.7, 'the ice cream...'],
+    [19.6, 21.9, 'what do people even *do?*'],
+    [22.6, 24.2, 'come outside!', null, { pitch: 1.3 }],
+    [26.3, 27.6, '*whoa.*'],
+    [28.2, 33.2, 'the lights went out. *the stars came on.*'],
+    [33.9, 35.2, "oh. it's back.", null, { pitch: 1.3 }],
+    [35.5, 37.3, '...five more *minutes.*'],
+  ],
+  init(S) {
+    S.bo = S.addChar({ x: 0, walk: V });
+    S.pal = S.addChar({ x: 1600, hair: 'curl', fill: '#d8d4cc', blush: '#ff9d8a', face: -1 });
+    S.nb1 = S.addChar({ x: 2190, hair: 'antenna', fill: '#c6c2bb', face: -1 });
+    S.pal.gain = S.nb1.gain = .5;
+    S.drops = []; S.dropClock = 0;
+  },
+  update(S, t, dt) {
+    const bo = S.bo, pal = S.pal, d = dark(t), c = t > 24 ? 1 : 0;
+    S.once('amb', () => S.sfx('night', { d: 20, g: 1.2 }));
+    S.plan(bo, t, [
+      [0, { x: 900, speed: V, accel: 520 }],
+      [5.5, { sit: 1, lookX: 1, lookY: -.1 }],
+      [8.7, { eye: 'wide', lookX: .2 }], [8.7, () => { S.sfx('powerDown', {}); S.shake(2); }],
+      [9.9, { lookX: -1 }], [10.4, { lookX: 1, eye: 'open' }],
+      [10.8, { sit: 0, x: 958, speed: 170 }], [11.5, { lookX: 1, lookY: .5 }],
+      [12.1, { eye: 'wide', tilt: -.1 }], [12.1, () => S.sfx('gasp', {}, bo.x)],
+      [12.8, { eye: 'squeeze', tilt: 0 }], [12.8, () => S.sfx('powerDown', { g: .6 }, bo.x)],
+      [13.3, { x: 1252, speed: 300, accel: 1100, eye: 'open', lookX: .2, lookY: -1 }],
+      [14.3, () => { bo.jump(0, -640); S.sfx('boing', {}, bo.x); }],
+      [14.95, () => { bo.jump(0, -760); S.sfx('boing', {}, bo.x); }],
+      [15.65, () => { bo.jump(0, -900, 6.28 * 1.6); S.sfx('boing', {}, bo.x); }],
+      [16.5, { x: 1272, speed: 160, lookX: 1, lookY: 0, eye: 'open' }],
+      [17.0, () => S.sfx('door', {}, 1400)], [17.3, { eye: 'sad', lookY: .3 }],
+      [18.9, { sit: 1, tilt: .06, lookY: .3 }], [18.9, () => S.sfx('drain', {}, bo.x)],
+      [22.3, { lookX: 1, lookY: -.1, eye: 'wide', tilt: 0 }],
+      [23.2, { sit: 0, x: 1670, speed: 190, accel: 500, eye: 'open', lookX: 0, lookY: 0 }],
+      [25.6, { lookX: .3, lookY: -1, tilt: -.1 }],
+      [26.2, { eye: 'wide' }], [27.0, () => S.sfx('swell', { root: 392 })],
+      [28.0, { eye: 'open' }],
+      [33.6, { face: -1, lookY: 0, tilt: 0, eye: 'flat' }],
+      [35.1, { face: 1, lookY: -1, tilt: -.1, eye: 'happy' }],
+      [LEAVE, { x: 1e6, speed: V, accel: 450, lookY: 0, tilt: 0, eye: 'open' }], 
+      [LEAVE + 1.4, () => S.sfx('hum', { notes: [2, 4, 5, 7, 5], gap: .3, g: .04 }, bo.x)],
+    ].sort((a, b) => a[0] - b[0]));
+    S.plan(pal, t, [
+      [22.2, () => S.sfx('knock', { n: 3 }, 1500)],
+      [24.0, { face: 1, x: 1860, speed: 150, accel: 500 }],
+      [26.6, { lookY: -1, lookX: .3, tilt: -.08, eye: 'happy' }],
+      [33.5, { face: -1, lookY: 0, tilt: 0, eye: 'open' }],
+      [35.3, { face: 1, lookY: -1, tilt: -.08, eye: 'happy' }],
+    ]);
+    for (const [n, a] of [[S.nb1, 1]]) S.plan(n, t, [
+      [25 + a * .4, { face: 1, lookY: -1, lookX: .2, tilt: -.1, eye: 'open' }],
+      [33.7 + a * .1, { face: -1, lookY: 0, tilt: 0, eye: 'flat' }],
+      [35.4 + a * .2, { face: 1, lookY: -1, tilt: -.1, eye: 'happy' }],
+    ]);
+    pal.hidden = t < 21.4;
+    bo.fill = mix('#ffffff', '#d3cfc7', d * (1 - seg(t, 23.6, 25.2)));
+    bo.hairColor = bo.ink = '#111111';
+    if (t > 28.2) S.once('look', () => S.sfx('pad', { root: 293.66, d: 5 }));
+    if (t > 30.6) S.once('shoot', () => S.sfx('twinkle', { pitch: 2093 }));
+    if (t > POWER) S.once('power', () => S.sfx('ding', { pitch: 1568, g: .14 }));
+    // out over the neighbours in two big bounces
+    if (t > LEAVE && bo.mode === 'ground') for (const n of [pal, S.nb1]) { const g = n.x - bo.x; if (g > 0 && g < 175) S.once('hop' + n.idx, () => { bo.jump(400, -1050); n.q.v += 2.5; S.sfx('whoosh', { d: .4, v: .5 }, bo.x); }); }
+    // ice cream starts to go
+    if (t > 17.2 && t < 19) { S.dropClock -= dt; if (S.dropClock <= 0) { S.dropClock = .34; S.drops.push({ x: 1402 + hash(t) * 22, y: GROUND - 118, v: 0 }); S.sfx('drip', { k: .9 }, 1400); } }
+    for (const q of S.drops) { q.v += 1200 * dt; q.y += q.v * dt; }
+    S.drops = S.drops.filter(q => q.y < GROUND);
+    // the camera: close on the sofa, then the room for the panic, then right back to take in the sky
+    if (t > 5.2 && t < 8.7) { S.camGoal.x = 1012; S.camGoal.z = 1.02; }
+    else if (t >= 8.7 && t < 23.2) { S.camGoal.x = clamp(bo.x + 30, 960, 1260); S.camGoal.kx = 3; }
+    if (t > 25.6 && t < 33.2) { S.camGoal.x = 1960; S.camGoal.y = GROUND - 255; S.camGoal.z = .66; S.camGoal.kx = 2; S.camGoal.kz = 1.1; }
+    else if (t >= 33.2 && t < LEAVE) { S.camGoal.x = 1640; S.camGoal.kx = 2; S.camGoal.kz = 1.4; }
+  },
+  // captions sit on a patch rubbed out of the charcoal with an eraser, so they stay easy to read
+  drawOverlay(S, ctx, t, v) {
+    const c = S.story.captions.find(([a, b]) => t > a - .2 && t < b + .1), d = dark(t); if (!c || d < .02) return;
+    const k = sine(seg(t, c[0] - .2, c[0] + .1)) * (1 - sine(seg(t, c[1] - .3, c[1] + .1))) * d, two = c[2].length > 24;
+    ctx.save(); ctx.translate(v.cw / 2, v.ch * .15); ctx.scale(1, (two ? .26 : .17)); const R = v.cw * .5;
+    const g = ctx.createRadialGradient(0, 0, R * .3, 0, 0, R); g.addColorStop(0, `rgba(200,196,188,${.96 * k})`); g.addColorStop(.6, `rgba(200,196,188,${.72 * k})`); g.addColorStop(1, 'rgba(200,196,188,0)');
+    ctx.fillStyle = g; ctx.beginPath(); ctx.arc(0, 0, R, 0, 7); ctx.fill(); ctx.restore();
+  },
+  drawSky(S, ctx, t, v) {
+    const a = starsOf(t); if (a <= .01) return;
+    ctx.save();
+    // the band of the galaxy: chalk dust rubbed across the sheet with a thumb
+    ctx.translate(1980, GROUND - 640); ctx.rotate(-.52);
+    for (const [dx, dy, rx, ry, al] of [[-300, 30, 460, 170, .5], [120, -10, 560, 210, .62], [440, 40, 360, 150, .42]]) {
+      ctx.save(); ctx.translate(dx, dy); ctx.scale(rx / 100, ry / 100);
+      const g = ctx.createRadialGradient(0, 0, 0, 0, 0, 100); g.addColorStop(0, `rgba(226,222,214,${al * a})`); g.addColorStop(1, 'rgba(226,222,214,0)');
+      ctx.fillStyle = g; ctx.beginPath(); ctx.arc(0, 0, 100, 0, 7); ctx.fill(); ctx.restore();
+    }
+    ctx.restore();
+    ctx.lineCap = 'round';
+    for (let i = 0; i < 620; i++) {
+      const x = 1320 + hash(i * 1.3) * 1200, h0 = hash(i * 2.1 + 4), y = GROUND - 150 - h0 * 1180, pop = clamp((a - hash(i * .7) * .7) / .3), r = (1.5 + hash(i * 3.3) ** 3 * 7.5) * outBack(pop);
+      if (pop <= 0) continue;
+      const tw = .62 + .38 * Math.sin(t * (1.2 + hash(i) * 2.4) + i), b = hash(i * 5.1) > .86;
+      ctx.globalAlpha = tw; ctx.fillStyle = '#ffffff'; ctx.beginPath(); ctx.arc(x, y, r, 0, 7); ctx.fill();
+      if (b) { ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 2.6; const l = r * 3.8 * tw; ctx.beginPath(); ctx.moveTo(x - l, y); ctx.lineTo(x + l, y); ctx.moveTo(x, y - l); ctx.lineTo(x, y + l); ctx.stroke(); }
+    }
+    ctx.globalAlpha = 1;
+    const u = seg(t, 30.6, 31.5);
+    if (u > 0 && u < 1) { const x = lerp(1560, 2240, u), y = lerp(GROUND - 1040, GROUND - 780, u); ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 4; ctx.globalAlpha = Math.sin(Math.PI * u); ctx.beginPath(); ctx.moveTo(x - 150, y - 58); ctx.lineTo(x, y); ctx.stroke(); ctx.globalAlpha = 1; }
+  },
+  drawBack(S, ctx, t, v) {
+    const d = dark(t), line = mix('#111111', '#1d1b1c', d);
+    // the far street, rooftops rubbed in with the side of the stick
+    if (v.right > HX1) {
+      ctx.fillStyle = mix('#a39f98', '#524e4a', d); ctx.beginPath(); ctx.moveTo(HX1, GROUND);
+      const R = [[1560, 96], [1620, 150], [1700, 96], [1700, 128], [1830, 128], [1880, 76], [1930, 118], [2060, 118], [2060, 88], [2190, 88], [2240, 150], [2300, 88], [2360, 110], [2460, 110], [2520, 70], [2640, 70], [2640, 120], [2800, 120], [2860, 80], [3000, 60]];
+      for (const [x, h] of R) ctx.lineTo(x, GROUND - h);
+      ctx.lineTo(3000, GROUND); ctx.closePath(); ctx.fill();
+    }
+    if (v.left > HX1 + 40 || v.right < HX0 - 60) return;
+
+    // the room, cut open. It keeps the sheet's own tone, then the lamp comes back on at the end
+    ctx.fillStyle = skyOf(t); ctx.fillRect(HX0, ROOF, HX1 - HX0, GROUND - ROOF);
+    if (t > POWER) { ctx.fillStyle = mix('#c8c4bc', skyOf(t), 1 - sine(seg(t, POWER, POWER + .2))); ctx.fillRect(HX0, ROOF, HX1 - HX0, GROUND - ROOF); }
+    ctx.strokeStyle = line; ctx.fillStyle = line; ctx.lineWidth = 6;
+    ctx.beginPath(); ctx.moveTo(HX0, GROUND + 2); ctx.lineTo(HX0, ROOF); ctx.lineTo(1100, ROOF - 64); ctx.lineTo(HX1, ROOF); ctx.lineTo(HX1, GROUND - 190); ctx.moveTo(HX0 - 40, ROOF + 22); ctx.lineTo(HX0, ROOF); ctx.moveTo(HX1, ROOF); ctx.lineTo(HX1 + 40, ROOF + 22); ctx.moveTo(HX0, ROOF); ctx.lineTo(HX1, ROOF); ctx.stroke();
+
+    const wash = mix('#a9a59e', '#8a867f', d);
+    // wall: a framed picture and a shelf with the router
+    ctx.lineWidth = 4; ctx.fillStyle = wash; ctx.fillRect(760, ROOF + 70, 110, 80); ctx.strokeRect(760, ROOF + 70, 110, 80);
+    ctx.beginPath(); ctx.moveTo(772, ROOF + 136); ctx.lineTo(800, ROOF + 96); ctx.lineTo(822, ROOF + 122); ctx.lineTo(838, ROOF + 104); ctx.lineTo(858, ROOF + 136); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(1190, GROUND - 190); ctx.lineTo(1320, GROUND - 190); ctx.stroke();
+    ctx.fillStyle = mix('#57554f', '#4e4b47', d); ctx.beginPath(); ctx.roundRect(1214, GROUND - 228, 84, 38, 6); ctx.fill(); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(1226, GROUND - 228); ctx.lineTo(1216, GROUND - 278); ctx.moveTo(1286, GROUND - 228); ctx.lineTo(1296, GROUND - 278); ctx.stroke();
+    if (t < CUT) for (let i = 0; i < 3; i++) { ctx.fillStyle = hash(Math.floor(t * 7) + i) > .3 ? '#42d36a' : '#2f6b3f'; ctx.beginPath(); ctx.arc(1236 + i * 20, GROUND - 209, 4.6, 0, 7); ctx.fill(); }
+
+    // the sofa
+    ctx.lineWidth = 5; ctx.fillStyle = mix('#77736c', '#5f5b56', d); ctx.strokeStyle = line;
+    ctx.beginPath(); ctx.roundRect(790, GROUND - 170, 230, 110, 22); ctx.fill(); ctx.stroke();
+    ctx.fillStyle = mix('#8d8982', '#696560', d); ctx.beginPath(); ctx.roundRect(762, GROUND - 92, 286, 74, 20); ctx.fill(); ctx.stroke();
+    ctx.lineWidth = 5; ctx.beginPath(); ctx.moveTo(800, GROUND - 18); ctx.lineTo(796, GROUND); ctx.moveTo(1010, GROUND - 18); ctx.lineTo(1014, GROUND); ctx.stroke();
+
+    // the telly and its flicker
+    ctx.lineWidth = 6; ctx.fillStyle = '#17161a'; ctx.beginPath(); ctx.roundRect(1098, GROUND - 240, 190, 124, 8); ctx.fill(); ctx.stroke();
+    ctx.lineWidth = 5; ctx.beginPath(); ctx.moveTo(1170, GROUND - 116); ctx.lineTo(1150, GROUND - 92); ctx.lineTo(1236, GROUND - 92); ctx.lineTo(1216, GROUND - 116); ctx.stroke();
+    ctx.fillStyle = mix('#77736c', '#5f5b56', d); ctx.fillRect(1120, GROUND - 92, 146, 92); ctx.strokeRect(1120, GROUND - 92, 146, 92);
+    if (t < CUT) {
+      const f = .68 + .32 * hash(Math.floor(t * 6));
+      ctx.fillStyle = mix('#ffffff', '#bdbab3', 1 - f); ctx.fillRect(1108, GROUND - 230, 170, 104);
+      const g = ctx.createRadialGradient(1193, GROUND - 178, 20, 1193, GROUND - 178, 430); g.addColorStop(0, `rgba(240,238,230,${(.5 * f * dim(t)).toFixed(3)})`); g.addColorStop(1, 'rgba(240,238,230,0)');
+      ctx.fillStyle = g; ctx.beginPath(); ctx.arc(1193, GROUND - 178, 430, 0, 7); ctx.fill();
+    }
+
+    // a low table and a phone that lasts one second
+    ctx.strokeStyle = line; ctx.lineWidth = 5; ctx.fillStyle = mix('#8d8982', '#696560', d); ctx.fillRect(1062, GROUND - 74, 40, 74); ctx.strokeRect(1062, GROUND - 74, 40, 74);
+    const ph = t > 11.5 && t < 12.9;
+    ctx.fillStyle = ph ? '#ffffff' : '#1a191c'; ctx.lineWidth = 4; ctx.beginPath(); ctx.roundRect(1054, GROUND - 176, 58, 102, 9); ctx.fill(); ctx.stroke();
+    if (ph) {
+      ctx.font = '700 28px "Kevin Sans", sans-serif'; ctx.textAlign = 'center'; ctx.fillStyle = PAL.red; ctx.fillText('1%', 1083, GROUND - 120); ctx.textAlign = 'start';
+      const g = ctx.createRadialGradient(1083, GROUND - 125, 10, 1083, GROUND - 125, 230); g.addColorStop(0, 'rgba(240,238,230,.5)'); g.addColorStop(1, 'rgba(240,238,230,0)'); ctx.fillStyle = g; ctx.beginPath(); ctx.arc(1083, GROUND - 125, 230, 0, 7); ctx.fill();
+    }
+
+    // the fridge: the light inside doesn't come on, which is the saddest part
+    const op = sine(seg(t, 17, 17.5)) * (1 - sine(seg(t, 19.2, 19.7)));
+    ctx.strokeStyle = line; ctx.lineWidth = 6; ctx.fillStyle = mix('#d4d0c8', '#a29e97', d); ctx.beginPath(); ctx.roundRect(1344, GROUND - 268, 130, 268, 10); ctx.fill(); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(1344, GROUND - 180); ctx.lineTo(1474, GROUND - 180); ctx.stroke();
+    if (op > .01) {
+      ctx.fillStyle = '#141316'; ctx.fillRect(1356, GROUND - 170, 106, 160);
+      ctx.strokeStyle = '#6a686a'; ctx.lineWidth = 3.5; for (const y of [GROUND - 112, GROUND - 60]) { ctx.beginPath(); ctx.moveTo(1358, y); ctx.lineTo(1460, y); ctx.stroke(); }
+      ctx.fillStyle = '#ff9db8'; ctx.beginPath(); ctx.roundRect(1386, GROUND - 150, 50, 38, 5); ctx.fill(); ctx.strokeStyle = CHALK; ctx.stroke();
+      ctx.fillStyle = '#ff9db8'; for (const q of S.drops) { ctx.beginPath(); ctx.ellipse(q.x, q.y, 4.5, 7, 0, 0, 7); ctx.fill(); }
+      ctx.save(); ctx.translate(1344, GROUND - 180); ctx.scale(-.7 * op, 1); ctx.fillStyle = mix('#d4d0c8', '#a29e97', d); ctx.strokeStyle = line; ctx.lineWidth = 6; ctx.fillRect(0, 0, 130, 180); ctx.strokeRect(0, 0, 130, 180); ctx.restore();
+    }
+  },
+  drawFront(S, ctx, t) {
+    const a = 1 - sine(seg(t, 39.5, 41.5));
+    if (t > 21.4) candle(ctx, S.pal.top().x, S.pal.top().y - 2, t, 1, a);
+    if (t > 22) candle(ctx, S.nb1.top().x, S.nb1.top().y - 2, t, 2, a);
+    // everyone else on the far street, tiny flames along the rooftops
+    if (t > 24) for (const [x, y] of [[1640, 62], [1760, 48], [1906, 40], [2004, 56], [2120, 44], [2300, 52], [2420, 40]]) { ctx.save(); ctx.globalAlpha = a * (.8 + .2 * Math.sin(t * 8 + x)); ctx.fillStyle = FLAME; ctx.beginPath(); ctx.ellipse(x, GROUND - y, 4.4, 7.5, 0, 0, 7); ctx.fill(); ctx.restore(); }
+  },
+});
+</script>
+</body>
+</html>

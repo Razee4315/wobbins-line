@@ -36,7 +36,7 @@
     const dt = Math.min(.05, (now - last) / 1000); last = now;
     if (!show || busy) return;
     if (playing) { if (show.t + dt >= show.T) show.reset(); else show.advance(dt); }
-    show.render(ctx, cv.width, cv.height);
+    show.render(ctx, cv.width, cv.height, true);
     scrub.value = Math.round(show.t / show.T * 1000); timeEl.textContent = `${fmt(show.t)} / ${fmt(show.T)}`;
   }
 

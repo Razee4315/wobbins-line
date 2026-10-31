@@ -20,7 +20,8 @@ ENGINE2 = ['one-more', 'the-hill', 'bloom', 'hurry', 'what-if',
            'the-cloud', 'the-seed', 'the-gap',
            'the-other-line', 'why-was-i-here', 'lost', 'small-talk', 'cant-sleep',
            'just-in-case', 'heavy', 'fine', 'comfort-zone', 'inner-voice',
-           'the-chair', 'two-minutes', 'did-i-lock-it', 'water-yourself', 'slow-walker']
+           'the-chair', 'two-minutes', 'did-i-lock-it', 'water-yourself', 'slow-walker',
+           'new-pencil', 'power-cut', 'the-menu', 'puddles']
 
 VIEW_OLD = """      const unit = Math.min(cw / (portrait ? 640 : 1200), ch / (portrait ? 640 * 16 / 9 : 600)) * this.cam.z.x;
       const gy = ch * (portrait ? .64 : .7);"""
@@ -52,6 +53,8 @@ def main():
     # site-only patches: stories may override camera scale/ground height and stride, and draw on a transparent canvas
     (OUT / 'engine2.js').write_text(engine.replace(VIEW_OLD, VIEW_NEW).replace(CLEAR_OLD, CLEAR_NEW).replace(LEAD_OLD, LEAD_NEW), encoding='utf-8')
     shutil.copy(ROOT / 'sfx.js', OUT / 'sfx.js')
+    shutil.copy(ROOT / 'sketch.js', OUT / 'sketch.js')           # the art styles, and the letters they use
+    shutil.copytree(ROOT / 'fonts', OUT / 'fonts', dirs_exist_ok=True)
 
     for ep in ENGINE2:
         html = (ROOT / f'{ep}.html').read_text(encoding='utf-8')

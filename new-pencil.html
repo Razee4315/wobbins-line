@@ -1,0 +1,140 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>New Pencil</title>
+</head>
+<body>
+<script src="sfx.js?v=12"></script>
+<script src="engine2.js?v=12"></script>
+<script src="sketch.js?v=2"></script>
+<script>
+// The season opener: the same little scene through every medium, one hop at a time. It starts in the show's
+// classic flat line. A pencil falls out of the sky, and each hop on it scribbles the world into the next look,
+// left to right, until Wobbin lands back on the old line, a bit more pleased with it.
+const { PAL, lerp, seg, sine, outBack, hash, clamp, cloud, sun, bird, GROUND, INK } = Shorts;
+const V = 150, LEAVE = 25.2, LOOP = LEAVE + 7.4, PX = 790, FALL = 7.6;
+const HOPS = [[9.6, 'pencil'], [12.6, 'crayon'], [15.6, 'charcoal'], [18.6, 'riso']], WIPE = .7, END = 24;
+// which look is on screen: null is the engine's own flat line
+const lookAt = t => {
+  if (t < HOPS[0][0] || t >= END) return null;
+  let i = 0; while (i + 1 < HOPS.length && t >= HOPS[i + 1][0]) i++;
+  const L = HOPS[i][1], P = i ? HOPS[i - 1][1] : null;
+  return i && t < HOPS[i][0] + WIPE ? { a: P, b: L } : L;
+};
+// the hill as a height above the line, so everything on it can stand on it
+const hillY = x => GROUND - (Math.abs(x - 920) > 270 ? 0 : 160 * Math.cos(Math.PI * (x - 920) / 540) ** 2);
+const hand = (...a) => Sketch.hand(...a);
+const wipeOf = t => { for (let i = 1; i < HOPS.length; i++) { const u = (t - HOPS[i][0]) / WIPE; if (u >= 0 && u < 1) return u; } return 2; };
+
+Shorts.play({
+  title: 'New Pencil',
+  style: lookAt,
+  accent: '#e8503f',
+  hook: 4.7,
+  loopAfter: LOOP,
+  paper: '#ffffff',
+  captions: [
+    [5.3, 6.4, 'same line.'],
+    [6.5, 7.5, 'same *everything.*'],
+    [10.3, 11.7, '...*oh.*'],
+    [13.3, 14.7, '*oh!*'],
+    [16.3, 17.7, 'ooh, *moody.*'],
+    [19.3, 20.7, 'very *fancy.*'],
+    [21.2, 23.7, 'same you. *new pencil.*'],
+  ],
+  init(S) { S.bo = S.addChar({ x: 0, walk: V }); S.hop = 0; },
+  update(S, t) {
+    const bo = S.bo;
+    S.plan(bo, t, [
+      [0, { x: 672, speed: V, accel: 520 }],
+      [4.7, { eye: 'flat', lookY: .4 }],
+      [FALL, { eye: 'wide', lookX: 1, lookY: -1, tilt: -.08 }],
+      [8.6, { eye: 'open', lookY: .2, tilt: 0 }],
+      [LEAVE, { x: 1e6, speed: V, accel: 450, eye: 'open', lookX: 0, lookY: 0 }], [LEAVE, () => bo.jump(250, -440)],
+      [LEAVE + 1.6, () => S.sfx('hum', { notes: [4, 5, 7, 9, 7], gap: .3, g: .04 }, bo.x)],
+    ]);
+    if (t > FALL) S.once('thunk', () => { S.sfx('thump', { g: .4 }, PX); S.shake(4); bo.q.v += 1.2; S.burst(PX + 4, GROUND - 4, 7, ['#8a8478'], { speed: 200, size: 8, life: .5, spread: 2.4 }); });
+    HOPS.forEach(([at], i) => {
+      if (t > at - .54) S.once('h' + i, () => { bo.jump(0, -700); S.sfx('jump', { v: .6 }, bo.x); });
+      if (t > at) S.once('f' + i, () => { S.sfx(i ? 'scribble' : 'flip', {}, bo.x); S.sfx('ding', { pitch: 1047 * (1 + i * .25), g: .1 }); bo.cmd.eye = i % 2 ? 'wide' : 'happy'; });
+      if (t > at + 1.6) S.once('c' + i, () => { bo.cmd.eye = 'open'; });
+    });
+    if (t > 21.2) { bo.cmd.eye = 'happy'; S.once('q', () => S.sfx('pad', { root: 293.66, d: 3 })); }
+    if (t > END - .54) S.once('last', () => { bo.jump(0, -760); S.sfx('jump', { v: .6 }, bo.x); });
+    if (t > END) S.once('back', () => { S.sfx('flip', {}, bo.x); S.sfx('chime', { n: 7, g: .12 }); });
+    if (t > 8 && t < LEAVE) { S.camGoal.x = 770; S.camGoal.kx = 2; }
+  },
+  // the wipe: a scribble of the next medium crossing the frame
+  mix(S, m, t, v) {
+    const u = wipeOf(t); if (u > 1) return;
+    const x = lerp(v.left - 60, v.right + 60, sine(u)); m.lineWidth = 46; m.beginPath();
+    for (let y = v.top - 40, i = 0; y < v.bottom + 40; y += 30, i++) { const w = x + (hash(i * 1.3) - .5) * 70; i % 2 ? m.lineTo(w, y) : m.lineTo(v.left - 80, y); }
+    m.stroke();
+  },
+  drawSky(S, ctx, t, v) {
+    sun(ctx, 868, GROUND - 452, 11, { X: '#ffc62e' });
+    cloud(ctx, 672, GROUND - 372, 12, { X: '#dff1fb' }); cloud(ctx, 1000, GROUND - 240, 9, { X: '#e7ddf7' });
+    if (t > 9.5 && t < END) bird(ctx, 700 + ((t * 44) % 300), GROUND - 240 + Math.sin(t * 2) * 16, 7, { X: PAL.sky, O: PAL.orange }, 1, 8);
+  },
+  drawBack(S, ctx, t, v) {
+    // Things grow out of the land here: the hill is drawn over the foot of the house and the tree, so
+    // nothing sits on top of the ground like a sticker, and grass, bushes and a path hide every join
+    const tx = 742, ty = hillY(tx);
+    ctx.lineWidth = 5; hand(ctx, [[tx - 19, ty + 14], [tx - 8, ty - 118], [tx + 9, ty - 118], [tx + 20, ty + 14]], { fill: '#a56a3a', seed: 2, over: 3 });
+    ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(tx - 3, ty - 96); ctx.quadraticCurveTo(tx - 7, ty - 60, tx - 2, ty - 26); ctx.moveTo(tx + 6, ty - 76); ctx.lineTo(tx + 4, ty - 48); ctx.stroke();
+    ctx.lineWidth = 12; ctx.fillStyle = '#49c06a'; ctx.beginPath(); ctx.arc(tx - 2, ty - 174, 70, 0, 7); ctx.moveTo(tx + 76, ty - 118); ctx.arc(tx + 36, ty - 118, 44, 0, 7); ctx.moveTo(tx, ty - 116); ctx.arc(tx - 42, ty - 116, 42, 0, 7); ctx.stroke(); ctx.fill();
+    ctx.lineWidth = 3.5; ctx.beginPath(); for (const [x, y] of [[-30, -190], [8, -206], [26, -160], [-16, -140], [-52, -118], [44, -112]]) { ctx.moveTo(tx + x, ty + y); ctx.arc(tx + x - 7, ty + y, 7, 0, 2.4); } ctx.stroke();
+
+    // chimney and its smoke, behind the roof
+    ctx.lineWidth = 5; hand(ctx, [[986, GROUND - 262], [986, GROUND - 306], [1012, GROUND - 306], [1012, GROUND - 240]], { fill: '#c98f6a', seed: 7, over: 3 });
+    ctx.lineWidth = 3.5; ctx.beginPath();
+    for (let k = 0; k < 3; k++) { const u = ((t * .22 + k / 3) % 1), y = GROUND - 316 - u * 96, x = 999 + Math.sin(u * 6 + k) * 10 * (1 + u * 2), r = 6 + u * 12; ctx.moveTo(x + r, y); ctx.arc(x, y, r, 0, Math.PI * 1.6); } ctx.stroke();
+
+    // the house. Its walls run down into the hill, which is drawn over them
+    ctx.lineWidth = 5; hand(ctx, [[902, GROUND - 90], [901, GROUND - 203], [1020, GROUND - 200], [1021, GROUND - 90]], { fill: '#ffb7a0', seed: 11 });
+    hand(ctx, [[880, GROUND - 197], [959, GROUND - 266], [1041, GROUND - 195]], { fill: '#e8503f', seed: 13, over: 9 });
+    ctx.lineWidth = 3; ctx.beginPath(); for (const [x, y] of [[930, 214], [956, 232], [984, 214], [958, 208], [1006, 204]]) { ctx.moveTo(x, GROUND - y); ctx.quadraticCurveTo(x + 7, GROUND - y + 6, x + 14, GROUND - y); } ctx.stroke();
+    Sketch.hatch(ctx, 903, GROUND - 200, 116, 12, { gap: 6, width: 2.2 });
+    ctx.lineWidth = 4; hand(ctx, [[922, GROUND - 180], [958, GROUND - 181], [959, GROUND - 145], [923, GROUND - 144]], { fill: '#ffe9a6', seed: 17, over: 3 });
+    ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(941, GROUND - 180); ctx.lineTo(941, GROUND - 145); ctx.moveTo(923, GROUND - 163); ctx.lineTo(958, GROUND - 162); ctx.stroke();
+    ctx.lineWidth = 4; hand(ctx, [[917, GROUND - 141], [964, GROUND - 142]], { open: true, seed: 19, over: 3 });
+    const dy = hillY(990) + 3; ctx.lineWidth = 5; hand(ctx, [[975, dy], [976, GROUND - 170], [1004, GROUND - 171], [1005, dy]], { fill: '#3f9be8', seed: 23, over: 2 });
+    ctx.fillStyle = INK; ctx.beginPath(); ctx.arc(998, dy - 34, 3, 0, 7); ctx.fill();
+
+    // the hill, over everything behind it
+    ctx.lineWidth = 6; ctx.fillStyle = '#b4e39c'; ctx.beginPath(); ctx.moveTo(650, GROUND + 3);
+    for (let x = 650, i = 0; x <= 1190; x += 14, i++) ctx.lineTo(x, hillY(x) + (hash(i * 1.9) - .5) * 2.6);
+    ctx.lineTo(1190, GROUND + 3); ctx.closePath(); ctx.stroke(); ctx.fill();
+    ctx.beginPath(); ctx.moveTo(650, GROUND + 3); for (let x = 650, i = 0; x <= 1190; x += 14, i++) ctx.lineTo(x, hillY(x) + (hash(i * 1.9) - .5) * 2.6); ctx.stroke();
+
+    // a worn path from the door, wider as it comes down toward us
+    ctx.lineWidth = 4; ctx.fillStyle = '#f2dfb4'; ctx.beginPath(); ctx.moveTo(977, dy + 1); ctx.quadraticCurveTo(958, GROUND - 92, 1000, GROUND - 56); ctx.quadraticCurveTo(1036, GROUND - 26, 1012, GROUND + 1); ctx.lineTo(1084, GROUND + 1); ctx.quadraticCurveTo(1090, GROUND - 40, 1044, GROUND - 74); ctx.quadraticCurveTo(1004, GROUND - 100, 1003, dy + 1); ctx.closePath(); ctx.fill();
+    ctx.beginPath(); ctx.moveTo(977, dy + 1); ctx.quadraticCurveTo(958, GROUND - 92, 1000, GROUND - 56); ctx.quadraticCurveTo(1036, GROUND - 26, 1012, GROUND + 1); ctx.moveTo(1084, GROUND + 1); ctx.quadraticCurveTo(1090, GROUND - 40, 1044, GROUND - 74); ctx.quadraticCurveTo(1004, GROUND - 100, 1003, dy + 1); ctx.stroke();
+    ctx.lineWidth = 3.5; ctx.fillStyle = '#d8d0bf'; ctx.beginPath(); ctx.ellipse(990, dy + 5, 22, 6, 0, 0, 7); ctx.fill(); ctx.stroke();
+
+    // bushes against the wall, and grass wherever something meets the ground
+    ctx.lineWidth = 9; ctx.fillStyle = '#6fce7c'; ctx.beginPath();
+    for (const [x, r] of [[898, 21], [918, 16], [1032, 18], [1050, 13]]) { const y = hillY(x) - r * .4; ctx.moveTo(x + r, y); ctx.arc(x, y, r, 0, 7); } ctx.stroke(); ctx.fill();
+    ctx.lineWidth = 4; ctx.strokeStyle = '#2f9a4a'; ctx.beginPath();
+    for (const x of [tx - 30, tx - 16, tx + 18, tx + 32, 690, 806, 846, 872, 1068, 1118, 1150]) { const y = hillY(x) + 4; ctx.moveTo(x - 7, y - 1); ctx.lineTo(x - 11, y - 13); ctx.moveTo(x, y); ctx.lineTo(x + 1, y - 17); ctx.moveTo(x + 7, y - 1); ctx.lineTo(x + 12, y - 12); } ctx.stroke(); ctx.strokeStyle = INK;
+    for (const [x, c] of [[832, '#ff8fa3'], [1108, '#ffe03d'], [1136, '#ff8fa3']]) { const y = hillY(x) - 16; ctx.lineWidth = 3; ctx.strokeStyle = '#2f9a4a'; ctx.beginPath(); ctx.moveTo(x, y + 18); ctx.lineTo(x, y); ctx.stroke(); ctx.strokeStyle = INK; ctx.fillStyle = c; ctx.beginPath(); for (let k = 0; k < 5; k++) { const a = k * 1.257; ctx.moveTo(x + Math.cos(a) * 5 + 4, y + Math.sin(a) * 5); ctx.arc(x + Math.cos(a) * 5, y + Math.sin(a) * 5, 4, 0, 7); } ctx.fill(); }
+
+    // the pencil, stuck in the line where it fell
+    const u = seg(t, FALL - .5, FALL), y = lerp(-500, GROUND - 2, u * u), wob = t > FALL ? Math.exp(-(t - FALL) * 3) * Math.sin((t - FALL) * 26) * .12 : 0;
+    if (u > 0) {
+      ctx.save(); ctx.translate(PX + 4, y); ctx.rotate(.12 + wob); ctx.lineWidth = 5;
+      ctx.fillStyle = '#ffc62e'; ctx.fillRect(-12, -150, 24, 122); ctx.strokeRect(-12, -150, 24, 122);
+      ctx.fillStyle = '#ff8fa3'; ctx.fillRect(-12, -176, 24, 20); ctx.strokeRect(-12, -176, 24, 20);
+      ctx.fillStyle = '#c9ccd2'; ctx.fillRect(-12, -158, 24, 8); ctx.strokeRect(-12, -158, 24, 8);
+      ctx.fillStyle = '#f3d9b8'; ctx.beginPath(); ctx.moveTo(-12, -28); ctx.lineTo(12, -28); ctx.lineTo(0, 0); ctx.closePath(); ctx.fill(); ctx.stroke();
+      ctx.restore();
+      // where it landed, the line cracked
+      if (t > FALL) { ctx.lineWidth = 4; ctx.beginPath(); ctx.moveTo(PX - 14, GROUND + 2); ctx.lineTo(PX - 4, GROUND + 15); ctx.moveTo(PX + 14, GROUND + 2); ctx.lineTo(PX + 22, GROUND + 12); ctx.moveTo(PX + 2, GROUND + 6); ctx.lineTo(PX + 4, GROUND + 22); ctx.stroke(); }
+    }
+  },
+});
+</script>
+</body>
+</html>

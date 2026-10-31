@@ -1,6 +1,12 @@
 /* Every episode of Wobbin's Line. Numbered in release order; the page lists seasons newest first.
    poster: the moment (seconds) used as the card's still frame and where hover previews start. */
 window.WL_SEASONS = [
+  { n: 9, title: 'Sketchbook', episodes: [
+    { id: 'new-pencil', title: 'New Pencil', theme: 'trying something new', accent: '#e8503f', poster: 14.4, line: 'Same line, same everything. Then a pencil falls out of the sky, and every hop redraws the world in a new medium.', quote: 'same you. new pencil.' },
+    { id: 'power-cut', title: 'Power Cut', theme: 'switching off', accent: '#ff9d2e', poster: 30.7, line: 'Charcoal and chalk. The film stops, the phone dies, the wifi is gone. Then a small flame at the window.', quote: 'the lights went out. the stars came on.' },
+    { id: 'the-menu', title: 'The Menu', theme: 'too many choices', accent: '#c9503f', poster: 20.5, line: 'Pen and coloured pencil. The menu unrolls to the floor and out of the door, and the sun sets on the queue.', quote: 'you were always going to get the usual.' },
+    { id: 'puddles', title: 'Puddles', theme: 'playing like a kid', accent: '#e8503f', poster: 18.8, line: 'A pencil-grey street and a careful grown-up. A kid jumps in a puddle, and the world scribbles itself into crayon.', quote: 'you\u2019re never too old for puddles.' },
+  ] },
   { n: 8, title: 'Daily routine', episodes: [
     { id: 'the-chair', title: 'The Chair', theme: 'putting it away', accent: '#3b7dd8', poster: 18.2, line: 'Clean laundry goes on the chair, not in the wardrobe right next to it. “later.” By day four the pile blinks.', quote: 'put it away now. future you says thanks.' },
     { id: 'two-minutes', title: 'Two Minutes', theme: 'the tiny task you dread', accent: '#ffa300', poster: 24.0, line: 'The lamp flickers, new bulbs sit right beside it, and a cloud of dread grows for days. The fix takes 0:02.', quote: 'it took two seconds. the dread took two weeks.' },

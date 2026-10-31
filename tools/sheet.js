@@ -19,6 +19,19 @@ window.sheet = async (name, times, { w = 216, h = 384, cols = 8 } = {}) => {
   return { T: +window.show.T.toFixed(2), err: +(window.show.loopErr ?? -1).toFixed(3), errs };
 };
 
+// One moment in several art styles, side by side: looks('gap', 20, ['pencil', 'charcoal']) -> tools/out/sheets/gap.png
+window.looks = async (name, t, styles, { w = 540, h = 960 } = {}) => {
+  await Sketch.ready();
+  const out = document.createElement('canvas'); out.width = styles.length * (w + 8); out.height = h;
+  const o = out.getContext('2d'), c = document.createElement('canvas'); c.width = w; c.height = h; const ctx = c.getContext('2d');
+  const sh = new Shorts.Show(show.story, { loop: { T: show.T, startState: show.startState } }); sh.advance(t);
+  for (const [i, s] of styles.entries()) { Sketch.override = s; sh.render(ctx, w, h); o.drawImage(c, i * (w + 8), 0); }
+  Sketch.override = null;
+  const blob = await new Promise(r => out.toBlob(r, 'image/png'));
+  await fetch('/save/sheets/' + name + '.png', { method: 'POST', body: blob });
+  return 'ok';
+};
+
 // Which parts of Bo's state don't match at the loop seam ([] = perfect).
 window.seamDiff = () => {
   const s = new Shorts.Show(show.story, { loop: { T: show.T, startState: show.startState } });

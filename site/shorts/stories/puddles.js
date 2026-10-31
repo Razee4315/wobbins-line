@@ -1,0 +1,166 @@
+/* puddles: extracted from ../puddles.html by scripts/sync-shorts.py. Do not edit here. */
+(function () {
+  const Shorts = Object.assign(Object.create(window.Shorts), { play: story => { (window.WL_STORIES ||= {})['puddles'] = story; } });
+  // Two media in one film. The street after the rain is a graphite sketch, and grown-up Wobbin steps over every
+  // puddle. A kid jumps in one, and the world round the splash scribbles itself into crayon. The whole street
+  // is always painted in full colour underneath; the reveal mask only decides which medium shows.
+  // Third time, Wobbin takes a run-up, and the colour floods the street. Button: someone very old comes for a turn.
+  const { PAL, lerp, seg, sine, outBack, outCubic, hash, mix, clamp, GROUND, INK } = Shorts;
+  const V = 150, LEAVE = 36.2, LOOP = LEAVE + 8, XMIN = 650, XMAX = 2270;
+  const P1 = 760, P2 = 1060, P3 = 1420, P4 = 1775, P5 = 2010;
+  const POOLS = [[P1, 74], [P2, 82], [P3, 46], [P4, 120], [P5, 60]];
+  const SUN = 24.9, K = ['#ff5a4d', '#ffb12e', '#ffe03d', '#3fc66b', '#3f9be8', '#a06be0'];
+
+  function splash(S, x, R, dur, n) {
+    S.sp.push({ x, R, t0: S.t, dur });
+    S.rip.push({ x, t0: S.t });
+    S.burst(x, GROUND - 6, n, K, { speed: 460 + R * .12, size: 15, life: .95, angle: -Math.PI / 2, spread: 1.7, gravity: 1400 });
+    S.sfx('splash', {}, x);
+  }
+  function house(ctx, x, w, h, wall, roof, door) {
+    const hand = Sketch.hand, s = x * .13;
+    ctx.lineWidth = 6; hand(ctx, [[x, GROUND + 4], [x, GROUND - h], [x + w, GROUND - h], [x + w, GROUND + 4]], { fill: wall, seed: s });
+    hand(ctx, [[x - 26, GROUND - h + 3], [x + w / 2, GROUND - h - w * .46], [x + w + 26, GROUND - h + 3]], { fill: roof, seed: s + 3, over: 9 });
+    ctx.lineWidth = 5;
+    for (const k of [.24, .76]) { hand(ctx, [[x + w * k - 34, GROUND - h + 44], [x + w * k + 34, GROUND - h + 44], [x + w * k + 34, GROUND - h + 118], [x + w * k - 34, GROUND - h + 118]], { fill: '#ffe9a6', seed: s + k * 9 }); ctx.beginPath(); ctx.moveTo(x + w * k, GROUND - h + 44); ctx.lineTo(x + w * k, GROUND - h + 118); ctx.moveTo(x + w * k - 34, GROUND - h + 80); ctx.lineTo(x + w * k + 34, GROUND - h + 80); ctx.stroke(); }
+    ctx.fillStyle = door; ctx.beginPath(); ctx.roundRect(x + w / 2 - 36, GROUND - 124, 72, 124, [30, 30, 0, 0]); ctx.fill(); ctx.stroke();
+    ctx.fillStyle = INK; ctx.beginPath(); ctx.arc(x + w / 2 + 20, GROUND - 56, 5, 0, 7); ctx.fill();
+  }
+  function tree(ctx, x, r, c) {
+    ctx.lineWidth = 6; ctx.fillStyle = '#a56a3a'; ctx.beginPath(); ctx.moveTo(x - 11, GROUND); ctx.lineTo(x - 7, GROUND - 120); ctx.lineTo(x + 7, GROUND - 120); ctx.lineTo(x + 11, GROUND); ctx.closePath(); ctx.fill(); ctx.stroke();
+    ctx.lineWidth = 12; ctx.fillStyle = c; ctx.beginPath(); ctx.arc(x, GROUND - 170, r, 0, 7); ctx.moveTo(x + r * 1.5, GROUND - 130); ctx.arc(x + r * .7, GROUND - 130, r * .78, 0, 7); ctx.moveTo(x - r * .1, GROUND - 130); ctx.arc(x - r * .7, GROUND - 130, r * .74, 0, 7); ctx.stroke(); ctx.fill();
+  }
+
+  Shorts.play({
+    title: 'Puddles',
+    style: { a: 'graphite', b: 'crayon' },
+    accent: '#e8503f',
+    hook: 5.2,
+    wash: 0,
+    loopAfter: LOOP,
+    paper: '#a9dcf7',
+    captions: [
+      [5.9, 7.4, 'careful. *careful.*'],
+      [8, 9, 'dry feet.'],
+      [10.3, 11.3, '*splash!*', null, { pitch: 1.45 }],
+      [11.5, 12.6, 'no, thank you.'],
+      [15.2, 16.4, 'your turn!', null, { pitch: 1.45 }],
+      [16.7, 18.2, 'i am a *grown-up.*'],
+      [21.1, 22, '...oh.'],
+      [26, 27.2, '*again!*'],
+      [28.6, 33, "you're never too old for *puddles.*"],
+      [33.5, 34.9, 'wait for me...', null, { pitch: .78 }],
+    ],
+    init(S) {
+      S.bo = S.addChar({ x: 0, walk: V });
+      S.kid = S.addChar({ x: 420, hair: 'curl', hairColor: '#e8504a', fill: '#ffd84d', blush: '#ff8a7a' }); S.kid.space = 0; S.kid.gain = .6;
+      S.old = S.addChar({ x: 2330, hair: 'antenna', hairColor: '#9a93b8', fill: '#d9c8ef', blush: '#ff9db8', face: -1 }); S.old.space = 0; S.old.gain = .35;
+      S.kid.hidden = S.old.hidden = true; S.sp = []; S.rip = []; S.kidLands = 0; S.boLands = 0; S.oldLands = 0;
+    },
+    update(S, t, dt) {
+      const bo = S.bo, kid = S.kid, old = S.old;
+      S.plan(bo, t, [
+        [0, { x: 668, speed: V, accel: 520 }],
+        [5.2, { lookX: .7, lookY: .9, tilt: .1 }],
+        [6.9, () => bo.jump(232, -430, 0, false)], [6.9, { x: 945, speed: 90, lookX: 0, lookY: 0, tilt: 0 }],
+        [7.9, { eye: 'flat' }],
+        [9.9, { face: -1, eye: 'wide', lookX: .4, lookY: .2 }],
+        [11.5, { eye: 'flat', lookY: 0 }], [12.5, { face: 1, x: 968, speed: 110, eye: 'open' }],
+        [13.15, () => bo.jump(232, -430, 0, false)], [13.15, { x: 1275, speed: 130 }],
+        [14.3, { face: -1, eye: 'flat' }],
+        [16.5, { eye: 'flat', face: 1, lookY: 0 }],
+        [18.4, { lookX: 1, lookY: .9, eye: 'open' }], [18.9, { lookX: -1, lookY: 0 }], [19.3, { lookX: 1, lookY: 0 }],
+        [19.6, { x: 1372, speed: 110, accel: 400, lookX: .7, lookY: .9 }],
+        [20.7, () => bo.jump(70, -320)],
+        [21.3, { eye: 'wide', lookY: .9 }], [22.1, { eye: 'happy', lookY: 0 }],
+        [22.7, { face: -1, x: 1270, speed: 220, accel: 900 }], [23.3, { face: 1, crouch: .24, eye: 'squeeze', tilt: .08 }], [23.3, () => S.sfx('charge', {}, bo.x)],
+        [24.05, { crouch: 0, tilt: 0, x: 1800, speed: 480, accel: 1700, eye: 'open' }],
+        [25.9, { eye: 'happy' }],
+        [27.0, () => bo.jump(0, -640)], [27.9, () => bo.jump(0, -760)],
+        [29.5, { lookX: -1 }], [33.7, { lookX: 1 }],
+        [LEAVE, { x: 1e6, speed: V, accel: 450, lookX: 0, eye: 'open' }], [LEAVE, () => bo.jump(250, -440)],
+        [LEAVE + 2, () => S.sfx('hum', { notes: [4, 5, 7, 9, 7], gap: .3, g: .04 }, bo.x)],
+      ]);
+      S.plan(kid, t, [
+        [8.2, { x: 660, speed: 340, accel: 1400, eye: 'happy' }],
+        [10.7, () => kid.jump(0, -560)],
+        [13.3, { x: 950, speed: 330, accel: 1400 }],
+        [15.1, { lookX: 1, eye: 'open' }], [16.5, { eye: 'happy' }],
+        [25.3, { x: 1600, speed: 330, accel: 1200 }],
+        [27.3, () => kid.jump(0, -700)], [28.2, () => kid.jump(0, -640)],
+        [33.8, { lookX: 1 }],
+      ]);
+      kid.hidden = t < 8; old.hidden = t < 31.4;
+      S.plan(old, t, [[31.4, { x: 2024, speed: 100, accel: 300, eye: 'open', tilt: .05, crouch: .08 }], [35.2, () => old.jump(-16, -260)], [36, { eye: 'happy' }]]);
+      if (t > 8 && kid.x >= 640) S.once('k1', () => kid.jump(236, -690));
+      if (t > 13.3 && kid.x >= 930) S.once('k2', () => kid.jump(232, -760));
+      if (t > 24 && bo.x >= 1422) S.once('leap', () => { bo.jump(420, -1100, Math.PI * 2); S.sfx('whoosh', { d: .6 }, bo.x); });
+      if (kid.lands > S.kidLands) { S.kidLands = kid.lands; if (S.kidLands === 1) splash(S, P1, 300, 1.1, 22); else if (S.kidLands === 3) splash(S, P2, 360, 1.2, 26); }
+      if (bo.lands > S.boLands) { S.boLands = bo.lands; if (t > 20.7 && t < 22) { splash(S, P3, 140, .7, 7); S.sfx('drip', { k: .9 }, P3); } else if (t > 24.5 && t < 26) { splash(S, P4, 1500, 2.2, 60); S.shake(8); S.sfx('swell', { root: 392 }); S.sfx('sparkle', { n: 8 }); S.sfx('birds', { d: 14, g: .8 }); } }
+      if (old.lands > S.oldLands) { S.oldLands = old.lands; splash(S, P5, 100, .5, 6); S.sfx('laugh', { n: 3 }, old.x); }
+      if (t > 28.7) S.once('q', () => S.sfx('pad', { root: 293.66, d: 4.5 }));
+      if (t > LEAVE + .3) S.leapfrog(bo, old, 'out', 480);
+      if (t > 8.6 && t < 12.2) { S.camGoal.x = lerp(bo.x, P1, .55); S.camGoal.kx = 3; }
+      else if (t >= 13.2 && t < 18) { S.camGoal.x = 1180; S.camGoal.kx = 2; }
+      else if (t >= 24.7 && t < 33) { S.camGoal.x = P4 - 50; S.camGoal.z = .8; S.camGoal.y = GROUND - 90; S.camGoal.kx = 2; S.camGoal.kz = 1.1; }
+      else if (t >= 33 && t < LEAVE) { S.camGoal.x = P4 + 90; S.camGoal.kx = 2; S.camGoal.kz = 1.4; }
+    },
+    // the reveal: each splash scribbles colour outward, row by row, like a kid filling in a shape
+    mix(S, m, t) {
+      m.lineWidth = 44;
+      for (const s of S.sp) {
+        const R = s.R * outCubic(seg(t, s.t0, s.t0 + s.dur)); if (R < 6) continue;
+        const rows = Math.ceil(2 * R / 34); m.beginPath();
+        for (let i = 0; i <= rows; i++) {
+          const y = -R + i * 34, w = Math.sqrt(Math.max(0, R * R - y * y)) * (.85 + .24 * hash(i * 1.7 + s.x)), a = Math.max(XMIN, s.x - w), b = Math.min(XMAX, s.x + w), yy = GROUND - 30 + y * .86;
+          if (i === 0) m.moveTo(a, yy); else if (i % 2) { m.lineTo(a, yy); m.lineTo(b, yy + 17); } else { m.lineTo(b, yy); m.lineTo(a, yy + 17); }
+        }
+        m.stroke();
+      }
+    },
+    drawSky(S, ctx, t, v) {
+      if (t > SUN) {
+        const u = outBack(seg(t, SUN + .3, SUN + 1.2)), x = 2070, y = GROUND - 470;
+        ctx.save(); ctx.translate(x, y); ctx.scale(u, u); ctx.strokeStyle = '#ffb12e'; ctx.lineWidth = 12; ctx.beginPath();
+        for (let i = 0; i < 12; i++) { const a = i / 12 * 6.283 + t * .1; ctx.moveTo(Math.cos(a) * 96, Math.sin(a) * 96); ctx.lineTo(Math.cos(a) * 138, Math.sin(a) * 138); } ctx.stroke();
+        ctx.fillStyle = '#ffe03d'; ctx.strokeStyle = INK; ctx.lineWidth = 6; ctx.beginPath(); ctx.arc(0, 0, 80, 0, 7); ctx.fill(); ctx.stroke(); ctx.restore();
+        const r = sine(seg(t, SUN + .6, SUN + 2.6));
+        ctx.lineWidth = 26; for (let i = 0; i < 6; i++) { ctx.strokeStyle = K[i]; ctx.beginPath(); ctx.arc(1730, GROUND + 120, 640 - i * 25, Math.PI * 1.07, Math.PI * (1.07 + .72 * r)); ctx.stroke(); }
+      }
+      // clouds, rubbed in rain-grey, that turn into white ones in the colour
+      for (const [x, y, s] of [[760, 300, 1.4], [1160, 210, 1.6], [1560, 280, 1.2], [2180, 190, 1.5]]) {
+        ctx.fillStyle = '#ffffff'; ctx.strokeStyle = INK; ctx.lineWidth = 12; ctx.beginPath();
+        for (const [dx, dy, r] of [[-70, 10, 34], [-30, -14, 48], [26, -22, 56], [78, 6, 36]]) { ctx.moveTo(x + (dx + r) * s, y + dy * s); ctx.arc(x + dx * s, y + dy * s, r * s, 0, 7); }
+        ctx.stroke(); ctx.fill();   // outline first, then the fill over it: the lumps read as one cloud
+      }
+    },
+    drawBack(S, ctx, t, v) {
+      // the street
+      ctx.fillStyle = '#8fd878'; ctx.fillRect(v.left - 20, GROUND + 58, v.right - v.left + 40, 900);
+      ctx.fillStyle = '#d9d2c6'; ctx.fillRect(v.left - 20, GROUND + 4, v.right - v.left + 40, 54);
+      ctx.lineWidth = 5; ctx.beginPath(); ctx.moveTo(v.left - 20, GROUND + 58); ctx.lineTo(v.right + 20, GROUND + 58); for (let x = 700; x < 2240; x += 150) { ctx.moveTo(x, GROUND + 6); ctx.lineTo(x - 18, GROUND + 56); } ctx.stroke();
+      for (let i = 0; i < 40; i++) {   // nothing with a pattern near either end of the loop, or the seam would show
+        const x = 680 + i * 38 + hash(i) * 30, y = GROUND + 90 + hash(i + .4) * 300; if (x < v.left - 40 || x > v.right + 40) continue;
+        ctx.lineWidth = 5; ctx.strokeStyle = '#3aa655'; ctx.beginPath(); ctx.moveTo(x, y); ctx.quadraticCurveTo(x - 4, y - 20, x - 12, y - 28); ctx.moveTo(x, y); ctx.quadraticCurveTo(x + 4, y - 20, x + 12, y - 28); ctx.stroke();
+        if (i % 3 === 0) { ctx.fillStyle = K[i % 5]; for (let k = 0; k < 5; k++) { const a = k / 5 * 6.283; ctx.beginPath(); ctx.arc(x + Math.cos(a) * 9, y - 36 + Math.sin(a) * 9, 7, 0, 7); ctx.fill(); } ctx.fillStyle = '#ffe03d'; ctx.beginPath(); ctx.arc(x, y - 36, 5, 0, 7); ctx.fill(); }
+      }
+      ctx.strokeStyle = INK;
+      house(ctx, 672, 216, 214, '#ffb7b0', '#d9534f', '#3f9be8');
+      house(ctx, 900, 320, 280, '#ffe08a', '#ef8a3c', '#3fc66b');
+      tree(ctx, 1290, 66, '#3fb562');
+      house(ctx, 1370, 300, 230, '#a8e4d8', '#3f8fb8', '#ff7a7a');
+      tree(ctx, 1730, 86, '#55c774');
+      house(ctx, 1830, 340, 290, '#d8c3f2', '#7b5cff', '#ffb12e');
+      // the fence along the front
+      ctx.lineWidth = 5; ctx.fillStyle = '#ffffff';
+      for (let x = 662; x < 2240; x += 46) { if (x > 1000 && x < 1090) continue; ctx.beginPath(); ctx.moveTo(x, GROUND); ctx.lineTo(x, GROUND - 56); ctx.lineTo(x + 13, GROUND - 72); ctx.lineTo(x + 26, GROUND - 56); ctx.lineTo(x + 26, GROUND); ctx.closePath(); ctx.fill(); ctx.stroke(); }
+      ctx.beginPath(); ctx.moveTo(662, GROUND - 40); ctx.lineTo(2240, GROUND - 40); ctx.stroke();
+      // the puddles, with sky in them
+      for (const [x, r] of POOLS) {
+        ctx.lineWidth = 5; ctx.fillStyle = '#5cb6ee'; ctx.beginPath(); ctx.ellipse(x, GROUND + 14, r, 13, 0, 0, 7); ctx.fill(); ctx.stroke();
+        ctx.fillStyle = '#d9f1ff'; ctx.beginPath(); ctx.ellipse(x - r * .3, GROUND + 11, r * .3, 3.4, 0, 0, 7); ctx.fill();
+        for (const q of S.rip) { if (q.x !== x) continue; const u = (t - q.t0) / 1.1; if (u < 0 || u > 1) continue; ctx.globalAlpha = 1 - u; ctx.lineWidth = 3.5; ctx.beginPath(); ctx.ellipse(x, GROUND + 14, r * (.3 + u), 13 * (.3 + u), 0, 0, 7); ctx.stroke(); ctx.globalAlpha = 1; }
+      }
+    },
+  });
+})();

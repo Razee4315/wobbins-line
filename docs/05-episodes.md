@@ -1,6 +1,6 @@
 # 05 · Episodes
 
-All 38 episodes in release order. ★ = one of the user's favourites. Seasons on the site are listed newest first.
+All 38 episodes in release order, plus the four Season 9 pilots. ★ = one of the user's favourites. Seasons on the site are listed newest first.
 
 | EP | Season | Episode | Theme | Quote | Notes |
 |---|---|---|---|---|---|
@@ -42,6 +42,10 @@ All 38 episodes in release order. ★ = one of the user's favourites. Seasons on
 | 36 | 8 | [Did I Lock It?](../did-i-lock-it.html) | checking again | you checked. you can let it go. | New 2026-10-30 |
 | 37 | 8 | [Water Yourself](../water-yourself.html) | looking after yourself | you need watering too. | New 2026-10-30 |
 | 38 | 8 | [Slow Walker](../slow-walker.html) | slowing down for others | some days, the slow lane has the best view. | New 2026-10-30 |
+| 39 | 9 | [New Pencil](../new-pencil.html) | trying something new | same you. new pencil. | Pilot. Season opener, every look in turn. Starts and ends on the flat line |
+| 40 | 9 | [Power Cut](../power-cut.html) | switching off | the lights went out. the stars came on. | Pilot. Charcoal + chalk, flames are the only colour. Lightened after feedback |
+| 41 | 9 | [The Menu](../the-menu.html) | too many choices | you were always going to get the usual. | Pilot. Pen + coloured pencil, after the boba plates |
+| 42 | 9 | [Puddles](../puddles.html) | playing like a kid | you're never too old for puddles. | Pilot. Two media in one film: graphite into crayon |
 
 ## Seasons
 
@@ -55,6 +59,7 @@ All 38 episodes in release order. ★ = one of the user's favourites. Seasons on
 | 6 | Little things | 24–28 |
 | 7 | Heavy things | 29–33 |
 | 8 | Daily routine | 34–38 |
+| 9 | Sketchbook (pilots) | 39–42 |
 
 ## Posting log
 

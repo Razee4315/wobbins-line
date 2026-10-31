@@ -627,24 +627,32 @@
     J(i) { return this.boil ? (hash(i * 3.17 + this.boilFrame * 31.7) - .5) * (this.story.boilAmt ?? 2.0) : 0; }
     ink(ctx) { ctx.strokeStyle = INK; ctx.fillStyle = INK; ctx.globalAlpha = 1; ctx.lineWidth = 6; ctx.lineCap = 'round'; ctx.lineJoin = 'round'; }
 
-    render(ctx, cw, ch) {
+    // art styles (sketch.js): the same drawing, split into paint and line and laid on paper
+    render(ctx, cw, ch, live) {
+      const st = this.story, style = window.Sketch && (Sketch.override ?? (typeof st.style === 'function' ? st.style(this.t, this) : st.style));
+      if (style) Sketch.frame(this, ctx, cw, ch, style, live); else this.draw(ctx, cw, ch);
+    }
+    draw(ctx, cw, ch) {
       const st = this.story, t = this.t, v = this.view = this.viewFor(cw, ch);
+      if (st.view) st.view(v, this);
       this.ctx = ctx; this.boilFrame = Math.floor(t * 12); NOW = t;
       ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.globalAlpha = 1;
       ctx.fillStyle = st.paperAt ? st.paperAt(t, this) : st.paper || PAPER; ctx.fillRect(0, 0, cw, ch);
       ctx.setTransform(v.unit, 0, 0, v.unit, v.ox, v.oy);
       const layer = fn => { if (fn) { this.ink(ctx); fn(this, ctx, t, v); } };
       layer(st.drawSky);
-      this.ink(ctx); this.drawGround(ctx, v);
+      if (!st.noGround) { this.ink(ctx); if (ctx.sketch) ctx.floor(v, st.lineAt ? x => st.lineAt(x, t, this) : x => this.groundAt(x), st.ground ? 10 : 80, ctx.wash); this.drawGround(ctx, v); }
       layer(st.drawBack);
-      this.ink(ctx); for (const c of this.chars) if (!c.hidden) this.drawChar(ctx, c);
+      this.ink(ctx); ctx.cel?.('#f00');
+      for (const c of this.chars) if (!c.hidden) { if (st.place) st.place(this, ctx, c, () => this.drawChar(ctx, c)); else this.drawChar(ctx, c); }
+      ctx.cel?.(null);
       layer(st.drawFront);
-      const finish = st.paperFinish !== false && !st.clear;   // the site's own scenes opt out
+      const finish = st.paperFinish !== false && !st.clear && !ctx.sketch;   // the site's own scenes opt out
       if (finish) { this.ink(ctx); this.drawFloor(ctx, v); }
-      this.ink(ctx); this.drawFx(ctx); this.drawParts(ctx);
+      this.ink(ctx); ctx.cel?.('#f00'); this.drawFx(ctx); this.drawParts(ctx); ctx.cel?.(null);
       ctx.setTransform(1, 0, 0, 1, 0, 0);
       layer(st.drawOverlay);
-      this.ink(ctx); this.drawCaptions(ctx, cw, ch);
+      this.ink(ctx); ctx.cel?.('#00f'); this.drawCaptions(ctx, cw, ch); ctx.cel?.(null);
       if (finish) this.drawPaper(ctx, cw, ch);
     }
 
@@ -682,6 +690,7 @@
       ctx.save(); ctx.globalAlpha = .13 * (1 - up * .75); ctx.fillStyle = INK;
       ctx.beginPath(); ctx.ellipse(c.x + 4 * c.fw, g + 5, 54 * (1 - up * .5), 7 * (1 - up * .5), 0, 0, Math.PI * 2); ctx.fill();
       ctx.restore();
+      const ink = c.ink ?? INK; ctx.strokeStyle = ink; ctx.fillStyle = ink;   // a chalk outline for dark scenes
       c.feet.forEach((F, i) => this.drawLeg(ctx, c, c.hip(i), F, i));
       const b = c.toWorld(-12 * c.fw, -BODY_H + 1), T = c.tuft;
       if (T) {
@@ -696,21 +705,22 @@
           if (c.hair === 'curl') { ctx.beginPath(); ctx.arc(ex - 6 * c.fw, ey, 6, 0, Math.PI * 2); ctx.stroke(); }
           if (c.hair === 'antenna') { ctx.fillStyle = c.hairColor; ctx.beginPath(); ctx.arc(ex, ey, 7, 0, Math.PI * 2); ctx.fill(); }
         }
-        ctx.strokeStyle = INK;
+        ctx.strokeStyle = ink;
       }
       const pts = shapeAt(c.fw).map(([x, y], i) => { const w = c.toWorld(x, y); return [w.x + this.J(i), w.y + this.J(i + 50)]; });
       const n = pts.length, mid = (p, q) => [(p[0] + q[0]) / 2, (p[1] + q[1]) / 2], m0 = mid(pts[n - 1], pts[0]);
       ctx.beginPath(); ctx.moveTo(m0[0], m0[1]);
       for (let i = 0; i < n; i++) { const m = mid(pts[i], pts[(i + 1) % n]); ctx.quadraticCurveTo(pts[i][0], pts[i][1], m[0], m[1]); }
-      ctx.closePath(); ctx.fillStyle = c.fill; ctx.fill(); ctx.lineWidth = 6; ctx.stroke(); ctx.fillStyle = INK;
+      ctx.closePath(); ctx.fillStyle = c.fill; ctx.fill(); ctx.lineWidth = 6; ctx.stroke(); ctx.fillStyle = ink;
       if (c.blush) {
         const bl = c.toWorld(40 * c.fw, 4);
         ctx.fillStyle = c.blush; ctx.globalAlpha = .85;
         ctx.beginPath(); ctx.ellipse(bl.x, bl.y, 9, 5, c.rot.x, 0, Math.PI * 2); ctx.fill();
-        ctx.globalAlpha = 1; ctx.fillStyle = INK;
+        ctx.globalAlpha = 1; ctx.fillStyle = ink;
       }
       this.drawEye(ctx, c);
       this.drawTake(ctx, c);
+      ctx.strokeStyle = INK; ctx.fillStyle = INK;
     }
 
     drawLeg(ctx, c, h, F, i) {
@@ -801,9 +811,9 @@
     }
 
     drawCaptions(ctx, cw, ch) {
-      const caps = this.story.captions || [], t = this.t, portrait = ch > cw;
-      const fs = Math.round(Math.min(cw, ch) * (portrait ? .05 : .04));
-      ctx.font = `${fs}px ${FONT}`; ctx.textBaseline = 'middle';
+      const caps = this.story.captions || [], t = this.t, portrait = ch > cw, capInk = this.story.capInk?.(t) ?? INK;
+      const fs = Math.round(Math.min(cw, ch) * (portrait ? .05 : .04) * (ctx.capK ?? 1));
+      ctx.font = `${fs}px ${ctx.capFont ?? FONT}`; ctx.textBaseline = 'middle';
       for (const [a, b, text, color] of caps) {
         if (t < a || t > b) continue;
         const plain = text.replace(/\*/g, ''), typeDur = Math.min(1.3, plain.length * .055);
@@ -832,7 +842,7 @@
               // each letter pops in: it drops into place and overshoots a touch (accent words a bit more)
               const cwid = ctx.measureText(chr).width, k = clamp((t - (a + typeDur * (idx + 1) / plain.length)) / .2);
               const sc = .55 + .45 * outBack(k) + (accent ? .16 * Math.sin(Math.PI * k) : 0), dy = (1 - outCubic(k)) * fs * -.28;
-              ctx.fillStyle = accent ? (color || this.story.accent || PAL.blue) : INK;
+              ctx.fillStyle = accent ? (color || this.story.accent || PAL.blue) : capInk;
               ctx.save(); ctx.globalAlpha = alpha * clamp(k * 4); ctx.translate(x + cwid / 2, y + dy); ctx.scale(sc, sc);
               ctx.fillText(chr, -cwid / 2, 0); ctx.restore();
               x += cwid; idx++;
@@ -841,7 +851,7 @@
           if (!cursor && li === lines.length - 1) cursor = [x, y];
         });
         const typing = shown < plain.length, blinkOn = ((t - a) % .7) < .4;
-        if (cursor && (typing || (blinkOn && t < b - .5))) {
+        if (!ctx.sketch && cursor && (typing || (blinkOn && t < b - .5))) {
           ctx.fillStyle = color || this.story.accent || PAL.blue;
           ctx.fillRect(cursor[0] + fs * .15, cursor[1] - fs * .45, fs * .5, fs * .9);
         }
@@ -891,6 +901,7 @@
     if (!('VideoEncoder' in window)) throw new Error('This browser cannot encode MP4. Use Chrome or Edge on a laptop.');
     await loadMuxer();
     await document.fonts.load(`40px Silkscreen`).catch(() => {});
+    await window.Sketch?.ready();
     const bitrate = br ?? Math.round(w * h * fps * .14);
     let codec = null;
     for (const c of ['avc1.640034', 'avc1.640033', 'avc1.4d0034', 'avc1.42003e']) {
@@ -957,6 +968,10 @@
   }
 
   function play(story) {
+    // any page can try a look: the-gap.html?style=charcoal
+    const want = new URLSearchParams(location.search).get('style');
+    if (want && !window.Sketch) { const s = document.createElement('script'); s.src = 'sketch.js'; s.onload = () => play(story); document.head.appendChild(s); return; }
+    if (want) Sketch.override = want;
     document.title = story.title;
     const fl = document.createElement('link'); fl.rel = 'stylesheet';
     fl.href = 'https://fonts.googleapis.com/css2?family=Silkscreen&display=swap'; document.head.appendChild(fl);
@@ -1017,7 +1032,7 @@
     function frame(now) {
       const dt = Math.min(.05, (now - last) / 1000) * (playing && !busy ? speed : 0); last = now;
       if (dt > 0) { if (S.t + dt >= S.T) S.reset(); else S.advance(dt); }
-      S.render(ctx, cv.width, cv.height);
+      S.render(ctx, cv.width, cv.height, true);
       $('scrub').value = Math.round(S.t / S.T * 1000);
       $('time').textContent = `${S.t.toFixed(1)} / ${S.T.toFixed(1)}s`;
       requestAnimationFrame(frame);

@@ -12,6 +12,7 @@ Everything we know about making this show, in one place. Read it before starting
 | [06-preferences.md](06-preferences.md) | What the user loves and dislikes, in their own words where possible |
 | [07-workflow.md](07-workflow.md) | Tools and steps: testing, syncing the site, deploying, rendering, Instagram |
 | [08-audit.md](08-audit.md) | The full audit before posting: what's wrong, what's fixed, what to fix next |
+| [09-art-styles.md](09-art-styles.md) | The art styles (charcoal, coloured pencil, crayon, graphite, riso): how they work and how to tune them |
 | [../ideas.md](../ideas.md) | The idea bank: every season's plan, the backlog of future episodes, research notes |
 
 ## Where things live
@@ -19,6 +20,8 @@ Everything we know about making this show, in one place. Read it before starting
 - `*.html` in the project root: one page per episode. Each opens on its own and can export an MP4.
 - `engine2.js`: the animation engine (characters, physics, camera, captions, loops, MP4 export).
 - `sfx.js`: every sound, synthesized in code.
+- `sketch.js`: the art styles. Only pages that use a style load it. `fonts/` holds the letters they use.
+- `sketchbook/`: a page for comparing the Season 9 pilots and trying any look on any episode.
 - `site/`: the website, deployed to https://razee4315.github.io/wobbins-line/ on every push to `main`. Its own design docs are in `site/docs/`.
 - `brand/instagram/`: profile pictures, highlight covers, bio text and first captions.
 - `legacy/season1/`: the original Season 1 pages on the first engine, kept for reference.

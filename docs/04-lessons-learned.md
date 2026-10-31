@@ -154,6 +154,25 @@ Battery about 21 h old, The Chair about 8 h old. Small sample.
 - GitHub Pages on a private repo needs a paid plan, and even then Actions artifact storage can run out (it did: about 1.2 GB of old build artifacts in other repos). Making the repo public fixed it, since public repos don't count toward the quota.
 - Commits must not carry a `Co-Authored-By: Claude` line.
 
+## Art styles (2026-10-31)
+
+- The art kit we studied draws one still over many seconds in Node, so it can't run in a player. Its idea can: pigment catches on the paper's tooth according to pressure, and that is one line in a fragment shader.
+- Keep colour and line on separate layers, or a shader can only filter the picture. The `Pen` sends fills to one canvas and strokes to another, and a fill erases the lines behind it.
+- A pure threshold turns light shading into hard black specks. The kit's "film", a faint smooth layer under the grain, is what makes a light touch look like pencil.
+- Pulling pure pigment out of a colour oversaturates heavy media (the crayon grass went neon). `truth` blends back toward the colour that was asked for.
+- A world-pinned paper makes the grain pop for one frame at the loop's jump, even at seam error 0.00. Every texture lookup now repeats exactly every 1820 world units, and the grain slides into line during the empty walk-off.
+- Patterns near either end of the loop break the seam too. Sidewalk cracks, grass tufts and clouds must stay away from the first and last 650 units.
+- The isometric pilot looked fine as a print but the user didn't like it, so it was dropped. If it ever returns (`legacy/pilots/`): a paper-doll flip is edge-on exactly at a corner, so never stop a character on one, and keep inner walls low.
+- **The house that didn't belong.** New Pencil's house was a box set on top of a hill, and the tree trunk ended in mid-air above the slope. Both read as stickers, and the user called it AI-ish. The fix: work out the ground's height with a function (`hillY(x)`), draw the hill over the foot of what stands on it, then hide the joins with grass, bushes and a path.
+- **Too dark.** Power Cut's first night was nearly black. It looked striking in a still frame, but the user preferred the lighter tone it passed through at dawn. Charcoal night is now about `#8a867f`, with the paper still showing.
+- **Lines on a mid-tone.** With a lighter night, keep lines dark charcoal and save chalk for stars and highlights.
+- **The menu over the eye.** Its top rail was exactly at eye height, because nobody checked where the eye is (about 132 above the ground). It also floated. It now has its own stand, beside Wobbin rather than in front. Anything Wobbin looks at goes beside the eye, and everything needs something holding it up.
+- **Captions on a mid-tone** are hard to read in any colour, and orange worst of all. Rub a soft patch out of the charcoal behind them, like an eraser (see Power Cut's `drawOverlay`).
+- `mix()` only takes six-digit colours. `INK` is `#111`, so `mix(INK, ...)` gives an invalid colour and the canvas silently keeps the previous one. Use `#111111`.
+- Black lines vanish in the dark, so Wobbin had no legs at night. Use `c.ink` for a chalk outline.
+- `sheet()` downscales by two, which made fake bands in the riso dither. Check dither at full size.
+- On Windows, Python's text mode writes CRLF, and the tools' `<script>\n` match then fails with "no inline story script". Open files with `newline=''`.
+
 ## Earlier seasons (from the first sessions)
 
 - Story state must be fully reset in `init()` or the second loop behaves differently.

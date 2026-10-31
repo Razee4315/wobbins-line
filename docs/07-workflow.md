@@ -50,6 +50,8 @@ seamDiff();                                                        // [] means t
 
 `tools/out/` is git-ignored.
 
+Art styles: any episode page takes `?style=charcoal` (or pencil, crayon, graphite, riso). `looks('name', 20, ['pencil', 'riso'])` in `sheet.js` saves one moment in several styles side by side. `sheet()` halves its frames, which turns the riso dither into bands that aren't really there; judge riso at full size. `http://localhost:8123/sketchbook/` compares the pilots. The live site's Season 9 section is the easiest way to show them to someone else.
+
 ## Update the website after changing episodes
 
 ```bash

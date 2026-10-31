@@ -1,0 +1,247 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Midnight Snack</title>
+</head>
+<body>
+<script src="sfx.js?v=12"></script>
+<script src="engine2.js?v=12"></script>
+<script src="sketch.js?v=1"></script>
+<script>
+// A dark doll's house in isometric 3D, printed in riso inks: every tint is a dither, and the fridge light is
+// the one big sheet of yellow. Wobbin sneaks to the kitchen at 2 am. Two pairs of eyes watch from the dark
+// the whole way, and the audience sees them first. The fridge is empty, and the cake is on the table.
+// Button: the "sleeping" one in the bedroom comes running.
+// The engine still walks everyone along a line (x); place() and view() bend that line through the house:
+// up the bedroom, round the corner to the kitchen, out of the door. At a corner a character flips like a paper doll.
+const { PAL, lerp, seg, sine, outBack, hash, mix, clamp, zzz, GROUND, BODY_H } = Shorts;
+const V = 150, LEAVE = 35.4, LOOP = LEAVE + 7.6, X1 = 1240, X2 = 1540, JT = 300;
+const KEY = '#344a80', NIGHT1 = '#7083b6', NIGHT2 = '#5d70a6', WALLA = '#51639b', WALLB = '#43548c', CORAL = '#ee6852', SUN = '#ffd428';
+const iso = (i, j, z = 0) => [(i - j) * .894, (i + j) * .447 - z];
+const ij = x => x < X1 ? [x, 0] : x < X2 ? [X1, x - X1] : [X1 + x - X2, JT];
+const flip = x => { const f = (a, s) => s * Math.cos(Math.PI * clamp((x - a + 26) / 52)); return x < (X1 + X2) / 2 ? f(X1, 1) : f(X2, -1); };
+const shade = (c, k) => mix(c, '#1f2b52', k);
+const glowOf = t => sine(seg(t, 20.2, 20.7));
+const SPOT = { mum: [1370, 560], dad: [1600, 470] };
+
+function poly(ctx, pts, fill, line = true) {
+  ctx.fillStyle = fill; ctx.beginPath(); pts.forEach((p, k) => k ? ctx.lineTo(p[0], p[1]) : ctx.moveTo(p[0], p[1])); ctx.closePath(); ctx.fill(); if (line) ctx.stroke();
+}
+function box(ctx, i, j, z, w, d, h, col) {
+  poly(ctx, [iso(i, j + d, z), iso(i + w, j + d, z), iso(i + w, j + d, z + h), iso(i, j + d, z + h)], shade(col, .24));
+  poly(ctx, [iso(i + w, j, z), iso(i + w, j + d, z), iso(i + w, j + d, z + h), iso(i + w, j, z + h)], shade(col, .46));
+  poly(ctx, [iso(i, j, z + h), iso(i + w, j, z + h), iso(i + w, j + d, z + h), iso(i, j + d, z + h)], col);
+}
+const floor = (ctx, i0, i1, j0, j1, col) => {
+  poly(ctx, [iso(i0, j0), iso(i1, j0), iso(i1, j1), iso(i0, j1)], col);
+  ctx.save(); ctx.lineWidth = 2.5; ctx.globalAlpha = .55; ctx.beginPath();
+  for (let j = j0 + 60; j < j1; j += 60) { const a = iso(i0, j), b = iso(i1, j); ctx.moveTo(a[0], a[1]); ctx.lineTo(b[0], b[1]); }
+  ctx.stroke(); ctx.restore();
+};
+const wallI = (ctx, j, i0, i1, h, col) => poly(ctx, [iso(i0, j), iso(i1, j), iso(i1, j, h), iso(i0, j, h)], col);
+const wallJ = (ctx, i, j0, j1, h, col) => poly(ctx, [iso(i, j0), iso(i, j1), iso(i, j1, h), iso(i, j0, h)], col);
+function cake(ctx, x, y, s, slice) {
+  ctx.save(); ctx.translate(x, y); ctx.scale(s, s); ctx.lineWidth = 4;
+  ctx.fillStyle = '#fbe9cf'; ctx.beginPath(); ctx.ellipse(0, 4, 54, 15, 0, 0, 7); ctx.fill(); ctx.stroke();
+  ctx.fillStyle = CORAL; ctx.beginPath(); ctx.moveTo(-40, -2); ctx.lineTo(-40, -36); ctx.lineTo(40, -36); ctx.lineTo(40, -2); ctx.ellipse(0, -2, 40, 12, 0, 0, Math.PI); ctx.closePath(); ctx.fill(); ctx.stroke();
+  ctx.fillStyle = '#fbe9cf'; ctx.beginPath(); ctx.ellipse(0, -36, 40, 12, 0, 0, 7); ctx.fill(); ctx.stroke();
+  if (slice) { ctx.fillStyle = shade(CORAL, .5); ctx.beginPath(); ctx.moveTo(0, -36); ctx.lineTo(38, -33); ctx.lineTo(38, 0); ctx.lineTo(0, -3); ctx.closePath(); ctx.fill(); ctx.stroke(); }
+  ctx.fillStyle = '#e8384a'; ctx.beginPath(); ctx.arc(-6, -46, 8, 0, 7); ctx.fill(); ctx.stroke();
+  ctx.restore();
+}
+
+Shorts.play({
+  title: 'Midnight Snack',
+  style: 'riso',
+  accent: CORAL,
+  hook: 4.9,
+  noGround: true,
+  loopAfter: LOOP,
+  paper: '#ffffff',
+  capInk: () => KEY,
+  captions: [
+    [5.6, 6.8, '*shhh.*'],
+    [7.5, 9.1, '2 am. *cake.*'],
+    [16.5, 17.5, '*phew.*'],
+    [21.3, 22.6, 'the cake...'],
+    [22.8, 23.9, '...is *gone.*'],
+    [25.8, 27, 'looking for this?', null, { pitch: 1.3 }],
+    [27.2, 28.4, '...*you too?*'],
+    [28.9, 33, 'at 2 am, nobody is really *asleep.*'],
+    [33.4, 34.8, 'save me some!', null, { pitch: 1.45 }],
+  ],
+  // where the camera looks: the same line, bent through the house
+  view(v, S) {
+    const q = ij(S.cam.x.x), p = iso(q[0], q[1]), t = S.t, k = sine(seg(t, 23.9, 25.6)) * (1 - sine(seg(t, LEAVE + .2, LEAVE + 2.4))), c = iso(1420, 450);
+    v.ox = v.cw / 2 - lerp(p[0], c[0], k) * v.unit; v.oy = v.ch * (v.portrait ? .56 : .6) - lerp(p[1], c[1], k) * v.unit;
+  },
+  // everyone stands on the bent line (or a fixed spot), feet following the floor's slope
+  place(S, ctx, c, draw) {
+    const q = c.spot || ij(c.x), p = iso(q[0], q[1]), sx = c.spot ? (c.flipTo ?? 1) : flip(c.x);
+    const ys = c.feet.map(F => F.y), xs = c.feet.map(F => F.x);
+    for (const F of c.feet) { F.y += (F.x - c.x) * .447; F.x = c.x + (F.x - c.x) * .894; }
+    ctx.save(); ctx.translate(p[0], p[1]); ctx.scale(sx || .02, 1); ctx.translate(-c.x, -GROUND);
+    draw();
+    ctx.restore();
+    c.feet.forEach((F, i) => { F.y = ys[i]; F.x = xs[i]; });
+  },
+  init(S) {
+    S.bo = S.addChar({ x: 0, walk: V });
+    S.mum = S.addChar({ x: 6000, hair: 'curl', blush: '#ff9d8a', fill: NIGHT2 }); S.mum.spot = SPOT.mum; S.mum.flipTo = 1;
+    S.dad = S.addChar({ x: 6400, hair: 'antenna', fill: NIGHT2, face: -1 }); S.dad.spot = SPOT.dad; S.dad.flipTo = 1;
+    S.sib = S.addChar({ x: 1300, hair: 'tuft', fill: '#ffd9c2', blush: '#ff9d8a' }); S.sib.hidden = true;
+    for (const c of [S.mum, S.dad, S.sib]) { c.space = 0; c.gain = .4; }
+    S.vase = { state: 0, x: 0, y: 0, vy: 0 };
+  },
+  update(S, t, dt) {
+    const bo = S.bo, mum = S.mum, dad = S.dad, sib = S.sib, g = glowOf(t);
+    S.once('amb', () => S.sfx('night', { d: 20, g: 1.4 }));
+    bo.ink = bo.hairColor = KEY;
+    const lit = seg(t, 20.2, 21);
+    mum.fill = mix(NIGHT1, '#ffd9c2', lit); dad.fill = mix(NIGHT1, '#bfe0d8', lit);
+    mum.ink = mum.hairColor = mix('#66789f', KEY, lit); dad.ink = dad.hairColor = mix('#66789f', KEY, lit);
+    sib.ink = sib.hairColor = KEY;
+    S.plan(bo, t, [
+      [0, { x: 700, speed: V, accel: 520 }],
+      [4.6, { x: 790, speed: 62, accel: 300, crouch: .05, lookX: 0 }],
+      [7.2, { lookY: -.5, lookX: .5 }],
+      [9.2, { x: 1006, speed: 92, lookY: 0, lookX: 0 }],
+      [11.6, () => S.sfx('creak', {}, bo.x)], [11.6, { eye: 'wide', tilt: -.12, crouch: .1 }],
+      [13.1, { eye: 'open', tilt: 0, crouch: .05, x: 1192, speed: 112 }],
+      [15.0, { eye: 'wide', lookY: -1 }],
+      [15.9, { eye: 'squeeze', crouch: .12 }],
+      [16.5, { eye: 'flat', crouch: .05, lookY: 0 }],
+      [17.2, { eye: 'open', x: X1 + 244, speed: 118, accel: 400 }],
+      [20.1, { lookX: .6, crouch: 0 }],
+      [20.25, { eye: 'wide', tilt: -.14 }], [20.25, () => { S.sfx('door', {}, bo.x); S.sfx('swell', { root: 392 }); }],
+      [21.2, { eye: 'open', tilt: 0, lookX: 1, lookY: .1 }],
+      [22.8, { eye: 'sad' }], [22.8, () => S.sfx('drain', {}, bo.x)],
+      [24.2, () => S.sfx('tock', { f: 520 }, bo.x)], [24.2, { eye: 'wide', tilt: -.08 }],
+      [24.9, { face: -1, eye: 'wide' }],
+      [27.3, { eye: 'open', tilt: 0 }],
+      [28.1, { face: 1, x: 1810, speed: 150, accel: 500 }], [29.8, { eye: 'happy', face: 1 }],
+      [31, () => { S.sfx('pop', { pitch: 900, g: .08 }, bo.x); }], [31.9, () => S.sfx('pop', { pitch: 1040, g: .08 }, bo.x)],
+      [LEAVE, { x: 1e6, speed: V, accel: 450, eye: 'open' }], [LEAVE, () => bo.jump(240, -440)],
+      [LEAVE + 1.6, () => S.sfx('hum', { notes: [2, 4, 5, 7, 5], gap: .3, g: .04 }, bo.x)],
+    ]);
+    S.plan(mum, t, [[25.6, { eye: 'happy' }], [28.4, { eye: 'happy' }]]);
+    S.plan(dad, t, [[24.6, { eye: 'flat' }], [27.2, { eye: 'happy' }]]);
+    S.plan(sib, t, [
+      [32.6, { x: 1625, speed: 430, accel: 1500, eye: 'wide' }], [32.6, () => S.sfx('whoosh', { d: .5 }, 1300)],
+      [33.9, () => sib.jump(0, -560)], [33.9, () => S.sfx('laugh', { n: 3 })], [34.6, { eye: 'happy' }],
+    ]);
+    sib.hidden = t < 32.6;
+    if (t > 12) S.once('stir', () => S.sfx('rustle', { n: 2 }, 960));
+    // the vase: a nudge, a wobble, a fall, and it lands exactly on Wobbin's head
+    const V0 = S.vase;
+    if (t > 14.9) S.once('nudge', () => { V0.state = 1; S.sfx('tap', {}, bo.x); });
+    if (V0.state === 1 && t > 15.5) { V0.state = 2; V0.y = -62; V0.vy = -120; S.sfx('slip', {}, bo.x); }
+    if (V0.state === 2) { V0.vy += 1500 * dt; V0.y += V0.vy * dt; if (V0.y > 0) { V0.state = 3; S.sfx('tock', { f: 420 }, bo.x); bo.q.v += 2; } }
+    if (V0.state === 3 && t > 24.4) { V0.state = 4; bo.q.v -= 2; S.sfx('pop', { pitch: 700, g: .08 }, bo.x); }
+    if (t > 20.4) S.once('light', () => S.sfx('hum', { notes: [7, 7, 7], gap: .9, g: .02 }));
+    if (t > 29) S.once('q', () => S.sfx('pad', { root: 293.66, d: 4 }));
+    if (t > 33.2) S.once('hop2', () => { mum.q.v += 1.6; dad.q.v += 1.6; });
+    // the camera rides the line, wider inside the house
+    if (t > 3 && t < LEAVE + 1) { S.camGoal.z = .92; S.camGoal.kz = 1.3; }
+    if (t >= 24 && t < LEAVE) { S.camGoal.z = .84; S.camGoal.kz = 1; }
+  },
+  drawOverlay(S, ctx, t, v) {
+    const c = S.story.captions.find(([a, b]) => t > a - .15 && t < b + .1); if (!c) return;
+    const k = sine(seg(t, c[0] - .15, c[0])) * (1 - sine(seg(t, c[1] - .2, c[1] + .1))), two = c[2].length > 26, y = v.ch * .15, h = v.ch * (two ? .067 : .042), w = v.cw * .46 * k + v.cw * .04;
+    const m = v.cw / 2; ctx.fillStyle = '#fffaf0'; ctx.strokeStyle = KEY; ctx.lineWidth = v.cw * .006; ctx.beginPath(); ctx.rect(m - w, y - h, w * 2, h * 2); ctx.fill(); ctx.stroke();
+  },
+  drawBack(S, ctx, t, v) {
+    ctx.strokeStyle = KEY; ctx.lineWidth = 5; ctx.lineJoin = 'round';
+    const g = glowOf(t), kit = NIGHT1;
+    // the outer walls first, then floors, then the low walls between the rooms
+    wallI(ctx, -240, 640, 1600, 250, WALLA); wallJ(ctx, 640, -240, 240, 250, WALLB);
+    floor(ctx, 640, 1120, -240, 240, NIGHT1); floor(ctx, 1120, 1600, -240, 240, NIGHT2);
+    wallI(ctx, 240, 640, 1120, 16, WALLA);
+    wallJ(ctx, 1120, 240, 720, 120, WALLB);
+    floor(ctx, 1120, 1600, 240, 720, kit);
+    // the kitchen's tiles
+    ctx.save(); ctx.globalAlpha = .4; ctx.lineWidth = 2.5; ctx.beginPath(); for (let i = 1180; i < 1600; i += 60) { const a = iso(i, 240), b = iso(i, 720); ctx.moveTo(a[0], a[1]); ctx.lineTo(b[0], b[1]); } ctx.stroke(); ctx.restore();
+
+    // bedroom: moon in the window, its light on the floor, a rug, two beds, one of them not as empty as it looks
+    const w = [iso(800, -240, 90), iso(960, -240, 90), iso(960, -240, 216), iso(800, -240, 216)];
+    poly(ctx, w, '#f7ecd0'); ctx.beginPath(); ctx.moveTo(...iso(880, -240, 90)); ctx.lineTo(...iso(880, -240, 216)); ctx.moveTo(...iso(800, -240, 153)); ctx.lineTo(...iso(960, -240, 153)); ctx.stroke();
+    ctx.save(); ctx.globalAlpha = .45; poly(ctx, [iso(800, -240), iso(960, -240), iso(1010, -10), iso(850, -10)], '#e9e3d6', false); ctx.restore();
+    poly(ctx, [iso(740, -60), iso(1030, -60), iso(1030, 140), iso(740, 140)], shade(CORAL, .18));
+    ctx.save(); ctx.lineWidth = 3; ctx.setLineDash([12, 10]); ctx.beginPath(); ctx.moveTo(...iso(756, -44)); ctx.lineTo(...iso(1014, -44)); ctx.lineTo(...iso(1014, 124)); ctx.lineTo(...iso(756, 124)); ctx.closePath(); ctx.stroke(); ctx.restore();
+    box(ctx, 660, -232, 0, 112, 170, 34, '#8d9dc6'); box(ctx, 660, -232, 34, 112, 56, 20, '#efe7d6');
+    box(ctx, 1000, -232, 0, 104, 160, 34, '#8d9dc6'); box(ctx, 1000, -232, 34, 104, 54, 20, '#efe7d6');
+    if (t < 32.6) { const r = t > 11.6 && t < 13 ? Math.sin((t - 11.6) * 6) * 6 : 0; const [a, b] = iso(1056 + r, -130, 62); ctx.fillStyle = shade(CORAL, .1); ctx.beginPath(); ctx.ellipse(a, b, 62, 34, .46, 0, 7); ctx.fill(); ctx.stroke(); zzz(ctx, a + 20, b - 20, t, t > 11.6 && t < 13.4 ? 0 : 1); }
+    box(ctx, 660, -30, 0, 60, 60, 66, '#7788b8');
+
+    // the living room: a long sofa, a plant, the little table with the vase
+    box(ctx, 1190, -232, 0, 300, 90, 44, shade(CORAL, .3)); box(ctx, 1190, -232, 44, 300, 30, 44, shade(CORAL, .34));
+    poly(ctx, [iso(1240, -110), iso(1500, -110), iso(1500, 130), iso(1240, 130)], '#55689f');
+    box(ctx, 1540, -220, 0, 44, 44, 40, CORAL); { const [a, b] = iso(1562, -198, 40); for (const [dx, dy] of [[-22, -40], [0, -60], [22, -36]]) { ctx.fillStyle = '#3f8f86'; ctx.beginPath(); ctx.ellipse(a + dx, b + dy, 13, 28, dx * .03, 0, 7); ctx.fill(); ctx.stroke(); } }
+    box(ctx, 1152, -116, 0, 66, 66, 72, '#8d9dc6');
+    const V0 = S.vase, wob = V0.state === 1 ? Math.sin((t - 14.9) * 22) * .16 : 0;
+    if (V0.state < 2) { const [a, b] = iso(1190, -80, 72); ctx.save(); ctx.translate(a, b); ctx.rotate(wob); ctx.fillStyle = '#efe7d6'; ctx.beginPath(); ctx.moveTo(-12, 0); ctx.quadraticCurveTo(-26, -30, -9, -50); ctx.lineTo(9, -50); ctx.quadraticCurveTo(26, -30, 12, 0); ctx.closePath(); ctx.fill(); ctx.stroke(); ctx.restore(); }
+
+    // low walls between the rooms, with doorways on the line
+    wallJ(ctx, 1120, -240, -60, 56, WALLB); wallJ(ctx, 1120, 60, 240, 56, WALLB);
+    wallI(ctx, 240, 1120, 1168, 56, WALLA); wallI(ctx, 240, 1312, 1600, 56, WALLA);
+
+    // the kitchen: counter, cupboards, and the fridge that is about to ruin everything
+    box(ctx, 1120, 400, 0, 74, 310, 92, '#9fadcf'); box(ctx, 1122, 410, 92, 70, 110, 8, '#efe7d6');
+    // the fridge body. When it opens the +i face is the bright inside, and the door swings out towards the room
+    const fi = 1124, fj = 262, fw = 92, fd = 110, fh = 208;
+    box(ctx, fi, fj, 0, fw, fd, fh, '#d4dbe8');
+    if (g > .01) {
+      poly(ctx, [iso(fi + fw, fj + 8), iso(fi + fw, fj + fd - 8), iso(fi + fw, fj + fd - 8, fh - 12), iso(fi + fw, fj + 8, fh - 12)], '#fff4b8');
+      ctx.lineWidth = 4; ctx.beginPath(); for (const z of [60, 118]) { ctx.moveTo(...iso(fi + fw, fj + 8, z)); ctx.lineTo(...iso(fi + fw, fj + fd - 8, z)); } ctx.stroke(); ctx.lineWidth = 5;
+      const [cx, cy] = iso(fi + fw, fj + fd / 2, 118); ctx.fillStyle = '#fbe9cf'; ctx.beginPath(); ctx.ellipse(cx, cy, 38, 12, 0, 0, 7); ctx.fill(); ctx.stroke();
+      ctx.fillStyle = CORAL; for (const k of [-1, 0, 1]) { ctx.beginPath(); ctx.arc(cx + k * 12, cy - 2 + k * k, 2.6, 0, 7); ctx.fill(); }   // crumbs
+      poly(ctx, [iso(fi + fw, fj + fd), iso(fi + fw + fd * .92 * g, fj + fd + 18 * g), iso(fi + fw + fd * .92 * g, fj + fd + 18 * g, fh), iso(fi + fw, fj + fd, fh)], '#b8c2d8');
+    }
+    // the table, printed before the family sits at it; the light finds it after the door opens
+    const li = sine(seg(t, 20.4, 22));
+    box(ctx, 1450, 560, 0, 124, 104, 74, mix('#55689f', '#d9a56b', li));
+    // the door out, on the line
+    wallI(ctx, 720, 1120, 1600, 16, WALLA); wallJ(ctx, 1600, 240, 720, 16, WALLB); wallJ(ctx, 1600, -240, 240, 16, WALLB);
+    // the glow: a great wash of sun ink out of the fridge; riso prints it as a dithered halo
+    if (g > .01) {
+      const [gx, gy] = iso(fi + fw + 40, fj + fd / 2, 30), R = 760 * g;
+      const r = ctx.createRadialGradient(gx, gy, 20, gx, gy, R); r.addColorStop(0, 'rgba(255,226,80,.96)'); r.addColorStop(.4, 'rgba(255,222,86,.74)'); r.addColorStop(.8, 'rgba(255,214,60,.32)'); r.addColorStop(1, 'rgba(255,212,40,0)');
+      // it stays in the kitchen: an island of yellow in a blue house, spilling a little through the door
+      ctx.save(); ctx.beginPath(); for (const P of [[iso(1120, 240), iso(1600, 240), iso(1600, 720), iso(1120, 720)], [iso(1168, 120), iso(1312, 120), iso(1312, 240), iso(1168, 240)]]) { P.forEach((q, k) => k ? ctx.lineTo(q[0], q[1]) : ctx.moveTo(q[0], q[1])); ctx.closePath(); } ctx.clip();
+      ctx.fillStyle = r; ctx.beginPath(); ctx.arc(gx, gy, R, 0, 7); ctx.fill(); ctx.restore();
+    }
+  },
+  drawFront(S, ctx, t, v) {
+    ctx.strokeStyle = KEY; ctx.lineWidth = 5;
+    const bo = S.bo, q = ij(bo.x), p = iso(q[0], q[1]), top = [p[0] + (bo.top().x - bo.x) * flip(bo.x), p[1] + bo.top().y - GROUND];
+    const li = sine(seg(t, 20.4, 22));
+    if (li > .02) {   // what was on the table all along
+      const [a, b] = iso(1512, 612, 74); ctx.save(); ctx.globalAlpha = li; const n = (t > 31) + (t > 31.9); cake(ctx, a, b - 8, 1.05 - n * .16, true); ctx.restore();
+    }
+    // the thought
+    const u = sine(seg(t, 7.4, 7.9)) * (1 - sine(seg(t, 8.9, 9.3)));
+    if (u > .01) {
+      const x = top[0] + 118, y = top[1] - 92;
+      ctx.save(); ctx.translate(x, y); ctx.scale(u, u); ctx.fillStyle = '#ffffff'; ctx.lineWidth = 11; ctx.beginPath();
+      for (const [dx, dy, r] of [[-58, 8, 42], [-16, -22, 54], [38, -14, 50], [64, 16, 36], [4, 26, 46]]) { ctx.moveTo(dx + r, dy); ctx.arc(dx, dy, r, 0, 7); }
+      ctx.stroke(); ctx.fill(); ctx.restore(); ctx.lineWidth = 5;
+      for (const [k, r] of [[.42, 11], [.72, 7]]) { ctx.fillStyle = '#ffffff'; ctx.beginPath(); ctx.arc(lerp(x, top[0] + 30, k), lerp(y + 50, top[1] - 8, k), r * u, 0, 7); ctx.fill(); ctx.stroke(); }
+      cake(ctx, x + 2, y + 16, .62 * u, false);
+    }
+    // the vase, on its way down, then riding on the head, then back onto a shelf
+    const V0 = S.vase;
+    if (V0.state >= 2 && V0.state < 4) {
+      const y = top[1] + V0.y * (V0.state === 2 ? 1 : 0);
+      ctx.fillStyle = '#efe7d6'; ctx.beginPath(); ctx.moveTo(top[0] - 12, y); ctx.quadraticCurveTo(top[0] - 26, y - 30, top[0] - 9, y - 50); ctx.lineTo(top[0] + 9, y - 50); ctx.quadraticCurveTo(top[0] + 26, y - 30, top[0] + 12, y); ctx.closePath(); ctx.fill(); ctx.stroke();
+    }
+    if (V0.state === 4) {
+      const k = sine(seg(t, 24.4, 24.8)), e = iso(1200, 560, 100), x = lerp(top[0], e[0], k), y = lerp(top[1], e[1], k) - Math.sin(Math.PI * k) * 90;
+      ctx.fillStyle = '#efe7d6'; ctx.beginPath(); ctx.moveTo(x - 12, y); ctx.quadraticCurveTo(x - 26, y - 30, x - 9, y - 50); ctx.lineTo(x + 9, y - 50); ctx.quadraticCurveTo(x + 26, y - 30, x + 12, y); ctx.closePath(); ctx.fill(); ctx.stroke();
+    }
+  },
+});
+</script>
+</body>
+</html>

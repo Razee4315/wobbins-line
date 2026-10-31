@@ -70,6 +70,26 @@ to drink water, walking behind someone slow.
 | **Water Yourself** | Looking after everything but yourself | Bo waters a plant daily while Bo's own glass waits; the plant blooms, Bo wilts; the plant flips the glass to Bo | "you need watering too." |
 | **Slow Walker** | Stuck behind someone slow | One line means no overtaking; Bo stops pushing, looks where they look, and the slow lane has the sunset | "some days, the slow lane has the best view." |
 
+## Season 9 · sketchbook (pilots, built 2026-10-31)
+
+New looks, from three of Kevin Ngo's repos (see `docs/09-art-styles.md`). The user picks what to continue.
+
+| Episode | Look | Idea |
+|---|---|---|
+| New Pencil | all of them | a pencil falls from the sky; every hop redraws the same scene in the next medium |
+| Power Cut | charcoal + chalk | blackout panic, then neighbours with candles under a sky you never normally see |
+| The Menu | pen + coloured pencil | the menu unrolls out of the door while the sun sets; "the usual" |
+| Puddles | graphite into crayon | a grey careful world, coloured in by splashes |
+
+The isometric pilot (Midnight Snack) was dropped: the user didn't like the 3D look. Its page is parked in `legacy/pilots/`.
+
+**Waiting on:** the user is asking a friend which version is best. Don't start a new season until they say.
+
+If a look wins, more stories that suit each one:
+- Charcoal: lift stuck at night, walking home after rain, first snow, a candlelit birthday.
+- Coloured pencil: the corner shop, a packed lunch, the school bus, grandma's kitchen.
+- Crayon mix: the first day of school, a blank wall and a kid, a grey office and one plant.
+
 ## Backlog (fresh ideas)
 
 - **Burnout** — Bo is a candle-flame keeper, lighting everyone else's lanterns until Bo's own flame is a flicker; Bo finally lights its own first. *"you can't pour from an empty cup."*
@@ -91,6 +111,32 @@ to drink water, walking behind someone slow.
 - **Midnight Snack** — *Hook:* a fridge light in the dark, and two eyes. *Reveal:* Bo tiptoes for "one" snack and returns again and again; a gentle, funny one about habits. *"be kind to yourself, even at midnight."*
 - **The Mirror** — *Hook:* Bo stares into a mirror and pulls the body in, pushes the tuft down. *Reveal:* the mirror shows a wobbly, unkind version; friends see the real Bo, and the mirror slowly agrees. *"you look like someone people love."*
 - **Burnout, gently** — *Hook:* Bo lights lanterns for everyone down the line. *Reveal:* Bo's own flame is a flicker; Bo stops, rests, relights. (Expands the backlog idea above.) *"you can't pour from an empty cup."*
+
+### Daily-life research (2026-10-31)
+
+Parked until the user picks a look. The surveys below come mostly from the US, UK and Australia, and some are press
+write-ups or narrow samples, so use them for themes, not numbers. What keeps coming up: noise and interruptions, phones,
+tiredness, cancelled plans, money, and chores.
+
+| What people said | Source |
+|---|---|
+| Top annoyances: seeing someone you don't want to talk to (46%), an unexpected knock (44%), noise when you want silence (43%). Sample: US adults who had tried CBD or THC | [Talker Research](https://talkerresearch.com/20-things-that-americans-find-annoying-about-modern-life/) |
+| The mosquito buzz just as you go to bed tops Australia's "everyday headaches" (46%) | [Medianet](https://newshub.medianet.com.au/2026/10/from-hot-cars-to-mozzies-magpies-and-broken-thongs-australias-biggest-everyday-headaches-revealed/175912/) |
+| Most young adults think their phone hurts their sleep | [NPR](https://www.npr.org/2026/09/02/g-s1-141525/survey-screen-time-phones) and [Pew](https://www.pewresearch.org/?p=358655) |
+| 72% say sleepiness gets in the way of the day | [AASM, via Powers Health](https://www.powershealth.org/about-us/newsroom/health-library/2025/11/18/new-survey-shows-72-of-adults-struggle-with-sleepiness-each-day) |
+| Lonely people cancel plans far more often (69% against 29%) | [APA Stress in America 2025](https://www.apa.org/pubs/reports/stress-in-america/2025) |
+| Money, chores, commutes and the charm of the mundane are the recurring themes in short video. Blog-level commentary only | [Rolling Stone on Boring TikTok](https://www.pressreader.com/usa/rolling-stone-usa/20220705/282299618858892) |
+
+Story seeds, each with the small true detail that makes it land:
+
+- **The Mosquito** (charcoal). Lights on: gone. Lights off: back. *Detail:* the buzz stops the moment the light clicks on, and Wobbin slowly pulls the blanket over everything but one ear.
+- **Hiding** (coloured pencil). Someone you know, aisle three. Wobbin studies a cereal box very hard. *Detail:* the box is upside down. *Turn:* they're hiding too, behind the same shelf.
+- **One Trip** (crayon or pencil). Every shopping bag, one trip, whatever it costs. *Detail:* the fingers-gone-white stage, here a tuft pulled tight, and the key that has to be reached with a foot.
+- **The Angle** (coloured pencil). The charger only works at one exact angle. *Detail:* the tiny hop of joy, then holding completely still.
+- **Just a Second** (graphite). Sits on the sofa for one second after work, and the window goes from gold to black. *Detail:* the bag still on the head when Wobbin wakes.
+- **Knock Knock** (crayon). An unexpected knock. The whole house freezes mid-step. *Detail:* the eye slowly turning toward the door, and one foot still in the air.
+- **Payday** (coloured pencil). Coins arrive, each bill hops out of the wallet, one coin is left by evening. *Detail:* the last coin checks the empty wallet, then looks at Wobbin.
+- **Small Wins** (graphite into crayon, the Puddles trick). A grey morning, and each tiny win colours in a bit more: the bus waiting, the warm side of the toast, the green light. *Detail:* the colour starts as one small scribble, right where the win happened.
 
 ### What we keep learning
 
