@@ -31,7 +31,8 @@ See `10-hooks.md`.
 ## Characters touching, and beats that went missing
 
 ```bash
-node tools/overlap.js                  # characters overlapping in the 9:16 frame (add --wide for 16:9)
+node tools/overlap.js                  # characters too close in the 9:16 frame, by centre points (add --wide for 16:9)
+node tools/touch.js                    # the final say: do the drawn outlines really overlap, in the 16:9 frame?
 node tools/events.js save              # record every episode's sound beats (do this before an engine change)
 node tools/events.js diff              # after: which beats vanished, appeared or moved
 ```

@@ -92,7 +92,7 @@ Go through the episode frame by frame and ask:
 - [ ] Three escalations, a turn, a quote.
 - [ ] `seam error 0.00`; contact sheet checked (see `07-workflow.md`).
 - [ ] The small details above; key frames looked at full size.
-- [ ] `node tools/overlap.js <id> --wide` says ok: nobody overlapping or face to face.
+- [ ] `node tools/overlap.js <id> --wide` says ok: nobody overlapping or face to face. If it flags a hop, `node tools/touch.js <id>` shows whether the outlines really touch.
 - [ ] Every field set in `update` is reset in `init` (or the second loop differs).
 - [ ] No props or friends in view at the start or end; colours match.
 - [ ] Every beat has a soft sound; ambience bed for the place (room, birds, night, rain).
