@@ -4,6 +4,7 @@ A running log. Newest at the top. When something breaks, write down what happene
 
 ## 2026-10-31 · Season 12: hard cuts and the new hooks
 
+- **The tools now read both line endings.** Git's `core.autocrlf` checks episodes out with Windows line endings, and six tools matched `<script>\n`, so 52 of the 57 episodes crashed them in a fresh worktree. They match `\r?\n` now, and the older notes below about CRLF breaking the tools no longer apply.
 - **Hard cuts keep the seam at 0.00,** even with 24 in one episode. How to do them is in `10-hooks.md`.
 - **Captions fade when the camera is close.** The shader picks its line blur from the zoom, so the thin letters go first. Thicken them for those shots (`bold()` in any Season 12 episode). It has to check it's the caption pass, or it stays on and repaints the next frame's lines in the caption's colour. We saw that as a red bus.
 - **The mixed look gets blotchy past zoom 3.** Give close-ups a finer tooth: `style` can be a function of the camera, and `grain` and `hatchScale` go up in steps of .5.

@@ -10,7 +10,7 @@ const { Show } = window.Shorts;
 
 function load(id) {
   const html = fs.readFileSync(path.join(ROOT, id + '.html'), 'utf8');
-  const m = html.match(/<script>\n([\s\S]*?)<\/script>/);
+  const m = html.match(/<script>\r?\n([\s\S]*?)<\/script>/);
   if (!m) throw new Error('no inline story script');
   let story = null;
   const Shorts = Object.assign(Object.create(window.Shorts), { play: s => { story = s; } });

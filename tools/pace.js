@@ -9,7 +9,7 @@ const { Show } = window.Shorts;
 const QUIET = new Set(['step', 'voice', 'blip', 'skid', 'wind', 'rain', 'roll', 'night', 'birds', 'rainbed', 'windbed', 'room']);
 
 function load(id) {
-  const m = fs.readFileSync(path.join(ROOT, id + '.html'), 'utf8').match(/<script>\n([\s\S]*?)<\/script>/);
+  const m = fs.readFileSync(path.join(ROOT, id + '.html'), 'utf8').match(/<script>\r?\n([\s\S]*?)<\/script>/);
   let story = null;
   new Function('Shorts', m[1])(Object.assign(Object.create(window.Shorts), { play: s => { story = s; } }));
   return story;

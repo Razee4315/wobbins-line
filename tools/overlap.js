@@ -13,7 +13,7 @@ const MIN = 158;
 
 function load(id) {
   const html = fs.readFileSync(path.join(ROOT, id + '.html'), 'utf8');
-  const m = html.match(/<script>\n([\s\S]*?)<\/script>/);
+  const m = html.match(/<script>\r?\n([\s\S]*?)<\/script>/);
   let story = null;
   new Function('Shorts', m[1])(Object.assign(Object.create(window.Shorts), { play: s => { story = s; } }));
   return story;

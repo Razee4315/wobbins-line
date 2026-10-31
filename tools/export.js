@@ -76,7 +76,7 @@ async function episodes() {
 }
 async function story(id) {
   const html = await (await fetch('/' + id + '.html', { cache: 'no-store' })).text(); let st;
-  new Function('Shorts', html.match(/<script>\n([\s\S]*?)<\/script>/)[1])(Object.assign(Object.create(Shorts), { play: s => { st = s; } }));
+  new Function('Shorts', html.match(/<script>\r?\n([\s\S]*?)<\/script>/)[1])(Object.assign(Object.create(Shorts), { play: s => { st = s; } }));
   return st;
 }
 

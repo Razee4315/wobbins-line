@@ -64,7 +64,7 @@ window.grid = async (name, shots, W = 300, H = 533, cols = 6) => {
   for (const [i, [id, t]] of shots.entries()) {
     if (!cache[id]) {
       const html = await (await fetch('/' + id + '.html', { cache: 'no-store' })).text(); let story;
-      new Function('Shorts', html.match(/<script>\n([\s\S]*?)<\/script>/)[1])(Object.assign(Object.create(Shorts), { play: s => { story = s; } }));
+      new Function('Shorts', html.match(/<script>\r?\n([\s\S]*?)<\/script>/)[1])(Object.assign(Object.create(Shorts), { play: s => { story = s; } }));
       const S0 = new Shorts.Show(story); cache[id] = { story, loop: { T: S0.T, startState: S0.startState } };
     }
     const S = new Shorts.Show(cache[id].story, { loop: cache[id].loop }); S.advance(t); S.render(ctx, c.width, c.height);
